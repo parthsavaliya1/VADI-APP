@@ -19,12 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-<<<<<<< HEAD
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.vadiapp"
-=======
-      "predictiveBackGestureEnabled": false
->>>>>>> 36492db (Initial commit)
     },
     "web": {
       "output": "static",
