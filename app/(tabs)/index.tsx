@@ -203,7 +203,6 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
   safe: {
     flex: 1,
     backgroundColor: "#F5F7F2",
@@ -417,22 +416,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "700",
-=======
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
->>>>>>> 36492db (Initial commit)
   },
 });

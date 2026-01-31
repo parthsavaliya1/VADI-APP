@@ -3,22 +3,13 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-<<<<<<< HEAD
       "@/*": ["./*"]
-=======
-      "@/*": [
-        "./*"
-      ]
->>>>>>> 36492db (Initial commit)
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-<<<<<<< HEAD
     "types",
-=======
->>>>>>> 36492db (Initial commit)
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ]
