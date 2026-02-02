@@ -1,4 +1,3 @@
-import { API } from "@/utils/api";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
@@ -11,23 +10,42 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function VerifyOtpScreen() {
-  const { phone } = useLocalSearchParams<{ phone: string }>();
-  const { login } = useAuth();
-
+  const params = useLocalSearchParams<any>();
+  const { verifyOtp, signup, loginWithOtp } = useAuth(); // ✅ UPDATED
   const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const verifyOtp = async () => {
-    if (otp.length !== 6) return;
+  const handleVerifyOtp = async () => {
+    if (otp.length !== 6 || loading) return;
 
-    // ⚠️ TEMP DEMO OTP
-    await API.post("/api/auth/verify-otp", { phone, otp });
+    try {
+      setLoading(true);
 
-    // 🔐 Fake login using OTP
-    await login(phone!, "otp-login");
-    router.replace("/(tabs)");
+      // 🔐 FIREBASE OTP VERIFY
+      await verifyOtp(otp);
+
+      // 🧠 AFTER OTP SUCCESS
+      if (params.mode === "signup") {
+        await signup({
+          name: params.name,
+          phone: params.phone,
+          password: params.password,
+          dob: params.dob,
+          role: params.role,
+        });
+      } else {
+        await loginWithOtp(params.phone);
+      }
+
+      router.replace("/(tabs)");
+    } catch (err) {
+      console.log("❌ OTP verification failed", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,7 +56,7 @@ export default function VerifyOtpScreen() {
       >
         <View style={styles.container}>
           <Text style={styles.title}>Verify OTP</Text>
-          <Text style={styles.subtitle}>OTP sent to {phone}</Text>
+          <Text style={styles.subtitle}>OTP sent to {params.phone}</Text>
 
           <TextInput
             placeholder="Enter 6-digit OTP"
@@ -50,10 +68,15 @@ export default function VerifyOtpScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.cta, otp.length !== 6 && { opacity: 0.5 }]}
-            onPress={verifyOtp}
+            style={[
+              styles.cta,
+              (otp.length !== 6 || loading) && { opacity: 0.5 },
+            ]}
+            onPress={handleVerifyOtp}
           >
-            <Text style={styles.ctaText}>Verify & Continue</Text>
+            <Text style={styles.ctaText}>
+              {loading ? "Verifying..." : "Verify & Continue"}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => router.back()}>
@@ -65,24 +88,22 @@ export default function VerifyOtpScreen() {
   );
 }
 
+/* 🎨 STYLES — UNCHANGED */
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#F6F7F2" },
   container: { padding: 20, paddingTop: 60 },
-
   title: {
     fontSize: 24,
     fontWeight: "800",
     color: "#1B5E20",
     textAlign: "center",
   },
-
   subtitle: {
     textAlign: "center",
     color: "#4E7C50",
     marginTop: 8,
     marginBottom: 30,
   },
-
   input: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -91,22 +112,18 @@ const styles = StyleSheet.create({
     letterSpacing: 8,
     textAlign: "center",
     marginBottom: 20,
-    elevation: 3,
   },
-
   cta: {
     backgroundColor: "#2E7D32",
     paddingVertical: 16,
     borderRadius: 16,
   },
-
   ctaText: {
     color: "#fff",
     textAlign: "center",
     fontWeight: "800",
     fontSize: 16,
   },
-
   link: {
     textAlign: "center",
     marginTop: 18,

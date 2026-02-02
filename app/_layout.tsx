@@ -10,11 +10,7 @@ export default function RootLayout() {
       <CartProvider>
         <OrderProvider>
           <Stack screenOptions={{ headerShown: false }}>
-            {/* Auth screens */}
-            <Stack.Screen name="signup" />
-            <Stack.Screen name="login" />
-
-            {/* Main app */}
+            <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
           </Stack>
           <StatusBar style="auto" />

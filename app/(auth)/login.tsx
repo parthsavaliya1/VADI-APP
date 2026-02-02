@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -53,7 +53,7 @@ export default function LoginScreen() {
           {/* 🟢 LOGO */}
           <View style={styles.logoWrap}>
             <Image
-              source={require("../assets/images/VADI.png")}
+              source={require("../../assets/images/VADI.png")}
               style={styles.logo}
             />
           </View>
@@ -95,7 +95,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           {/* 🔁 SIGNUP LINK */}
-          <TouchableOpacity onPress={() => router.push("/signup")}>
+          <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
             <Text style={styles.signupText}>
               New here?{" "}
               <Text style={{ fontWeight: "800" }}>Create account</Text>
