@@ -4,12 +4,10 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
-import { useOrders } from "../../context/OrderContext";
 
 export default function ProfileScreen() {
-  const { logout, user } = useAuth(); // ⬅️ user added
+  const { logout, user } = useAuth();
   const { clearCart } = useCart();
-  const { orders } = useOrders();
 
   const isAdmin = user?.role === "admin";
 
@@ -33,8 +31,18 @@ export default function ProfileScreen() {
 
         {/* MENU */}
         <View style={styles.menu}>
-          <MenuItem icon="receipt" label="My Orders" />
-          <MenuItem icon="location" label="My Addresses" />
+          <MenuItem
+            icon="receipt"
+            label="My Orders"
+            onPress={() => {
+              // Navigate to orders (already handled by Orders tab)
+            }}
+          />
+          <MenuItem
+            icon="location"
+            label="My Addresses"
+            onPress={() => router.push("/my-addresses")}
+          />
 
           {/* 🔐 ADMIN ACTIONS (AFTER ADDRESS) */}
           {isAdmin && (
@@ -52,8 +60,20 @@ export default function ProfileScreen() {
             </>
           )}
 
-          <MenuItem icon="help-circle" label="Help & Support" />
-          <MenuItem icon="information-circle" label="About VADI" />
+          <MenuItem
+            icon="help-circle"
+            label="Help & Support"
+            onPress={() => {
+              // Navigate to help
+            }}
+          />
+          <MenuItem
+            icon="information-circle"
+            label="About VADI"
+            onPress={() => {
+              // Navigate to about
+            }}
+          />
         </View>
 
         {/* LOGOUT */}
@@ -66,12 +86,23 @@ export default function ProfileScreen() {
 }
 
 /* NORMAL MENU ITEM */
-function MenuItem({ icon, label }: { icon: any; label: string }) {
+function MenuItem({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: any;
+  label: string;
+  onPress?: () => void;
+}) {
   return (
-    <View style={styles.menuItem}>
-      <Ionicons name={icon} size={22} color="#2E7D32" />
-      <Text style={styles.menuText}>{label}</Text>
-    </View>
+    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+      <View style={styles.menuItemLeft}>
+        <Ionicons name={icon} size={22} color="#2E7D32" />
+        <Text style={styles.menuText}>{label}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color="#999" />
+    </TouchableOpacity>
   );
 }
 
@@ -87,8 +118,11 @@ function AdminItem({
 }) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-      <Ionicons name={icon} size={22} color="#1B5E20" />
-      <Text style={[styles.menuText, { fontWeight: "700" }]}>{label}</Text>
+      <View style={styles.menuItemLeft}>
+        <Ionicons name={icon} size={22} color="#1B5E20" />
+        <Text style={[styles.menuText, { fontWeight: "700" }]}>{label}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color="#1B5E20" />
     </TouchableOpacity>
   );
 }
@@ -108,6 +142,11 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
     marginBottom: 20,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   name: {
     fontSize: 18,
@@ -123,14 +162,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 10,
     marginBottom: 20,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderBottomWidth: 0.5,
     borderColor: "#eee",
+  },
+  menuItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   menuText: {
     marginLeft: 12,
@@ -140,6 +189,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#D32F2F",
     padding: 15,
     borderRadius: 8,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   logoutText: {
     color: "#fff",

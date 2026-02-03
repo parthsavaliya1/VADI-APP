@@ -1,12 +1,9 @@
-import { useCart } from "@/context/CartContext";
-import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -15,51 +12,86 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type Product = {
-  _id: string;
+import { useCart } from "@/context/CartContext";
+import { API } from "@/utils/api";
+
+type CategoryData = {
   name: string;
-  price: number;
-  unit: string;
-  image?: string;
-  category?: string;
+  icon: string;
+  color: string;
+  count: number;
 };
 
-export default function CategoryScreen() {
-  const params = useLocalSearchParams();
-  const { category, title } = params;
-  const { items, addToCart } = useCart();
+const categoryIcons: { [key: string]: { icon: string; color: string } } = {
+  vegetables: { icon: "leaf", color: "#4CAF50" },
+  fruits: { icon: "nutrition", color: "#FF9800" },
+  dairy: { icon: "ice-cream", color: "#2196F3" },
+  bakery: { icon: "pizza", color: "#FF6F00" },
+  beverages: { icon: "beer", color: "#00BCD4" },
+  snacks: { icon: "fast-food", color: "#E91E63" },
+  meat: { icon: "restaurant", color: "#795548" },
+  seafood: { icon: "fish", color: "#009688" },
+  "personal care": { icon: "sparkles", color: "#9C27B0" },
+  household: { icon: "home", color: "#607D8B" },
+  "baby care": { icon: "heart", color: "#F06292" },
+  "pet care": { icon: "paw", color: "#8D6E63" },
+};
 
-  const [products, setProducts] = useState<Product[]>([]);
+export default function CategoriesScreen() {
+  const { items } = useCart();
+  const [categories, setCategories] = useState<CategoryData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    loadProducts();
-  }, [category]);
+    loadCategories();
+  }, []);
 
-  const loadProducts = async () => {
+  const loadCategories = async () => {
     try {
       const res = await API.get("/products");
-      const filtered = res.data.filter(
-        (p: Product) =>
-          p.category?.toLowerCase() === category?.toString().toLowerCase(),
+      const products = res.data;
+
+      // Group products by category and count them
+      const categoryMap: { [key: string]: number } = {};
+
+      products.forEach((product: any) => {
+        const category = product.category?.toLowerCase() || "other";
+        categoryMap[category] = (categoryMap[category] || 0) + 1;
+      });
+
+      // Convert to array and add icons/colors
+      const categoriesArray: CategoryData[] = Object.entries(categoryMap).map(
+        ([name, count]) => ({
+          name,
+          icon: categoryIcons[name]?.icon || "apps",
+          color: categoryIcons[name]?.color || "#666",
+          count,
+        }),
       );
-      setProducts(filtered);
+
+      // Sort by count (descending)
+      categoriesArray.sort((a, b) => b.count - a.count);
+
+      setCategories(categoriesArray);
+    } catch (error) {
+      console.error("Failed to load categories:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredCategories = categories.filter((cat) =>
+    cat.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const handleAddToCart = (item: Product) => {
-    addToCart({
-      id: item._id,
-      name: item.name,
-      price: item.price,
-      qty: 1,
+  const handleCategoryPress = (category: CategoryData) => {
+    router.push({
+      pathname: "/category",
+      params: {
+        category: category.name,
+        title: category.name.charAt(0).toUpperCase() + category.name.slice(1),
+      },
     });
   };
 
@@ -67,13 +99,10 @@ export default function CategoryScreen() {
     <SafeAreaView style={styles.safe}>
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#1B5E20" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{title}</Text>
+        <Text style={styles.headerTitle}>Categories</Text>
         <TouchableOpacity onPress={() => router.push("/cart")}>
           <View style={styles.cartIcon}>
-            <Ionicons name="cart-outline" size={24} color="#1B5E20" />
+            <Ionicons name="cart-outline" size={26} color="#1B5E20" />
             {items.length > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{items.length}</Text>
@@ -87,62 +116,63 @@ export default function CategoryScreen() {
       <View style={styles.searchBox}>
         <Ionicons name="search" size={18} color="#777" />
         <TextInput
-          placeholder={`Search in ${title}`}
+          placeholder="Search categories"
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <Ionicons name="close-circle" size={18} color="#999" />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* PRODUCTS */}
+      {/* CATEGORIES GRID */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2E7D32" />
         </View>
-      ) : filteredProducts.length > 0 ? (
+      ) : filteredCategories.length > 0 ? (
         <FlatList
-          data={filteredProducts}
+          data={filteredCategories}
           numColumns={2}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item) => item.name}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <TouchableOpacity
-                onPress={() =>
-                  router.push({
-                    pathname: "/product-detail",
-                    params: { id: item._id },
-                  })
-                }
+            <TouchableOpacity
+              style={styles.categoryCard}
+              activeOpacity={0.7}
+              onPress={() => handleCategoryPress(item)}
+            >
+              <View
+                style={[
+                  styles.iconCircle,
+                  { backgroundColor: item.color + "20" },
+                ]}
               >
-                <Image
-                  source={{
-                    uri: item.image || "https://via.placeholder.com/150",
-                  }}
-                  style={styles.image}
+                <Ionicons
+                  name={item.icon as any}
+                  size={32}
+                  color={item.color}
                 />
-                <Text numberOfLines={2} style={styles.name}>
-                  {item.name}
-                </Text>
-                <Text style={styles.unit}>{item.unit}</Text>
-                <View style={styles.footer}>
-                  <Text style={styles.price}>₹{item.price}</Text>
-                  <TouchableOpacity
-                    style={styles.addBtn}
-                    onPress={() => handleAddToCart(item)}
-                  >
-                    <Text style={styles.addText}>ADD</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </View>
+              </View>
+              <Text style={styles.categoryName}>
+                {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
+              </Text>
+              <Text style={styles.productCount}>
+                {item.count} product{item.count !== 1 ? "s" : ""}
+              </Text>
+            </TouchableOpacity>
           )}
         />
       ) : (
         <View style={styles.emptyState}>
-          <Ionicons name="basket-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyText}>No products found</Text>
+          <Ionicons name="search-outline" size={64} color="#ccc" />
+          <Text style={styles.emptyText}>No categories found</Text>
+          <Text style={styles.emptySubtext}>Try a different search term</Text>
         </View>
       )}
     </SafeAreaView>
@@ -158,23 +188,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 14,
-  },
-  backBtn: {
-    padding: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "800",
     color: "#1B5E20",
   },
   cartIcon: {
     position: "relative",
+    padding: 4,
   },
   badge: {
     position: "absolute",
-    top: -6,
-    right: -8,
+    top: 0,
+    right: 0,
     backgroundColor: "#2E7D32",
     borderRadius: 10,
     minWidth: 18,
@@ -198,6 +227,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginBottom: 16,
     elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   searchInput: {
     marginLeft: 8,
@@ -215,63 +248,55 @@ const styles = StyleSheet.create({
   row: {
     justifyContent: "space-between",
   },
-  card: {
+  categoryCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 12,
+    padding: 20,
     width: "48%",
     marginBottom: 14,
+    alignItems: "center",
     elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  image: {
-    width: "100%",
-    height: 100,
-    resizeMode: "contain",
-    marginBottom: 8,
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  name: {
-    fontSize: 14,
-    fontWeight: "600",
+  categoryName: {
+    fontSize: 15,
+    fontWeight: "700",
     color: "#222",
-    minHeight: 36,
+    textAlign: "center",
+    marginBottom: 4,
   },
-  unit: {
+  productCount: {
     fontSize: 12,
     color: "#777",
-    marginVertical: 4,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#2E7D32",
-  },
-  addBtn: {
-    borderWidth: 1.5,
-    borderColor: "#2E7D32",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  addText: {
-    color: "#2E7D32",
-    fontWeight: "700",
-    fontSize: 12,
+    textAlign: "center",
   },
   emptyState: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 40,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: "700",
     color: "#666",
     marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#999",
+    marginTop: 8,
+    textAlign: "center",
   },
 });

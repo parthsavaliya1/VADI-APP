@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { API } from "../../utils/api";
@@ -25,11 +26,11 @@ const { width } = Dimensions.get("window");
 const banners = [
   {
     id: "1",
-    image: "https://i.imgur.com/8Km9tLL.png",
+    image: "https://i.ibb.co/dzHx6kp/8d6f94e6-8f2b-41ab-a8af-a7b0a6f876ef.png",
   },
   {
     id: "2",
-    image: "https://i.imgur.com/Lz7Xc0S.png",
+    image: "https://i.ibb.co/dzHx6kp/8d6f94e6-8f2b-41ab-a8af-a7b0a6f876ef.png",
   },
 ];
 
@@ -125,6 +126,7 @@ export default function HomeScreen() {
   const cartFooterAnim = useRef(new Animated.Value(0)).current;
   const searchFocusAnim = useRef(new Animated.Value(0)).current;
   const bannerScrollRef = useRef<FlatList>(null);
+  const { defaultAddress } = useAddress();
 
   const total = items.reduce((s, i) => s + i.price * i.qty, 0);
 
@@ -188,11 +190,8 @@ export default function HomeScreen() {
     });
   };
 
-  // Handle category click
+  // Handle category click - navigate to category page
   const handleCategoryClick = (category: string) => {
-    setSelectedCategory(category);
-    setSearchQuery("");
-
     // Navigate to category page with the category as a parameter
     router.push({
       pathname: "/category",
@@ -298,7 +297,11 @@ export default function HomeScreen() {
                 // router.push("/(tabs)/location");
               }}
             >
-              <Text style={styles.address}>Home • Maharashtra</Text>
+              <Text style={styles.address}>
+                {defaultAddress
+                  ? `${defaultAddress.name} • ${defaultAddress.city}, ${defaultAddress.state}`
+                  : "Add delivery address"}
+              </Text>
               <Ionicons name="chevron-down" size={16} color="#1B5E20" />
             </TouchableOpacity>
           </View>
@@ -1010,7 +1013,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    marginVertical: 6, // 👈 IMPORTANT
+    marginVertical: 6,
     shadowRadius: 4,
     position: "relative",
   },
