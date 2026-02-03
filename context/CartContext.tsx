@@ -18,7 +18,11 @@ type CartContextType = {
   items: CartItem[];
   addToCart: (item: CartItem) => void;
   updateQty: (id: string, qty: number) => void;
+  updateQuantity: (id: string, qty: number) => void; // Alias for compatibility
+  removeFromCart: (id: string) => void;
   clearCart: () => void;
+  getCartTotal: () => number;
+  getCartItemCount: () => number;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -58,13 +62,41 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  // Alias for updateQty to support both naming conventions
+  const updateQuantity = (id: string, qty: number) => {
+    updateQty(id, qty);
+  };
+
+  const removeFromCart = (id: string) => {
+    setItems((prev) => prev.filter((p) => p.id !== id));
+  };
+
   const clearCart = async () => {
     setItems([]);
     await AsyncStorage.removeItem("CART_ITEMS");
   };
 
+  const getCartTotal = () => {
+    return items.reduce((total, item) => total + item.price * item.qty, 0);
+  };
+
+  const getCartItemCount = () => {
+    return items.reduce((count, item) => count + item.qty, 0);
+  };
+
   return (
-    <CartContext.Provider value={{ items, addToCart, updateQty, clearCart }}>
+    <CartContext.Provider
+      value={{
+        items,
+        addToCart,
+        updateQty,
+        updateQuantity,
+        removeFromCart,
+        clearCart,
+        getCartTotal,
+        getCartItemCount,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

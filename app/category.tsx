@@ -1,5 +1,3 @@
-import { useCart } from "@/context/CartContext";
-import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -14,6 +12,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useCart } from "../context/CartContext";
+import { API } from "../utils/api";
 
 type Product = {
   _id: string;
