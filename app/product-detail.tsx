@@ -85,6 +85,12 @@ export default function ProductDetailScreen() {
     }
   };
 
+  // Calculate original price if there's a discount
+  const getOriginalPrice = (price: number, discount?: number) => {
+    if (!discount || discount === 0) return null;
+    return price / (1 - discount / 100);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -114,6 +120,7 @@ export default function ProductDetailScreen() {
 
   const cartItem = items.find((i) => i.id === product._id);
   const isInCart = !!cartItem;
+  const originalPrice = getOriginalPrice(product.price, product.discount);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -162,10 +169,19 @@ export default function ProductDetailScreen() {
 
           <View style={styles.priceRow}>
             <View>
-              <Text style={styles.price}>₹{product.price}</Text>
-              {product.discount && (
+              <View style={styles.priceContainer}>
+                <Text style={styles.price}>₹{product.price.toFixed(2)}</Text>
+                {product.discount && product.discount > 0 && (
+                  <View style={styles.savingsBadge}>
+                    <Text style={styles.savingsText}>
+                      Save ₹{(originalPrice! - product.price).toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {originalPrice && (
                 <Text style={styles.originalPrice}>
-                  ₹{Math.round(product.price * 1.25)}
+                  ₹{originalPrice.toFixed(2)}
                 </Text>
               )}
             </View>
@@ -383,13 +399,29 @@ const styles = StyleSheet.create({
   priceRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 24,
+  },
+  priceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   price: {
     fontSize: 28,
     fontWeight: "800",
     color: "#2E7D32",
+  },
+  savingsBadge: {
+    backgroundColor: "#FFF3E0",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  savingsText: {
+    color: "#FF9800",
+    fontSize: 12,
+    fontWeight: "700",
   },
   originalPrice: {
     fontSize: 16,

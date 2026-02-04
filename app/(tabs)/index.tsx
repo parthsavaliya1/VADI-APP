@@ -58,10 +58,38 @@ const quickActions = [
   },
   {
     id: "4",
-    title: "Offers",
-    icon: "pricetag",
-    color: "#F44336",
-    category: "offers",
+    title: "Dry Fruits",
+    icon: "basket-outline",
+    color: "#8D6E63",
+    category: "dry-fruits",
+  },
+];
+
+// Featured categories for the new section
+const featuredCategories = [
+  {
+    id: "1",
+    name: "Fresh Vegetables",
+    image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400",
+    category: "vegetables",
+  },
+  {
+    id: "2",
+    name: "Seasonal Fruits",
+    image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400",
+    category: "fruits",
+  },
+  {
+    id: "3",
+    name: "Dairy Products",
+    image: "https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=400",
+    category: "dairy",
+  },
+  {
+    id: "4",
+    name: "Dry Fruits & Nuts",
+    image: "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=400",
+    category: "dry-fruits",
   },
 ];
 
@@ -73,6 +101,9 @@ type Product = {
   image?: string;
   category?: string;
   discount?: number;
+  featured?: boolean;
+  trending?: boolean;
+  bestDeal?: boolean; // New field to identify best deals
 };
 
 // Skeleton loader component
@@ -190,9 +221,7 @@ export default function HomeScreen() {
     });
   };
 
-  // Handle category click - navigate to category page
   const handleCategoryClick = (category: string) => {
-    // Navigate to category page with the category as a parameter
     router.push({
       pathname: "/category",
       params: {
@@ -202,7 +231,6 @@ export default function HomeScreen() {
     });
   };
 
-  // Handle "See All" click for popular items
   const handleSeeAllProducts = () => {
     router.push({
       pathname: "/all-products",
@@ -210,7 +238,6 @@ export default function HomeScreen() {
     });
   };
 
-  // Handle "See All" click for deals
   const handleSeeAllDeals = () => {
     router.push({
       pathname: "/all-products",
@@ -218,18 +245,30 @@ export default function HomeScreen() {
     });
   };
 
+  const handleSeeAllTrending = () => {
+    router.push({
+      pathname: "/all-products",
+      params: { type: "trending", title: "Trending Now" },
+    });
+  };
+
+  const handleSeeAllFeatured = () => {
+    router.push({
+      pathname: "/all-products",
+      params: { type: "featured", title: "Featured Products" },
+    });
+  };
+
   // Filter products based on search and category
   const getFilteredProducts = () => {
     let filtered = allProducts;
 
-    // Apply category filter
     if (selectedCategory) {
       filtered = filtered.filter(
         (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase(),
       );
     }
 
-    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter((p) =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -241,13 +280,48 @@ export default function HomeScreen() {
 
   const filteredProducts = getFilteredProducts();
 
-  // Get deals (products with discount or first 6 for demo)
-  const dealProducts = allProducts
-    .filter((p) => p.discount && p.discount > 0)
-    .slice(0, 6);
+  // Get ONLY products marked as best deals
+  // If no products have bestDeal flag, use products with discount > 20%
+  const getBestDeals = () => {
+    // First try to get products specifically marked as bestDeal
+    const markedDeals = allProducts.filter((p) => p.bestDeal === true);
 
-  const displayDeals =
-    dealProducts.length > 0 ? dealProducts : allProducts.slice(0, 6);
+    if (markedDeals.length > 0) {
+      return markedDeals.slice(0, 8);
+    }
+
+    // Fallback: get products with discount >= 20%
+    const highDiscountProducts = allProducts.filter(
+      (p) => p.discount && p.discount >= 20,
+    );
+
+    if (highDiscountProducts.length > 0) {
+      return highDiscountProducts.slice(0, 8);
+    }
+
+    // Last fallback: return empty array (don't show section)
+    return [];
+  };
+
+  const dealProducts = getBestDeals();
+
+  // Get trending products
+  const getTrendingProducts = () => {
+    const trending = allProducts.filter((p) => p.trending === true);
+    return trending.length > 0
+      ? trending.slice(0, 8)
+      : allProducts.slice(6, 14);
+  };
+
+  const trendingProducts = getTrendingProducts();
+
+  // Get featured products
+  const getFeaturedProducts = () => {
+    const featured = allProducts.filter((p) => p.featured === true);
+    return featured.length > 0 ? featured.slice(0, 6) : allProducts.slice(0, 6);
+  };
+
+  const featuredProducts = getFeaturedProducts();
 
   if (authLoading) return null;
   if (!user) return <Redirect href="/signup" />;
@@ -290,13 +364,7 @@ export default function HomeScreen() {
         <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
           <View>
             <Text style={styles.location}>Delivering to</Text>
-            <TouchableOpacity
-              style={styles.addressRow}
-              onPress={() => {
-                // Navigate to location selection
-                // router.push("/(tabs)/location");
-              }}
-            >
+            <TouchableOpacity style={styles.addressRow} onPress={() => {}}>
               <Text style={styles.address}>
                 {defaultAddress
                   ? `${defaultAddress.name} • ${defaultAddress.city}, ${defaultAddress.state}`
@@ -307,13 +375,7 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.headerIcons}>
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={() => {
-                // Navigate to notifications
-                // router.push("/(tabs)/notifications");
-              }}
-            >
+            <TouchableOpacity style={styles.iconBtn} onPress={() => {}}>
               <Ionicons
                 name="notifications-outline"
                 size={24}
@@ -361,7 +423,7 @@ export default function HomeScreen() {
             value={searchQuery}
             onChangeText={(text) => {
               setSearchQuery(text);
-              setSelectedCategory(null); // Clear category when searching
+              setSelectedCategory(null);
             }}
             onFocus={() => {
               Animated.spring(searchFocusAnim, {
@@ -383,7 +445,6 @@ export default function HomeScreen() {
           )}
         </Animated.View>
 
-        {/* Show selected category filter */}
         {selectedCategory && (
           <View style={styles.filterChip}>
             <Text style={styles.filterChipText}>
@@ -413,13 +474,7 @@ export default function HomeScreen() {
                 setCurrentBannerIndex(index);
               }}
               renderItem={({ item }) => (
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={() => {
-                    // Navigate to banner offer page
-                    // router.push("/(tabs)/offers");
-                  }}
-                >
+                <TouchableOpacity activeOpacity={0.9} onPress={() => {}}>
                   <Image source={{ uri: item.image }} style={styles.banner} />
                 </TouchableOpacity>
               )}
@@ -441,7 +496,7 @@ export default function HomeScreen() {
         {/* ⚡ QUICK ACTIONS */}
         {!searchQuery && !selectedCategory && (
           <View style={styles.quickRow}>
-            {quickActions.map((item, index) => (
+            {quickActions.map((item) => (
               <TouchableOpacity
                 key={item.id}
                 style={styles.quickCard}
@@ -466,7 +521,144 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 🛒 PRODUCTS */}
+        {/* 🔥 BEST DEALS - Only show if we have actual deals */}
+        {!searchQuery && !selectedCategory && dealProducts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={styles.sectionTitle}>Best deals today</Text>
+                <View style={styles.fireBadge}>
+                  <Text style={styles.fireEmoji}>🔥</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={handleSeeAllDeals}>
+                <Text style={styles.seeAll}>See all →</Text>
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={dealProducts}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item._id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.dealCard}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/product-detail",
+                      params: { id: item._id },
+                    });
+                  }}
+                >
+                  <View style={styles.dealBadge}>
+                    <Text style={styles.dealBadgeText}>
+                      {item.discount ? `${item.discount}% OFF` : "SPECIAL"}
+                    </Text>
+                  </View>
+                  <Image
+                    source={{
+                      uri: item.image || "https://via.placeholder.com/150",
+                    }}
+                    style={styles.dealImage}
+                  />
+                  <Text numberOfLines={1} style={styles.dealName}>
+                    {item.name}
+                  </Text>
+                  <View style={styles.dealPriceRow}>
+                    <Text style={styles.dealPrice}>
+                      ₹{item.price.toFixed(2)}
+                    </Text>
+                    {item.discount && item.discount > 0 && (
+                      <Text style={styles.dealOriginalPrice}>
+                        ₹{(item.price / (1 - item.discount / 100)).toFixed(2)}
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    style={styles.quickAddBtn}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleAddToCart(item);
+                    }}
+                  >
+                    <Ionicons name="add" size={18} color="#fff" />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )}
+
+        {/* 🌟 FEATURED CATEGORIES */}
+        {!searchQuery && !selectedCategory && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Shop by Category</Text>
+            </View>
+
+            <FlatList
+              data={featuredCategories}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.categoryCard}
+                  activeOpacity={0.8}
+                  onPress={() => handleCategoryClick(item.category)}
+                >
+                  <Image
+                    source={{ uri: item.image }}
+                    style={styles.categoryImage}
+                  />
+                  <View style={styles.categoryOverlay}>
+                    <Text style={styles.categoryName}>{item.name}</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#fff" />
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )}
+
+        {/* 📈 TRENDING NOW */}
+        {!searchQuery && !selectedCategory && trendingProducts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={styles.sectionTitle}>Trending Now</Text>
+                <View style={styles.trendBadge}>
+                  <Text style={styles.trendEmoji}>📈</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={handleSeeAllTrending}>
+                <Text style={styles.seeAll}>See all →</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.productsGrid}>
+              {trendingProducts.slice(0, 4).map((item) => (
+                <ProductCard
+                  key={item._id}
+                  item={item}
+                  onAdd={() => handleAddToCart(item)}
+                  inCart={items.some((i) => i.id === item._id)}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/product-detail",
+                      params: { id: item._id },
+                    });
+                  }}
+                  showTrendingBadge
+                />
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* 🛒 POPULAR ITEMS */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
@@ -499,7 +691,6 @@ export default function HomeScreen() {
                   onAdd={() => handleAddToCart(item)}
                   inCart={items.some((i) => i.id === item._id)}
                   onPress={() => {
-                    // Navigate to product detail page
                     router.push({
                       pathname: "/product-detail",
                       params: { id: item._id },
@@ -519,63 +710,65 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* 🔥 BEST DEALS */}
-        {!searchQuery && !selectedCategory && (
+        {/* ⭐ FEATURED PRODUCTS */}
+        {!searchQuery && !selectedCategory && featuredProducts.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Best deals today 🔥</Text>
-              <TouchableOpacity onPress={handleSeeAllDeals}>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={styles.sectionTitle}>Featured Products</Text>
+                <Ionicons name="star" size={18} color="#FFD700" />
+              </View>
+              <TouchableOpacity onPress={handleSeeAllFeatured}>
                 <Text style={styles.seeAll}>See all →</Text>
               </TouchableOpacity>
             </View>
 
             <FlatList
-              data={displayDeals}
+              data={featuredProducts}
               horizontal
               showsHorizontalScrollIndicator={false}
               keyExtractor={(item) => item._id}
               renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.dealCard}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    // Navigate to product detail
-                    router.push({
-                      pathname: "/product-detail",
-                      params: { id: item._id },
-                    });
-                  }}
-                >
-                  <View style={styles.dealBadge}>
-                    <Text style={styles.dealBadgeText}>
-                      {item.discount ? `${item.discount}% OFF` : "20% OFF"}
-                    </Text>
-                  </View>
-                  <Image
-                    source={{
-                      uri: item.image || "https://via.placeholder.com/150",
-                    }}
-                    style={styles.dealImage}
-                  />
-                  <Text numberOfLines={1} style={styles.dealName}>
-                    {item.name}
-                  </Text>
-                  <View style={styles.dealPriceRow}>
-                    <Text style={styles.dealPrice}>₹{item.price}</Text>
-                    <Text style={styles.dealOriginalPrice}>
-                      ₹{Math.round(item.price * 1.25)}
-                    </Text>
-                  </View>
+                <View style={styles.featuredCardContainer}>
                   <TouchableOpacity
-                    style={styles.quickAddBtn}
-                    onPress={(e) => {
-                      e.stopPropagation(); // Prevent navigation when adding to cart
-                      handleAddToCart(item);
+                    style={styles.featuredCard}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      router.push({
+                        pathname: "/product-detail",
+                        params: { id: item._id },
+                      });
                     }}
                   >
-                    <Ionicons name="add" size={18} color="#fff" />
+                    <View style={styles.featuredBadge}>
+                      <Ionicons name="star" size={12} color="#FFD700" />
+                    </View>
+                    <Image
+                      source={{
+                        uri: item.image || "https://via.placeholder.com/150",
+                      }}
+                      style={styles.featuredImage}
+                    />
+                    <View style={styles.featuredContent}>
+                      <Text numberOfLines={2} style={styles.featuredName}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.featuredUnit}>{item.unit}</Text>
+                      <View style={styles.featuredFooter}>
+                        <Text style={styles.featuredPrice}>₹{item.price}</Text>
+                        <TouchableOpacity
+                          style={styles.featuredAddBtn}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(item);
+                          }}
+                        >
+                          <Ionicons name="add" size={16} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   </TouchableOpacity>
-                </TouchableOpacity>
+                </View>
               )}
             />
           </View>
@@ -627,11 +820,13 @@ const ProductCard = ({
   onAdd,
   inCart,
   onPress,
+  showTrendingBadge = false,
 }: {
   item: Product;
   onAdd: () => void;
   inCart: boolean;
   onPress: () => void;
+  showTrendingBadge?: boolean;
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const [isAdding, setIsAdding] = useState(false);
@@ -661,6 +856,18 @@ const ProductCard = ({
   return (
     <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
+        {showTrendingBadge && (
+          <View style={styles.trendingCardBadge}>
+            <Text style={styles.trendingCardBadgeText}>TRENDING</Text>
+          </View>
+        )}
+
+        {!showTrendingBadge && item.discount && item.discount > 0 && (
+          <View style={styles.productDiscountBadge}>
+            <Text style={styles.productDiscountText}>{item.discount}% OFF</Text>
+          </View>
+        )}
+
         <Image
           source={{
             uri: item.image || "https://via.placeholder.com/150",
@@ -675,7 +882,14 @@ const ProductCard = ({
         <Text style={styles.unit}>{item.unit}</Text>
 
         <View style={styles.footerRow}>
-          <Text style={styles.price}>₹{item.price}</Text>
+          <View style={styles.priceColumn}>
+            <Text style={styles.price}>₹{item.price.toFixed(2)}</Text>
+            {item.discount && item.discount > 0 && (
+              <Text style={styles.originalPriceSmall}>
+                ₹{(item.price / (1 - item.discount / 100)).toFixed(2)}
+              </Text>
+            )}
+          </View>
 
           <TouchableOpacity
             style={[
@@ -684,7 +898,7 @@ const ProductCard = ({
               isAdding && styles.addBtnAdding,
             ]}
             onPress={(e) => {
-              e.stopPropagation(); // Prevent card click when adding to cart
+              e.stopPropagation();
               handlePress();
             }}
             disabled={isAdding}
@@ -908,10 +1122,42 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
+  sectionTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
   sectionTitle: {
     fontSize: 18,
     fontWeight: "800",
     color: "#1B5E20",
+  },
+
+  fireBadge: {
+    backgroundColor: "#FFE5E5",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  fireEmoji: {
+    fontSize: 14,
+  },
+
+  trendBadge: {
+    backgroundColor: "#E3F2FD",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  trendEmoji: {
+    fontSize: 14,
   },
 
   seeAll: {
@@ -939,6 +1185,41 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    position: "relative",
+  },
+
+  trendingCardBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: "#2196F3",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    zIndex: 1,
+  },
+
+  trendingCardBadgeText: {
+    color: "#fff",
+    fontSize: 9,
+    fontWeight: "700",
+  },
+
+  productDiscountBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "#F44336",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    zIndex: 1,
+  },
+
+  productDiscountText: {
+    color: "#fff",
+    fontSize: 9,
+    fontWeight: "700",
   },
 
   image: {
@@ -968,10 +1249,21 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
+  priceColumn: {
+    flex: 1,
+  },
+
   price: {
     fontSize: 16,
     fontWeight: "800",
     color: "#2E7D32",
+  },
+
+  originalPriceSmall: {
+    fontSize: 11,
+    color: "#999",
+    textDecorationLine: "line-through",
+    marginTop: 2,
   },
 
   addBtn: {
@@ -1077,6 +1369,117 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 4,
+  },
+
+  /* FEATURED CATEGORIES */
+  categoryCard: {
+    width: 180,
+    height: 120,
+    borderRadius: 16,
+    marginLeft: 14,
+    overflow: "hidden",
+    position: "relative",
+  },
+
+  categoryImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+
+  categoryOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    padding: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  categoryName: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  /* FEATURED PRODUCTS */
+  featuredCardContainer: {
+    marginLeft: 14,
+  },
+
+  featuredCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    width: 160,
+    overflow: "hidden",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    position: "relative",
+  },
+
+  featuredBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(255, 215, 0, 0.9)",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+
+  featuredImage: {
+    width: "100%",
+    height: 120,
+    resizeMode: "contain",
+    backgroundColor: "#f9f9f9",
+  },
+
+  featuredContent: {
+    padding: 12,
+  },
+
+  featuredName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#222",
+    minHeight: 34,
+    marginBottom: 4,
+  },
+
+  featuredUnit: {
+    fontSize: 11,
+    color: "#777",
+    marginBottom: 8,
+  },
+
+  featuredFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  featuredPrice: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#2E7D32",
+  },
+
+  featuredAddBtn: {
+    backgroundColor: "#2E7D32",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   /* EMPTY STATE */

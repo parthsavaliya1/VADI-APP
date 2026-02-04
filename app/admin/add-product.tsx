@@ -12,6 +12,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -31,7 +32,13 @@ export default function AddProductScreen() {
   const [unit, setUnit] = useState("");
   const [stock, setStock] = useState("");
   const [category, setCategory] = useState("");
+  const [discount, setDiscount] = useState("");
   const [image, setImage] = useState<string | null>(null);
+
+  // New toggle states
+  const [featured, setFeatured] = useState(false);
+  const [trending, setTrending] = useState(false);
+  const [bestDeal, setBestDeal] = useState(false);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,7 +59,7 @@ export default function AddProductScreen() {
     try {
       console.log("📂 Loading categories...");
       const res = await API.get("/categories");
-      setCategories(res.data); // ✅ THIS
+      setCategories(res.data);
       console.log(res.data);
     } catch (error: any) {
       console.error("❌ Categories error:", error);
@@ -165,6 +172,17 @@ export default function AddProductScreen() {
       return false;
     }
 
+    // Validate discount
+    if (
+      discount &&
+      (isNaN(Number(discount)) ||
+        Number(discount) < 0 ||
+        Number(discount) > 100)
+    ) {
+      Alert.alert("Validation Error", "Discount must be between 0 and 100");
+      return false;
+    }
+
     return true;
   };
 
@@ -190,12 +208,22 @@ export default function AddProductScreen() {
       formData.append("stock", stock.trim());
       formData.append("category", category);
 
+      // Add new fields
+      formData.append("discount", discount || "0");
+      formData.append("featured", featured.toString());
+      formData.append("trending", trending.toString());
+      formData.append("bestDeal", bestDeal.toString());
+
       console.log("📦 Form data prepared:", {
         name: name.trim(),
         price: price.trim(),
         unit: unit.trim(),
         stock: stock.trim(),
         category: category,
+        discount: discount || "0",
+        featured,
+        trending,
+        bestDeal,
         hasImage: !!image,
       });
 
@@ -203,7 +231,14 @@ export default function AddProductScreen() {
       if (image) {
         const filename = image.split("/").pop() || "product.jpg";
         const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : "image/jpeg";
+        const ext = match?.[1]?.toLowerCase();
+
+        const type =
+          ext === "jpg" || ext === "jpeg"
+            ? "image/jpeg"
+            : ext === "png"
+              ? "image/png"
+              : "image/jpeg";
 
         const imageFile = {
           uri: Platform.OS === "ios" ? image.replace("file://", "") : image,
@@ -211,7 +246,11 @@ export default function AddProductScreen() {
           type: type,
         };
 
-        formData.append("image", imageFile as any);
+        formData.append("image", {
+          uri: Platform.OS === "ios" ? image.replace("file://", "") : image,
+          name: filename,
+          type,
+        } as any);
         console.log("📸 Image attached:", imageFile);
       }
 
@@ -221,10 +260,9 @@ export default function AddProductScreen() {
 
       const response = await API.post("/products", formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
           Accept: "application/json",
         },
-        transformRequest: (data: any) => data, // Don't transform FormData
+        transformRequest: (data: any) => data,
       });
 
       setUploadProgress(100);
@@ -275,7 +313,7 @@ export default function AddProductScreen() {
           "Cannot connect to server.\n\n" +
           "Please check:\n" +
           "• Backend is running\n" +
-          "• IP address is correct (192.168.1.7)\n" +
+          "• IP address is correct\n" +
           "• Same WiFi network";
       } else if (err?.message) {
         errorMessage = err.message;
@@ -294,7 +332,11 @@ export default function AddProductScreen() {
     setUnit("");
     setStock("");
     setCategory("");
+    setDiscount("");
     setImage(null);
+    setFeatured(false);
+    setTrending(false);
+    setBestDeal(false);
     console.log("🔄 Form reset");
   };
 
@@ -375,25 +417,40 @@ export default function AddProductScreen() {
               </View>
             </View>
 
-            {/* Stock */}
-            <View style={styles.inputGroup}>
-              <View style={styles.labelRow}>
-                <Ionicons name="layers-outline" size={16} color="#2E7D32" />
-                <Text style={styles.label}>Available Stock *</Text>
+            {/* Stock & Discount Row */}
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <View style={styles.labelRow}>
+                  <Ionicons name="layers-outline" size={16} color="#2E7D32" />
+                  <Text style={styles.label}>Stock *</Text>
+                </View>
+                <TextInput
+                  value={stock}
+                  onChangeText={setStock}
+                  keyboardType="number-pad"
+                  placeholder="Quantity"
+                  placeholderTextColor="#999"
+                  style={styles.input}
+                />
+                {stock && Number(stock) < 10 && Number(stock) >= 0 && (
+                  <Text style={styles.warningText}>⚠️ Low stock</Text>
+                )}
               </View>
-              <TextInput
-                value={stock}
-                onChangeText={setStock}
-                keyboardType="number-pad"
-                placeholder="Enter quantity available"
-                placeholderTextColor="#999"
-                style={styles.input}
-              />
-              {stock && Number(stock) < 10 && Number(stock) >= 0 && (
-                <Text style={styles.warningText}>
-                  ⚠️ Low stock warning: Consider adding more inventory
-                </Text>
-              )}
+
+              <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
+                <View style={styles.labelRow}>
+                  <Ionicons name="pricetag-outline" size={16} color="#2E7D32" />
+                  <Text style={styles.label}>Discount %</Text>
+                </View>
+                <TextInput
+                  value={discount}
+                  onChangeText={setDiscount}
+                  keyboardType="number-pad"
+                  placeholder="0-100"
+                  placeholderTextColor="#999"
+                  style={styles.input}
+                />
+              </View>
             </View>
 
             {/* Category Dropdown */}
@@ -424,8 +481,8 @@ export default function AddProductScreen() {
                       setCategory(value);
                       console.log("📂 Category selected:", value);
                     }}
-                    itemStyle={{ color: "#000" }} // 🔥 CRITICAL
-                    dropdownIconColor="#333" // Android arrow
+                    itemStyle={{ color: "#000" }}
+                    dropdownIconColor="#333"
                   >
                     <Picker.Item
                       label="-- Select a category --"
@@ -437,7 +494,7 @@ export default function AddProductScreen() {
                         key={cat._id}
                         label={cat.name}
                         value={cat.slug || cat._id}
-                        color="#333" // 🔥 THIS LINE FIXES IT
+                        color="#333"
                       />
                     ))}
                   </Picker>
@@ -456,6 +513,73 @@ export default function AddProductScreen() {
                 </View>
               )}
             </View>
+
+            {/* Feature Toggles Section */}
+            <View style={styles.divider} />
+
+            <View style={styles.sectionHeader}>
+              <Ionicons name="star-outline" size={18} color="#2E7D32" />
+              <Text style={styles.sectionTitle}>Feature Options</Text>
+            </View>
+
+            {/* Best Deal Toggle */}
+            <View style={styles.toggleRow}>
+              <View style={styles.toggleInfo}>
+                <View style={styles.toggleLabelRow}>
+                  <Text style={styles.toggleEmoji}>🔥</Text>
+                  <Text style={styles.toggleLabel}>Best Deal</Text>
+                </View>
+                <Text style={styles.toggleDesc}>
+                  Show in "Best Deals Today" section
+                </Text>
+              </View>
+              <Switch
+                value={bestDeal}
+                onValueChange={setBestDeal}
+                trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
+                thumbColor={bestDeal ? "#2E7D32" : "#f4f3f4"}
+              />
+            </View>
+
+            {/* Trending Toggle */}
+            <View style={styles.toggleRow}>
+              <View style={styles.toggleInfo}>
+                <View style={styles.toggleLabelRow}>
+                  <Text style={styles.toggleEmoji}>📈</Text>
+                  <Text style={styles.toggleLabel}>Trending</Text>
+                </View>
+                <Text style={styles.toggleDesc}>
+                  Show in "Trending Now" section
+                </Text>
+              </View>
+              <Switch
+                value={trending}
+                onValueChange={setTrending}
+                trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
+                thumbColor={trending ? "#2E7D32" : "#f4f3f4"}
+              />
+            </View>
+
+            {/* Featured Toggle */}
+            <View style={styles.toggleRow}>
+              <View style={styles.toggleInfo}>
+                <View style={styles.toggleLabelRow}>
+                  <Text style={styles.toggleEmoji}>⭐</Text>
+                  <Text style={styles.toggleLabel}>Featured</Text>
+                </View>
+                <Text style={styles.toggleDesc}>
+                  Show in "Featured Products" section
+                </Text>
+              </View>
+              <Switch
+                value={featured}
+                onValueChange={setFeatured}
+                trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
+                thumbColor={featured ? "#2E7D32" : "#f4f3f4"}
+              />
+            </View>
+
+            <View style={styles.divider} />
 
             {/* Image Upload */}
             <View style={styles.inputGroup}>
@@ -500,6 +624,30 @@ export default function AddProductScreen() {
             </View>
           </Animated.View>
 
+          {/* Active Features Summary */}
+          {(bestDeal || trending || featured) && (
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Active Features:</Text>
+              <View style={styles.summaryRow}>
+                {bestDeal && (
+                  <View style={styles.summaryBadge}>
+                    <Text style={styles.summaryBadgeText}>🔥 Best Deal</Text>
+                  </View>
+                )}
+                {trending && (
+                  <View style={styles.summaryBadge}>
+                    <Text style={styles.summaryBadgeText}>📈 Trending</Text>
+                  </View>
+                )}
+                {featured && (
+                  <View style={styles.summaryBadge}>
+                    <Text style={styles.summaryBadgeText}>⭐ Featured</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
           {/* Progress Bar */}
           {loading && uploadProgress > 0 && (
             <View style={styles.progressContainer}>
@@ -535,7 +683,16 @@ export default function AddProductScreen() {
               )}
             </TouchableOpacity>
 
-            {(name || price || unit || stock || category || image) &&
+            {(name ||
+              price ||
+              unit ||
+              stock ||
+              category ||
+              image ||
+              discount ||
+              bestDeal ||
+              trending ||
+              featured) &&
               !loading && (
                 <TouchableOpacity
                   style={styles.resetBtn}
@@ -666,9 +823,6 @@ const styles = StyleSheet.create({
     minHeight: 50,
     justifyContent: "center",
   },
-  picker: {
-    height: 50,
-  },
   loadingContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -708,6 +862,82 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     marginLeft: 6,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#E8E8E8",
+    marginVertical: 20,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#333",
+    marginLeft: 8,
+  },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  toggleInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  toggleLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  toggleEmoji: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  toggleLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#333",
+  },
+  toggleDesc: {
+    fontSize: 12,
+    color: "#666",
+  },
+  summaryCard: {
+    backgroundColor: "#E8F5E9",
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+  },
+  summaryTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2E7D32",
+    marginBottom: 8,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  summaryBadge: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  summaryBadgeText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#2E7D32",
   },
   imageBtn: {
     backgroundColor: "#F1F8F4",
