@@ -103,7 +103,7 @@ type Product = {
   discount?: number;
   featured?: boolean;
   trending?: boolean;
-  bestDeal?: boolean; // New field to identify best deals
+  bestDeal?: boolean;
 };
 
 // Skeleton loader component
@@ -281,16 +281,13 @@ export default function HomeScreen() {
   const filteredProducts = getFilteredProducts();
 
   // Get ONLY products marked as best deals
-  // If no products have bestDeal flag, use products with discount > 20%
   const getBestDeals = () => {
-    // First try to get products specifically marked as bestDeal
     const markedDeals = allProducts.filter((p) => p.bestDeal === true);
 
     if (markedDeals.length > 0) {
       return markedDeals.slice(0, 8);
     }
 
-    // Fallback: get products with discount >= 20%
     const highDiscountProducts = allProducts.filter(
       (p) => p.discount && p.discount >= 20,
     );
@@ -299,7 +296,6 @@ export default function HomeScreen() {
       return highDiscountProducts.slice(0, 8);
     }
 
-    // Last fallback: return empty array (don't show section)
     return [];
   };
 
@@ -521,7 +517,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 🔥 BEST DEALS - Only show if we have actual deals */}
+        {/* 🔥 BEST DEALS */}
         {!searchQuery && !selectedCategory && dealProducts.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -741,7 +737,7 @@ export default function HomeScreen() {
                     }}
                   >
                     <View style={styles.featuredBadge}>
-                      <Ionicons name="star" size={12} color="#FFD700" />
+                      <Ionicons name="star" size={14} color="#FFF" />
                     </View>
                     <Image
                       source={{
@@ -1166,7 +1162,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  /* PRODUCTS */
+  /* PRODUCTS GRID */
   productsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1174,6 +1170,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
 
+  /* PRODUCT CARD - FIXED */
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -1186,47 +1183,54 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: "relative",
+    overflow: "hidden", // FIXED: Prevents badges from expanding card
   },
 
+  /* TRENDING BADGE - FIXED */
   trendingCardBadge: {
     position: "absolute",
-    top: 8,
-    left: 8,
+    top: 0, // FIXED: Changed from -1
+    left: 0, // FIXED: Changed from -1
     backgroundColor: "#2196F3",
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    zIndex: 1,
+    borderTopLeftRadius: 16,
+    borderBottomRightRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    zIndex: 10, // FIXED: Increased z-index
   },
 
   trendingCardBadgeText: {
     color: "#fff",
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "700",
   },
 
+  /* DISCOUNT BADGE - FIXED */
   productDiscountBadge: {
     position: "absolute",
-    top: 8,
-    right: 8,
+    top: 0, // FIXED: Changed from -1
+    right: 0, // FIXED: Changed from -1
     backgroundColor: "#F44336",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    zIndex: 1,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    zIndex: 10, // FIXED: Increased z-index
   },
 
   productDiscountText: {
     color: "#fff",
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: "700",
   },
 
+  /* PRODUCT IMAGE - FIXED */
   image: {
     width: "100%",
     height: 100,
     resizeMode: "contain",
     marginBottom: 8,
+    marginTop: 0, // FIXED: Ensures no extra top margin
   },
 
   name: {
@@ -1294,7 +1298,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
-  /* DEALS */
+  /* DEAL CARD - FIXED */
   dealCard: {
     backgroundColor: "#fff",
     borderRadius: 14,
@@ -1308,17 +1312,20 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     shadowRadius: 4,
     position: "relative",
+    overflow: "hidden", // FIXED: Prevents badge from expanding card
   },
 
+  /* DEAL BADGE - FIXED */
   dealBadge: {
     position: "absolute",
-    top: 8,
-    right: 8,
+    top: 0, // FIXED: Changed from -1
+    right: 0, // FIXED: Changed from -1
     backgroundColor: "#F44336",
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    zIndex: 1,
+    borderTopRightRadius: 14,
+    borderBottomLeftRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    zIndex: 10, // FIXED: Increased z-index
   },
 
   dealBadgeText: {
@@ -1327,11 +1334,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
+  /* DEAL IMAGE - FIXED */
   dealImage: {
     width: "100%",
     height: 80,
     resizeMode: "contain",
     marginBottom: 8,
+    marginTop: 0, // FIXED: Ensures no extra top margin
   },
 
   dealName: {
@@ -1405,7 +1414,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  /* FEATURED PRODUCTS */
+  /* FEATURED PRODUCTS - FIXED */
   featuredCardContainer: {
     marginLeft: 14,
   },
@@ -1414,7 +1423,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 16,
     width: 160,
-    overflow: "hidden",
+    overflow: "hidden", // FIXED: Prevents badge from expanding card
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -1423,24 +1432,33 @@ const styles = StyleSheet.create({
     position: "relative",
   },
 
+  /* FEATURED BADGE - FIXED */
   featuredBadge: {
     position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: "rgba(255, 215, 0, 0.9)",
-    borderRadius: 12,
-    width: 24,
-    height: 24,
+    top: 0, // FIXED: Changed from -1
+    right: 0, // FIXED: Changed from -1
+    backgroundColor: "#FFD700",
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 12,
+    width: 32,
+    height: 32,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1,
+    zIndex: 10, // FIXED: Increased z-index
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
 
+  /* FEATURED IMAGE - FIXED */
   featuredImage: {
     width: "100%",
     height: 120,
     resizeMode: "contain",
     backgroundColor: "#f9f9f9",
+    marginTop: 0, // FIXED: Ensures no extra top margin
   },
 
   featuredContent: {
@@ -1502,7 +1520,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  /* SKELETON */
+  /* SKELETON LOADER */
   skeletonImage: {
     width: "100%",
     height: 100,

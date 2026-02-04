@@ -1,7 +1,8 @@
+import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
 import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -26,6 +27,10 @@ type Address = {
 
 export default function MyAddressesScreen() {
   const { user } = useAuth();
+  const { selectedAddress, setSelectedAddress } = useAddress();
+  const params = useLocalSearchParams();
+  const fromCheckout = params.fromCheckout === "true";
+
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -48,10 +53,17 @@ export default function MyAddressesScreen() {
     }
   };
 
+  const handleSelectAddress = (address: Address) => {
+    if (fromCheckout) {
+      setSelectedAddress(address);
+      router.back();
+    }
+  };
+
   const handleSetDefault = async (addressId: string) => {
     try {
       await API.put(`/addresses/${addressId}/default`);
-      loadAddresses(); // Reload to get updated data
+      loadAddresses();
     } catch (error) {
       Alert.alert("Error", "Failed to set default address");
     }
@@ -115,7 +127,9 @@ export default function MyAddressesScreen() {
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#1B5E20" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Addresses</Text>
+          <Text style={styles.headerTitle}>
+            {fromCheckout ? "Select Address" : "My Addresses"}
+          </Text>
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -131,9 +145,20 @@ export default function MyAddressesScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#1B5E20" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Addresses</Text>
+        <Text style={styles.headerTitle}>
+          {fromCheckout ? "Select Address" : "My Addresses"}
+        </Text>
         <View style={{ width: 24 }} />
       </View>
+
+      {fromCheckout && (
+        <View style={styles.selectHint}>
+          <Ionicons name="information-circle" size={18} color="#2E7D32" />
+          <Text style={styles.selectHintText}>
+            Tap on any address to select for delivery
+          </Text>
+        </View>
+      )}
 
       <ScrollView style={styles.content}>
         {/* ADD ADDRESS BUTTON */}
@@ -170,7 +195,24 @@ export default function MyAddressesScreen() {
           </View>
         ) : (
           addresses.map((address) => (
-            <View key={address._id} style={styles.addressCard}>
+            <TouchableOpacity
+              key={address._id}
+              style={[
+                styles.addressCard,
+                fromCheckout &&
+                  selectedAddress?._id === address._id &&
+                  styles.selectedCard,
+              ]}
+              onPress={() => handleSelectAddress(address)}
+              activeOpacity={fromCheckout ? 0.7 : 1}
+            >
+              {/* SELECTED INDICATOR */}
+              {fromCheckout && selectedAddress?._id === address._id && (
+                <View style={styles.selectedIndicator}>
+                  <Ionicons name="checkmark-circle" size={24} color="#2E7D32" />
+                </View>
+              )}
+
               {/* DEFAULT BADGE */}
               {address.isDefault && (
                 <View style={styles.defaultBadge}>
@@ -192,54 +234,56 @@ export default function MyAddressesScreen() {
                 </View>
               </View>
 
-              {/* ACTIONS */}
-              <View style={styles.actions}>
-                {!address.isDefault && (
+              {/* ACTIONS - Only show when NOT from checkout */}
+              {!fromCheckout && (
+                <View style={styles.actions}>
+                  {!address.isDefault && (
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleSetDefault(address._id)}
+                    >
+                      <Ionicons
+                        name="checkmark-circle-outline"
+                        size={18}
+                        color="#2E7D32"
+                      />
+                      <Text style={styles.actionText}>Set as Default</Text>
+                    </TouchableOpacity>
+                  )}
+
                   <TouchableOpacity
                     style={styles.actionButton}
-                    onPress={() => handleSetDefault(address._id)}
+                    onPress={() => handleEditAddress(address)}
                   >
-                    <Ionicons
-                      name="checkmark-circle-outline"
-                      size={18}
-                      color="#2E7D32"
-                    />
-                    <Text style={styles.actionText}>Set as Default</Text>
+                    <Ionicons name="create-outline" size={18} color="#1976D2" />
+                    <Text style={[styles.actionText, { color: "#1976D2" }]}>
+                      Edit
+                    </Text>
                   </TouchableOpacity>
-                )}
 
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleEditAddress(address)}
-                >
-                  <Ionicons name="create-outline" size={18} color="#1976D2" />
-                  <Text style={[styles.actionText, { color: "#1976D2" }]}>
-                    Edit
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleDelete(address._id)}
-                  disabled={deleting === address._id}
-                >
-                  {deleting === address._id ? (
-                    <ActivityIndicator size="small" color="#D32F2F" />
-                  ) : (
-                    <>
-                      <Ionicons
-                        name="trash-outline"
-                        size={18}
-                        color="#D32F2F"
-                      />
-                      <Text style={[styles.actionText, { color: "#D32F2F" }]}>
-                        Delete
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => handleDelete(address._id)}
+                    disabled={deleting === address._id}
+                  >
+                    {deleting === address._id ? (
+                      <ActivityIndicator size="small" color="#D32F2F" />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="trash-outline"
+                          size={18}
+                          color="#D32F2F"
+                        />
+                        <Text style={[styles.actionText, { color: "#D32F2F" }]}>
+                          Delete
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </TouchableOpacity>
           ))
         )}
 
@@ -260,11 +304,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 12,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "800",
     color: "#1B5E20",
+  },
+  selectHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginHorizontal: 14,
+    marginTop: 12,
+    borderRadius: 8,
+  },
+  selectHintText: {
+    fontSize: 13,
+    color: "#2E7D32",
+    fontWeight: "600",
   },
   loadingContainer: {
     flex: 1,
@@ -274,6 +337,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 14,
+    paddingTop: 12,
   },
   addButton: {
     flexDirection: "row",
@@ -310,6 +374,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     position: "relative",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  selectedCard: {
+    borderColor: "#2E7D32",
+    backgroundColor: "#F1F8F4",
+  },
+  selectedIndicator: {
+    position: "absolute",
+    top: 12,
+    left: 12,
   },
   defaultBadge: {
     position: "absolute",
@@ -340,7 +415,7 @@ const styles = StyleSheet.create({
   },
   addressInfo: {
     flex: 1,
-    paddingRight: 60, // Space for default badge
+    paddingRight: 60,
   },
   addressName: {
     fontSize: 16,

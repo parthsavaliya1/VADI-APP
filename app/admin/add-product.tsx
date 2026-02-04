@@ -260,9 +260,8 @@ export default function AddProductScreen() {
 
       const response = await API.post("/products", formData, {
         headers: {
-          Accept: "application/json",
+          "Content-Type": "multipart/form-data",
         },
-        transformRequest: (data: any) => data,
       });
 
       setUploadProgress(100);
