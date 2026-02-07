@@ -1,6 +1,8 @@
+import { useAuth } from "@/context/AuthContext";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -10,11 +12,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "../../context/AuthContext";
 
 export default function VerifyOtpScreen() {
   const params = useLocalSearchParams<any>();
-  const { verifyOtp, signup, loginWithOtp } = useAuth(); // ✅ UPDATED
+  const { verifyOtpAndLogin, verifyOtpAndSignup } = useAuth();
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -24,25 +25,25 @@ export default function VerifyOtpScreen() {
     try {
       setLoading(true);
 
-      // 🔐 FIREBASE OTP VERIFY
-      await verifyOtp(otp);
-
-      // 🧠 AFTER OTP SUCCESS
       if (params.mode === "signup") {
-        await signup({
-          name: params.name,
-          phone: params.phone,
-          password: params.password,
-          dob: params.dob,
-          role: params.role,
-        });
+        // New user signup flow
+        await verifyOtpAndSignup(
+          params.phone,
+          otp,
+          params.name,
+          params.password,
+          params.role || "user",
+        );
       } else {
-        await loginWithOtp(params.phone);
+        // Existing user login flow
+        await verifyOtpAndLogin(params.phone, otp);
       }
 
+      // Navigate to home
       router.replace("/(tabs)");
-    } catch (err) {
-      console.log("❌ OTP verification failed", err);
+    } catch (err: any) {
+      console.log("❌ Verification failed", err?.message);
+      alert(err?.message || "Verification failed");
     } finally {
       setLoading(false);
     }
@@ -73,10 +74,13 @@ export default function VerifyOtpScreen() {
               (otp.length !== 6 || loading) && { opacity: 0.5 },
             ]}
             onPress={handleVerifyOtp}
+            disabled={otp.length !== 6 || loading}
           >
-            <Text style={styles.ctaText}>
-              {loading ? "Verifying..." : "Verify & Continue"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.ctaText}>Verify & Continue</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => router.back()}>
@@ -88,7 +92,6 @@ export default function VerifyOtpScreen() {
   );
 }
 
-/* 🎨 STYLES — UNCHANGED */
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#F6F7F2" },
   container: { padding: 20, paddingTop: 60 },

@@ -27,7 +27,6 @@ export default function EnhancedSignupScreen() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [dob, setDob] = useState("");
   const [role, setRole] = useState<"user" | "admin">("user");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -41,20 +40,14 @@ export default function EnhancedSignupScreen() {
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
-    new Animated.Value(0),
   ]).current;
 
   const normalizedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
   const isAdminNumber = normalizedPhone === "+919909049699";
 
   const isFormValid = useMemo(() => {
-    return (
-      name.length >= 2 &&
-      phone.length >= 10 &&
-      password.length >= 6 &&
-      dob.length >= 8
-    );
-  }, [name, phone, password, dob]);
+    return name.length >= 2 && phone.length >= 10 && password.length >= 6;
+  }, [name, phone, password]);
 
   const passwordStrength =
     password.length === 0
@@ -136,7 +129,6 @@ export default function EnhancedSignupScreen() {
           phone: normalizedPhone,
           name,
           password,
-          dob,
           role: isAdminNumber ? role : "user",
         },
       });
@@ -336,39 +328,6 @@ export default function EnhancedSignupScreen() {
                       </Text>
                     </View>
                   )}
-                </Animated.View>
-
-                {/* DOB Input */}
-                <Animated.View
-                  style={[
-                    styles.inputWrapper,
-                    { transform: [{ scale: inputScaleAnims[3] }] },
-                  ]}
-                >
-                  <View
-                    style={[styles.inputContainer, dob && styles.inputActive]}
-                  >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color="#4CAF50"
-                    />
-                    <TextInput
-                      placeholder="Date of Birth (YYYY-MM-DD)"
-                      value={dob}
-                      onChangeText={setDob}
-                      style={styles.input}
-                      placeholderTextColor="#999"
-                      maxLength={10}
-                    />
-                    {dob.length >= 8 && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color="#4CAF50"
-                      />
-                    )}
-                  </View>
                 </Animated.View>
 
                 {/* Admin Role Toggle */}

@@ -23,7 +23,7 @@ import { useAuth } from "../../context/AuthContext";
 const { width } = Dimensions.get("window");
 
 export default function EnhancedLoginScreen() {
-  const { login } = useAuth();
+  const { sendOtp } = useAuth();
 
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -119,8 +119,12 @@ export default function EnhancedLoginScreen() {
 
     try {
       setLoading(true);
-      await login(normalizedPhone, password);
-      router.replace("/(tabs)");
+      await sendOtp(normalizedPhone);
+
+      router.push({
+        pathname: "/(auth)/verify-otp",
+        params: { phone: normalizedPhone },
+      });
     } catch (err) {
       console.log("Login error", err);
     } finally {

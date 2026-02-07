@@ -2,25 +2,24 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 import { API } from "../utils/api";
 
-// 🔥 Firebase
-
 /* ================= TYPES ================= */
 
 type User = {
   _id: string;
   name: string;
   phone: string;
-  dob: string;
   profileImage?: string;
+  otp?: string;
+  otpExpiresAt?: Date;
+  otpAttempts: number;
+  otpVerifiedAt?: Date;
+  isPhoneVerified: boolean;
+  dob?: string;
   role: "user" | "admin";
-};
-
-type SignupPayload = {
-  name: string;
-  phone: string;
-  password: string;
-  dob: string;
-  role: "user" | "admin";
+  status: "active" | "blocked";
+  lastLoginAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 type AuthContextType = {
@@ -28,13 +27,23 @@ type AuthContextType = {
   isLoggedIn: boolean;
   loading: boolean;
 
-  signup: (data: SignupPayload) => Promise<void>;
-  login: (phone: string, password: string) => Promise<void>;
-
-  // 🔐 OTP
+  // OTP Authentication
   sendOtp: (phone: string) => Promise<void>;
-  verifyOtp: (otp: string) => Promise<void>;
-  loginWithOtp: (phone: string) => Promise<void>;
+  verifyOtpAndLogin: (phone: string, otp: string) => Promise<void>;
+  verifyOtpAndSignup: (
+    phone: string,
+    otp: string,
+    name: string,
+    password: string,
+    role?: string,
+  ) => Promise<void>;
+
+  // User Updates
+  updateProfile: (data: {
+    name?: string;
+    dob?: string;
+    profileImage?: string;
+  }) => Promise<void>;
 
   logout: () => Promise<void>;
 };
@@ -42,7 +51,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 const STORAGE_KEY = "AUTH_USER";
 
-/* ================= FIREBASE OTP STATE ================= */
+/* ================= PROVIDER ================= */
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -53,7 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const loadAuth = async () => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
-        if (stored) setUser(JSON.parse(stored));
+        if (stored) {
+          const userData = JSON.parse(stored);
+          setUser(userData);
+          // Update last login on app start
+          await API.patch(`/api/users/${userData._id}`, {
+            lastLoginAt: new Date(),
+          });
+        }
       } catch (e) {
         console.log("❌ Auth load error", e);
       } finally {
@@ -63,55 +79,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadAuth();
   }, []);
 
-  let pendingOtpPhone: string | null = null;
+  /* ================= OTP AUTHENTICATION ================= */
 
-  /* ================= OTP (DEV ONLY) ================= */
-
-  // 📤 SEND OTP (FAKE)
+  // 📤 SEND OTP
   const sendOtp = async (phone: string) => {
-    console.log("📨 Fake OTP sent to", phone);
-    console.log("✅ OTP = 123456");
-    pendingOtpPhone = phone;
-  };
-
-  // ✅ VERIFY OTP (FAKE)
-  const verifyOtp = async (otp: string) => {
-    if (otp !== "123456") {
-      throw new Error("Invalid OTP");
+    try {
+      await API.post("/api/auth/send-otp", { phone });
+      console.log("✅ OTP sent to", phone);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to send OTP");
     }
+  };
 
-    if (!pendingOtpPhone) {
-      throw new Error("No OTP request found");
+  // ✅ VERIFY OTP AND LOGIN (existing user)
+  const verifyOtpAndLogin = async (phone: string, otp: string) => {
+    try {
+      const verifyRes = await API.post("/api/auth/verify-otp", { phone, otp });
+      const { user: userData } = verifyRes.data;
+
+      // Save to storage and update state
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+      setUser(userData);
+      console.log("✅ User logged in:", userData.name);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || "Invalid OTP");
     }
-
-    console.log("✅ OTP verified for", pendingOtpPhone);
   };
 
-  /* ================= AUTH ================= */
+  // 🆕 VERIFY OTP AND SIGNUP (new user)
+  const verifyOtpAndSignup = async (
+    phone: string,
+    otp: string,
+    name: string,
+    password: string,
+    role: string = "user",
+  ) => {
+    try {
+      // Step 1: Verify OTP
+      const verifyRes = await API.post("/api/auth/verify-otp", { phone, otp });
+      const { isNewUser } = verifyRes.data;
 
-  // 🆕 SIGNUP (after OTP verified)
-  const signup = async (data: SignupPayload) => {
-    const res = await API.post("/api/auth/signup", data);
+      if (!isNewUser) {
+        throw new Error("User already exists. Please login instead.");
+      }
 
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(res.data));
-    setUser(res.data);
+      // Step 2: Complete signup
+      const signupRes = await API.post("/api/auth/signup", {
+        name,
+        phone,
+        password,
+        role,
+      });
+
+      const userData = signupRes.data;
+
+      // Save to storage and update state
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+      setUser(userData);
+      console.log("✅ User signed up:", userData.name);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || "Signup failed");
+    }
   };
 
-  // 🔑 LOGIN WITH PASSWORD
-  const login = async (phone: string, password: string) => {
-    const res = await API.post("/api/auth/login", { phone, password });
+  /* ================= USER UPDATES ================= */
 
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(res.data));
-    setUser(res.data);
-  };
+  const updateProfile = async (data: {
+    name?: string;
+    dob?: string;
+    profileImage?: string;
+  }) => {
+    if (!user) throw new Error("No user logged in");
 
-  // 🔓 LOGIN WITH OTP (after OTP verified)
-  const loginWithOtp = async (phone: string) => {
-    const res = await API.post("/api/auth/login-otp", { phone });
-    // 👆 backend should find user by phone
+    try {
+      const res = await API.patch(`/api/users/${user._id}`, data);
+      const updatedUser = res.data;
 
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(res.data));
-    setUser(res.data);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      console.log("✅ Profile updated");
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Update failed");
+    }
   };
 
   /* ================= LOGOUT ================= */
@@ -129,11 +178,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoggedIn: !!user,
         loading,
-        signup,
-        login,
         sendOtp,
-        verifyOtp,
-        loginWithOtp,
+        verifyOtpAndLogin,
+        verifyOtpAndSignup,
+        updateProfile,
         logout,
       }}
     >
