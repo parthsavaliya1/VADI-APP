@@ -15,18 +15,66 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useCart } from "../context/CartContext";
 import { API } from "../utils/api";
 
+type ProductVariant = {
+  _id: string;
+  packSize: number;
+  packUnit: string;
+  mrp: number;
+  price: number;
+  stock: number;
+  lowStockThreshold: number;
+  sku?: string;
+  isDefault: boolean;
+  isActive: boolean;
+};
+
+// Updated Product Type to match API response
 type Product = {
   _id: string;
   name: string;
-  price: number;
+  slug: string;
+  description?: string;
+  brand?: string;
+  category: {
+    _id: string;
+    name: string;
+    slug: string;
+  };
   unit: string;
+  seller: {
+    sellerId: string;
+    sellerName: string;
+    contact?: {
+      phone?: string;
+      email?: string;
+    };
+    location?: {
+      city?: string;
+      area?: string;
+    };
+  };
+  variants: ProductVariant[];
   image?: string;
-  category?: string;
+  images?: string[];
+  discount?: number;
+  featured?: boolean;
+  trending?: boolean;
+  bestDeal?: boolean;
+  rating: number;
+  reviewsCount: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const getDefaultVariant = (product: Product): ProductVariant => {
+  return product.variants.find((v) => v.isDefault) || product.variants[0];
 };
 
 export default function CategoryScreen() {
   const params = useLocalSearchParams();
-  const { category, title } = params;
+  const { categoryId, title } = params;
+  console.log("pp", params);
   const { items, addToCart } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -35,16 +83,25 @@ export default function CategoryScreen() {
 
   useEffect(() => {
     loadProducts();
-  }, [category]);
+  }, [categoryId]);
 
   const loadProducts = async () => {
     try {
+      setLoading(true);
       const res = await API.get("/products");
-      const filtered = res.data.filter(
-        (p: Product) =>
-          p.category?.toLowerCase() === category?.toString().toLowerCase(),
+
+      const allProducts: Product[] = res.data.data || [];
+
+      console.log("acte", categoryId);
+
+      const filtered = allProducts.filter(
+        (p) => p.category?._id === categoryId,
       );
+
       setProducts(filtered);
+    } catch (err) {
+      console.error("Failed to load category products", err);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -55,10 +112,12 @@ export default function CategoryScreen() {
   );
 
   const handleAddToCart = (item: Product) => {
+    const variant = getDefaultVariant(item);
+
     addToCart({
       id: item._id,
-      name: item.name,
-      price: item.price,
+      name: `${item.name} (${variant.packSize}${variant.packUnit})`,
+      price: variant.price,
       qty: 1,
     });
   };
@@ -106,38 +165,51 @@ export default function CategoryScreen() {
           keyExtractor={(item) => item._id}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <TouchableOpacity
-                onPress={() =>
-                  router.push({
-                    pathname: "/product-detail",
-                    params: { id: item._id },
-                  })
-                }
-              >
-                <Image
-                  source={{
-                    uri: item.image || "https://via.placeholder.com/150",
-                  }}
-                  style={styles.image}
-                />
-                <Text numberOfLines={2} style={styles.name}>
-                  {item.name}
-                </Text>
-                <Text style={styles.unit}>{item.unit}</Text>
-                <View style={styles.footer}>
-                  <Text style={styles.price}>₹{item.price}</Text>
-                  <TouchableOpacity
-                    style={styles.addBtn}
-                    onPress={() => handleAddToCart(item)}
-                  >
-                    <Text style={styles.addText}>ADD</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const variant = getDefaultVariant(item);
+
+            return (
+              <View style={styles.card}>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: "/product-detail",
+                      params: { id: item._id },
+                    })
+                  }
+                >
+                  <Image
+                    source={{
+                      uri: item.image || "https://via.placeholder.com/150",
+                    }}
+                    style={styles.image}
+                  />
+
+                  <Text numberOfLines={2} style={styles.name}>
+                    {item.name}
+                  </Text>
+
+                  {/* ✅ VARIANT UNIT */}
+                  <Text style={styles.unit}>
+                    {variant.packSize}
+                    {variant.packUnit}
+                  </Text>
+
+                  <View style={styles.footer}>
+                    {/* ✅ VARIANT PRICE */}
+                    <Text style={styles.price}>₹{variant.price}</Text>
+
+                    <TouchableOpacity
+                      style={styles.addBtn}
+                      onPress={() => handleAddToCart(item)}
+                    >
+                      <Text style={styles.addText}>ADD</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            );
+          }}
         />
       ) : (
         <View style={styles.emptyState}>

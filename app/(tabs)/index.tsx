@@ -40,70 +40,110 @@ const quickActions = [
     title: "Vegetables",
     icon: "leaf",
     color: "#4CAF50",
-    category: "vegetables",
+    categoryId: null, // Will be set dynamically
   },
   {
     id: "2",
     title: "Fruits",
     icon: "nutrition",
     color: "#FF9800",
-    category: "fruits",
+    categoryId: null,
   },
   {
     id: "3",
     title: "Dairy",
     icon: "ice-cream",
     color: "#2196F3",
-    category: "dairy",
+    categoryId: null,
   },
   {
     id: "4",
     title: "Dry Fruits",
     icon: "basket-outline",
     color: "#8D6E63",
-    category: "dry-fruits",
+    categoryId: null,
   },
 ];
 
-// Featured categories for the new section
-const featuredCategories = [
-  {
-    id: "1",
-    name: "Fresh Vegetables",
-    image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400",
-    category: "vegetables",
-  },
-  {
-    id: "2",
-    name: "Seasonal Fruits",
-    image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400",
-    category: "fruits",
-  },
-  {
-    id: "3",
-    name: "Dairy Products",
-    image: "https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=400",
-    category: "dairy",
-  },
-  {
-    id: "4",
-    name: "Dry Fruits & Nuts",
-    image: "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=400",
-    category: "dry-fruits",
-  },
-];
+// Product Variant Type
+type ProductVariant = {
+  _id: string;
+  packSize: number;
+  packUnit: string;
+  mrp: number;
+  price: number;
+  stock: number;
+  lowStockThreshold: number;
+  sku?: string;
+  isDefault: boolean;
+  isActive: boolean;
+};
 
+// Updated Product Type to match API response
 type Product = {
   _id: string;
   name: string;
-  price: number;
+  slug: string;
+  description?: string;
+  brand?: string;
+  category: {
+    _id: string;
+    name: string;
+    slug: string;
+  };
   unit: string;
+  seller: {
+    sellerId: string;
+    sellerName: string;
+    contact?: {
+      phone?: string;
+      email?: string;
+    };
+    location?: {
+      city?: string;
+      area?: string;
+    };
+  };
+  variants: ProductVariant[];
   image?: string;
-  category?: string;
+  images?: string[];
   discount?: number;
   featured?: boolean;
   trending?: boolean;
   bestDeal?: boolean;
+  rating: number;
+  reviewsCount: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Category = {
+  _id: string;
+  name: string;
+  slug: string;
+  image?: string;
+  sortOrder: number;
+  showOnHome: boolean;
+  isActive: boolean;
+};
+
+// Helper function to get default variant
+const getDefaultVariant = (product: Product): ProductVariant => {
+  const defaultVariant = product.variants.find((v) => v.isDefault);
+  return defaultVariant || product.variants[0];
+};
+
+// Helper function to get product display price
+const getProductPrice = (product: Product): number => {
+  const variant = getDefaultVariant(product);
+  return variant.price;
+};
+
+// Helper function to get product MRP
+const getProductMRP = (product: Product): number => {
+  const variant = getDefaultVariant(product);
+  return variant.mrp;
 };
 
 // Skeleton loader component
@@ -151,13 +191,18 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null,
+  );
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const cartFooterAnim = useRef(new Animated.Value(0)).current;
   const searchFocusAnim = useRef(new Animated.Value(0)).current;
   const bannerScrollRef = useRef<FlatList>(null);
   const { defaultAddress } = useAddress();
+
+  console.log("DDD", defaultAddress);
 
   const total = items.reduce((s, i) => s + i.price * i.qty, 0);
 
@@ -177,6 +222,20 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, []);
 
+  const loadCategories = async () => {
+    try {
+      const res = await API.get("/categories");
+      setCategories(res.data.data || []);
+    } catch (error) {
+      console.error("Failed to load categories", error);
+      setCategories([]);
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
   // Animate cart footer when items change
   useEffect(() => {
     Animated.spring(cartFooterAnim, {
@@ -190,10 +249,15 @@ export default function HomeScreen() {
   const loadProducts = async () => {
     try {
       const res = await API.get("/products");
-      const fetchedProducts = res.data;
+      const fetchedProducts = res.data.data || res.data || [];
 
       setAllProducts(fetchedProducts);
-      setProducts(fetchedProducts.slice(0, 12));
+      // Show more products by default (first 20 instead of 12)
+      setProducts(fetchedProducts.slice(0, 20));
+    } catch (error) {
+      console.error("Failed to load products:", error);
+      setAllProducts([]);
+      setProducts([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -207,28 +271,29 @@ export default function HomeScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    setSelectedCategory(null);
+    setSelectedCategoryId(null);
     setSearchQuery("");
     loadProducts();
   };
 
-  const handleAddToCart = (item: Product) => {
+  const handleAddToCart = (product: Product) => {
+    if (!product.variants || product.variants.length === 0) {
+      console.warn("Product has no variants:", product.name);
+      return;
+    }
+
+    const variant = getDefaultVariant(product);
     addToCart({
-      id: item._id,
-      name: item.name,
-      price: item.price,
+      id: product._id,
+      name: `${product.name} (${variant.packSize}${variant.packUnit})`,
+      price: variant.price,
       qty: 1,
     });
   };
 
-  const handleCategoryClick = (category: string) => {
-    router.push({
-      pathname: "/category",
-      params: {
-        category: category,
-        title: category.charAt(0).toUpperCase() + category.slice(1),
-      },
-    });
+  const handleCategoryClick = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    setSearchQuery("");
   };
 
   const handleSeeAllProducts = () => {
@@ -261,27 +326,39 @@ export default function HomeScreen() {
 
   // Filter products based on search and category
   const getFilteredProducts = () => {
-    let filtered = allProducts;
+    let filtered = [...allProducts]; // Create copy to avoid mutations
 
-    if (selectedCategory) {
+    if (selectedCategoryId && filtered.length > 0) {
+      filtered = filtered.filter((p) => p.category?._id === selectedCategoryId);
+    }
+
+    if (searchQuery && filtered.length > 0) {
       filtered = filtered.filter(
-        (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase(),
+        (p) =>
+          p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.brand?.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
 
-    if (searchQuery) {
-      filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
-
-    return selectedCategory || searchQuery ? filtered : products;
+    return selectedCategoryId || searchQuery ? filtered : products;
   };
 
   const filteredProducts = getFilteredProducts();
 
+  // Get category name for filter chip
+  const getSelectedCategoryName = () => {
+    if (!selectedCategoryId || allProducts.length === 0) return "";
+    const product = allProducts.find(
+      (p) => p.category?._id === selectedCategoryId,
+    );
+    return product?.category?.name || "";
+  };
+
   // Get ONLY products marked as best deals
   const getBestDeals = () => {
+    if (allProducts.length === 0) return [];
+
     const markedDeals = allProducts.filter((p) => p.bestDeal === true);
 
     if (markedDeals.length > 0) {
@@ -303,6 +380,8 @@ export default function HomeScreen() {
 
   // Get trending products
   const getTrendingProducts = () => {
+    if (allProducts.length === 0) return [];
+
     const trending = allProducts.filter((p) => p.trending === true);
     return trending.length > 0
       ? trending.slice(0, 8)
@@ -313,11 +392,21 @@ export default function HomeScreen() {
 
   // Get featured products
   const getFeaturedProducts = () => {
+    if (allProducts.length === 0) return [];
+
     const featured = allProducts.filter((p) => p.featured === true);
     return featured.length > 0 ? featured.slice(0, 6) : allProducts.slice(0, 6);
   };
 
+  const homeCategories = categories
+    .filter((c) => c.showOnHome && c.isActive)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const quickCategories = homeCategories.slice(0, 4);
+
   const featuredProducts = getFeaturedProducts();
+
+  // Get unique categories for quick actions
 
   if (authLoading) return null;
   if (!user) return <Redirect href="/signup" />;
@@ -419,7 +508,7 @@ export default function HomeScreen() {
             value={searchQuery}
             onChangeText={(text) => {
               setSearchQuery(text);
-              setSelectedCategory(null);
+              setSelectedCategoryId(null);
             }}
             onFocus={() => {
               Animated.spring(searchFocusAnim, {
@@ -441,20 +530,19 @@ export default function HomeScreen() {
           )}
         </Animated.View>
 
-        {selectedCategory && (
+        {selectedCategoryId && (
           <View style={styles.filterChip}>
             <Text style={styles.filterChipText}>
-              {selectedCategory.charAt(0).toUpperCase() +
-                selectedCategory.slice(1)}
+              {getSelectedCategoryName()}
             </Text>
-            <TouchableOpacity onPress={() => setSelectedCategory(null)}>
+            <TouchableOpacity onPress={() => setSelectedCategoryId(null)}>
               <Ionicons name="close" size={16} color="#2E7D32" />
             </TouchableOpacity>
           </View>
         )}
 
         {/* 📢 AD BANNER */}
-        {!searchQuery && !selectedCategory && (
+        {!searchQuery && !selectedCategoryId && (
           <View style={styles.bannerContainer}>
             <FlatList
               ref={bannerScrollRef}
@@ -489,36 +577,42 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ⚡ QUICK ACTIONS */}
-        {!searchQuery && !selectedCategory && (
+        {/* ⚡ QUICK ACTIONS - DYNAMIC CATEGORIES */}
+        {!searchQuery && !selectedCategoryId && quickCategories.length > 0 && (
           <View style={styles.quickRow}>
-            {quickActions.map((item) => (
+            {quickCategories.map((category, index) => (
               <TouchableOpacity
-                key={item.id}
+                key={category._id}
                 style={styles.quickCard}
                 activeOpacity={0.7}
-                onPress={() => handleCategoryClick(item.category)}
+                onPress={() => handleCategoryClick(category._id)}
               >
                 <View
                   style={[
                     styles.iconCircle,
-                    { backgroundColor: item.color + "20" },
+                    {
+                      backgroundColor:
+                        quickActions[index]?.color + "20" || "#4CAF5020",
+                    },
                   ]}
                 >
                   <Ionicons
-                    name={item.icon as any}
+                    name={(quickActions[index]?.icon as any) || "apps"}
                     size={24}
-                    color={item.color}
+                    color={quickActions[index]?.color || "#4CAF50"}
                   />
                 </View>
-                <Text style={styles.quickText}>{item.title}</Text>
+
+                <Text style={styles.quickText} numberOfLines={1}>
+                  {category.name}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
 
         {/* 🔥 BEST DEALS */}
-        {!searchQuery && !selectedCategory && dealProducts.length > 0 && (
+        {!searchQuery && !selectedCategoryId && dealProducts.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
@@ -564,11 +658,11 @@ export default function HomeScreen() {
                   </Text>
                   <View style={styles.dealPriceRow}>
                     <Text style={styles.dealPrice}>
-                      ₹{item.price.toFixed(2)}
+                      ₹{getProductPrice(item).toFixed(2)}
                     </Text>
                     {item.discount && item.discount > 0 && (
                       <Text style={styles.dealOriginalPrice}>
-                        ₹{(item.price / (1 - item.discount / 100)).toFixed(2)}
+                        ₹{getProductMRP(item).toFixed(2)}
                       </Text>
                     )}
                   </View>
@@ -587,40 +681,8 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 🌟 FEATURED CATEGORIES */}
-        {!searchQuery && !selectedCategory && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Shop by Category</Text>
-            </View>
-
-            <FlatList
-              data={featuredCategories}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.categoryCard}
-                  activeOpacity={0.8}
-                  onPress={() => handleCategoryClick(item.category)}
-                >
-                  <Image
-                    source={{ uri: item.image }}
-                    style={styles.categoryImage}
-                  />
-                  <View style={styles.categoryOverlay}>
-                    <Text style={styles.categoryName}>{item.name}</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#fff" />
-                  </View>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        )}
-
         {/* 📈 TRENDING NOW */}
-        {!searchQuery && !selectedCategory && trendingProducts.length > 0 && (
+        {!searchQuery && !selectedCategoryId && trendingProducts.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
@@ -654,18 +716,17 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 🛒 POPULAR ITEMS */}
+        {/* 🛒 POPULAR ITEMS / SEARCH RESULTS */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
               {searchQuery
                 ? `Results for "${searchQuery}"`
-                : selectedCategory
-                  ? selectedCategory.charAt(0).toUpperCase() +
-                    selectedCategory.slice(1)
-                  : "Popular items"}
+                : selectedCategoryId
+                  ? getSelectedCategoryName()
+                  : "All Products"}
             </Text>
-            {!searchQuery && !selectedCategory && (
+            {!searchQuery && !selectedCategoryId && (
               <TouchableOpacity onPress={handleSeeAllProducts}>
                 <Text style={styles.seeAll}>See all →</Text>
               </TouchableOpacity>
@@ -707,7 +768,7 @@ export default function HomeScreen() {
         </View>
 
         {/* ⭐ FEATURED PRODUCTS */}
-        {!searchQuery && !selectedCategory && featuredProducts.length > 0 && (
+        {!searchQuery && !selectedCategoryId && featuredProducts.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
@@ -724,48 +785,56 @@ export default function HomeScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               keyExtractor={(item) => item._id}
-              renderItem={({ item }) => (
-                <View style={styles.featuredCardContainer}>
-                  <TouchableOpacity
-                    style={styles.featuredCard}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      router.push({
-                        pathname: "/product-detail",
-                        params: { id: item._id },
-                      });
-                    }}
-                  >
-                    <View style={styles.featuredBadge}>
-                      <Ionicons name="star" size={14} color="#FFF" />
-                    </View>
-                    <Image
-                      source={{
-                        uri: item.image || "https://via.placeholder.com/150",
+              renderItem={({ item }) => {
+                const variant = getDefaultVariant(item);
+                return (
+                  <View style={styles.featuredCardContainer}>
+                    <TouchableOpacity
+                      style={styles.featuredCard}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        router.push({
+                          pathname: "/product-detail",
+                          params: { id: item._id },
+                        });
                       }}
-                      style={styles.featuredImage}
-                    />
-                    <View style={styles.featuredContent}>
-                      <Text numberOfLines={2} style={styles.featuredName}>
-                        {item.name}
-                      </Text>
-                      <Text style={styles.featuredUnit}>{item.unit}</Text>
-                      <View style={styles.featuredFooter}>
-                        <Text style={styles.featuredPrice}>₹{item.price}</Text>
-                        <TouchableOpacity
-                          style={styles.featuredAddBtn}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleAddToCart(item);
-                          }}
-                        >
-                          <Ionicons name="add" size={16} color="#fff" />
-                        </TouchableOpacity>
+                    >
+                      <View style={styles.featuredBadge}>
+                        <Ionicons name="star" size={14} color="#FFF" />
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              )}
+                      <Image
+                        source={{
+                          uri: item.image || "https://via.placeholder.com/150",
+                        }}
+                        style={styles.featuredImage}
+                      />
+                      <View style={styles.featuredContent}>
+                        <Text numberOfLines={2} style={styles.featuredName}>
+                          {item.name}
+                        </Text>
+                        <Text style={styles.featuredUnit}>
+                          {variant.packSize}
+                          {variant.packUnit}
+                        </Text>
+                        <View style={styles.featuredFooter}>
+                          <Text style={styles.featuredPrice}>
+                            ₹{variant.price}
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.featuredAddBtn}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleAddToCart(item);
+                            }}
+                          >
+                            <Ionicons name="add" size={16} color="#fff" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }}
             />
           </View>
         )}
@@ -827,6 +896,10 @@ const ProductCard = ({
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const [isAdding, setIsAdding] = useState(false);
 
+  const variant = getDefaultVariant(item);
+  const price = variant.price;
+  const mrp = variant.mrp;
+
   const handlePress = () => {
     setIsAdding(true);
 
@@ -852,17 +925,17 @@ const ProductCard = ({
   return (
     <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
-        {showTrendingBadge && (
+        {/* Only show ONE badge based on priority: Trending > Discount */}
+        {showTrendingBadge ? (
           <View style={styles.trendingCardBadge}>
+            <Ionicons name="trending-up" size={10} color="#fff" />
             <Text style={styles.trendingCardBadgeText}>TRENDING</Text>
           </View>
-        )}
-
-        {!showTrendingBadge && item.discount && item.discount > 0 && (
+        ) : item.discount && item.discount > 0 ? (
           <View style={styles.productDiscountBadge}>
             <Text style={styles.productDiscountText}>{item.discount}% OFF</Text>
           </View>
-        )}
+        ) : null}
 
         <Image
           source={{
@@ -875,15 +948,16 @@ const ProductCard = ({
           {item.name}
         </Text>
 
-        <Text style={styles.unit}>{item.unit}</Text>
+        <Text style={styles.unit}>
+          {variant.packSize}
+          {variant.packUnit}
+        </Text>
 
         <View style={styles.footerRow}>
           <View style={styles.priceColumn}>
-            <Text style={styles.price}>₹{item.price.toFixed(2)}</Text>
+            <Text style={styles.price}>₹{price.toFixed(2)}</Text>
             {item.discount && item.discount > 0 && (
-              <Text style={styles.originalPriceSmall}>
-                ₹{(item.price / (1 - item.discount / 100)).toFixed(2)}
-              </Text>
+              <Text style={styles.originalPriceSmall}>₹{mrp.toFixed(2)}</Text>
             )}
           </View>
 
@@ -1103,6 +1177,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
     color: "#333",
+    textAlign: "center",
   },
 
   /* SECTION */
@@ -1170,7 +1245,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
 
-  /* PRODUCT CARD - FIXED */
+  /* PRODUCT CARD */
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -1183,54 +1258,66 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     position: "relative",
-    overflow: "hidden", // FIXED: Prevents badges from expanding card
   },
 
-  /* TRENDING BADGE - FIXED */
+  /* TRENDING BADGE */
   trendingCardBadge: {
     position: "absolute",
-    top: 0, // FIXED: Changed from -1
-    left: 0, // FIXED: Changed from -1
+    top: 8,
+    left: 8,
     backgroundColor: "#2196F3",
-    borderTopLeftRadius: 16,
-    borderBottomRightRadius: 8,
+    borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    zIndex: 10, // FIXED: Increased z-index
+    zIndex: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
 
   trendingCardBadgeText: {
     color: "#fff",
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
+    letterSpacing: 0.5,
   },
 
-  /* DISCOUNT BADGE - FIXED */
+  /* DISCOUNT BADGE */
   productDiscountBadge: {
     position: "absolute",
-    top: 0, // FIXED: Changed from -1
-    right: 0, // FIXED: Changed from -1
+    top: 8,
+    right: 8,
     backgroundColor: "#F44336",
-    borderTopRightRadius: 16,
-    borderBottomLeftRadius: 8,
+    borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    zIndex: 10, // FIXED: Increased z-index
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
 
   productDiscountText: {
     color: "#fff",
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
+    letterSpacing: 0.5,
   },
 
-  /* PRODUCT IMAGE - FIXED */
+  /* PRODUCT IMAGE */
   image: {
     width: "100%",
     height: 100,
     resizeMode: "contain",
     marginBottom: 8,
-    marginTop: 0, // FIXED: Ensures no extra top margin
+    marginTop: 4,
   },
 
   name: {
@@ -1298,7 +1385,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
-  /* DEAL CARD - FIXED */
+  /* DEAL CARD */
   dealCard: {
     backgroundColor: "#fff",
     borderRadius: 14,
@@ -1312,35 +1399,39 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     shadowRadius: 4,
     position: "relative",
-    overflow: "hidden", // FIXED: Prevents badge from expanding card
   },
 
-  /* DEAL BADGE - FIXED */
+  /* DEAL BADGE */
   dealBadge: {
     position: "absolute",
-    top: 0, // FIXED: Changed from -1
-    right: 0, // FIXED: Changed from -1
+    top: 8,
+    right: 8,
     backgroundColor: "#F44336",
-    borderTopRightRadius: 14,
-    borderBottomLeftRadius: 10,
+    borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    zIndex: 10, // FIXED: Increased z-index
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
 
   dealBadgeText: {
     color: "#fff",
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
+    letterSpacing: 0.5,
   },
 
-  /* DEAL IMAGE - FIXED */
+  /* DEAL IMAGE */
   dealImage: {
     width: "100%",
     height: 80,
     resizeMode: "contain",
     marginBottom: 8,
-    marginTop: 0, // FIXED: Ensures no extra top margin
+    marginTop: 4,
   },
 
   dealName: {
@@ -1380,41 +1471,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  /* FEATURED CATEGORIES */
-  categoryCard: {
-    width: 180,
-    height: 120,
-    borderRadius: 16,
-    marginLeft: 14,
-    overflow: "hidden",
-    position: "relative",
-  },
-
-  categoryImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-
-  categoryOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    padding: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  categoryName: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-
-  /* FEATURED PRODUCTS - FIXED */
+  /* FEATURED PRODUCTS */
   featuredCardContainer: {
     marginLeft: 14,
   },
@@ -1423,7 +1480,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 16,
     width: 160,
-    overflow: "hidden", // FIXED: Prevents badge from expanding card
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -1432,19 +1488,17 @@ const styles = StyleSheet.create({
     position: "relative",
   },
 
-  /* FEATURED BADGE - FIXED */
   featuredBadge: {
     position: "absolute",
-    top: 0, // FIXED: Changed from -1
-    right: 0, // FIXED: Changed from -1
+    top: 8,
+    right: 8,
     backgroundColor: "#FFD700",
-    borderTopRightRadius: 16,
-    borderBottomLeftRadius: 12,
-    width: 32,
-    height: 32,
+    borderRadius: 6,
+    width: 28,
+    height: 28,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 10, // FIXED: Increased z-index
+    zIndex: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -1452,13 +1506,14 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  /* FEATURED IMAGE - FIXED */
   featuredImage: {
     width: "100%",
     height: 120,
     resizeMode: "contain",
     backgroundColor: "#f9f9f9",
-    marginTop: 0, // FIXED: Ensures no extra top margin
+    marginTop: 4,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
 
   featuredContent: {

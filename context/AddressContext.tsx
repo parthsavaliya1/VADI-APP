@@ -85,6 +85,7 @@ export const AddressProvider = ({
   children: React.ReactNode;
 }) => {
   const { user } = useAuth();
+  console.log("SSS", user);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [defaultAddress, setDefaultAddressState] = useState<Address | null>(
     null,
@@ -107,12 +108,14 @@ export const AddressProvider = ({
 
   // 📥 LOAD ADDRESSES FROM SERVER
   const loadAddresses = async () => {
+    console.log("ALOAOAOAO");
     if (!user?._id) return;
 
     setLoading(true);
     try {
       // Updated endpoint to match backend route: GET /addresses/:userId
-      const res = await API.get(`/api/addresses/${user._id}`);
+      const res = await API.get(`/addresses/${user._id}`);
+      console.log("SSS", res.data);
       setAddresses(res.data);
 
       // Set default address
@@ -160,7 +163,7 @@ export const AddressProvider = ({
       }
 
       // Updated endpoint to match backend route: POST /addresses
-      const res = await API.post("/api/addresses", payload);
+      const res = await API.post("/addresses", payload);
       const newAddress = res.data;
 
       setAddresses((prev) => [...prev, newAddress]);
@@ -197,7 +200,7 @@ export const AddressProvider = ({
       }
 
       // Updated endpoint to match backend route: PUT /addresses/:id
-      const res = await API.put(`/api/addresses/${addressId}`, payload);
+      const res = await API.put(`/addresses/${addressId}`, payload);
       const updatedAddress = res.data;
 
       setAddresses((prev) =>
@@ -234,7 +237,7 @@ export const AddressProvider = ({
 
     try {
       // Updated endpoint to match backend route: DELETE /addresses/:id
-      await API.delete(`/api/addresses/${addressId}`);
+      await API.delete(`/addresses/${addressId}`);
 
       const deletedAddress = addresses.find((a) => a._id === addressId);
       const wasDefault = deletedAddress?.isDefault;
@@ -263,11 +266,12 @@ export const AddressProvider = ({
 
   // ⭐ SET DEFAULT ADDRESS
   const setDefaultAddress = async (addressId: string) => {
+    console.log("USUS", user);
     if (!user?._id) return;
 
     try {
       // Updated endpoint to match backend route: PUT /addresses/:id/default
-      const res = await API.put(`/api/addresses/${addressId}/default`);
+      const res = await API.put(`/addresses/${addressId}/default`);
       const updatedAddress = res.data;
 
       // Update all addresses (unset previous default)
@@ -305,7 +309,7 @@ export const AddressProvider = ({
   ): Promise<Address[]> => {
     try {
       // Updated endpoint to match backend route: POST /addresses/nearby
-      const res = await API.post("/api/addresses/nearby", {
+      const res = await API.post("/addresses/nearby", {
         longitude,
         latitude,
         maxDistance,

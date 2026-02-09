@@ -15,31 +15,35 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useCart } from "@/context/CartContext";
 import { API } from "@/utils/api";
 
-type CategoryData = {
+type Category = {
+  _id: string;
   name: string;
+  slug: string;
+  image?: string;
+  sortOrder: number;
+  showOnHome: boolean;
+  isActive: boolean;
+};
+
+type CategoryUI = {
+  _id: string;
+  name: string;
+  slug: string;
   icon: string;
   color: string;
   count: number;
 };
 
-const categoryIcons: { [key: string]: { icon: string; color: string } } = {
+const categoryIcons: Record<string, { icon: string; color: string }> = {
   vegetables: { icon: "leaf", color: "#4CAF50" },
   fruits: { icon: "nutrition", color: "#FF9800" },
-  dairy: { icon: "ice-cream", color: "#2196F3" },
-  bakery: { icon: "pizza", color: "#FF6F00" },
+  "dairy-bakery": { icon: "ice-cream", color: "#2196F3" },
   beverages: { icon: "beer", color: "#00BCD4" },
-  snacks: { icon: "fast-food", color: "#E91E63" },
-  meat: { icon: "restaurant", color: "#795548" },
-  seafood: { icon: "fish", color: "#009688" },
-  "personal care": { icon: "sparkles", color: "#9C27B0" },
-  household: { icon: "home", color: "#607D8B" },
-  "baby care": { icon: "heart", color: "#F06292" },
-  "pet care": { icon: "paw", color: "#8D6E63" },
 };
 
 export default function CategoriesScreen() {
   const { items } = useCart();
-  const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [categories, setCategories] = useState<CategoryUI[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -49,33 +53,41 @@ export default function CategoriesScreen() {
 
   const loadCategories = async () => {
     try {
-      const res = await API.get("/products");
-      const products = res.data;
+      setLoading(true);
 
-      // Group products by category and count them
-      const categoryMap: { [key: string]: number } = {};
+      const [catRes, prodRes] = await Promise.all([
+        API.get("/categories"),
+        API.get("/products"),
+      ]);
 
-      products.forEach((product: any) => {
-        const category = product.category?.toLowerCase() || "other";
-        categoryMap[category] = (categoryMap[category] || 0) + 1;
+      const categories: Category[] = catRes.data.data;
+      const products = prodRes.data.data;
+
+      // Count products per categoryId
+      const countMap: Record<string, number> = {};
+
+      products.forEach((p: any) => {
+        const catId = p.category?._id;
+        if (!catId) return;
+        countMap[catId] = (countMap[catId] || 0) + 1;
       });
 
-      // Convert to array and add icons/colors
-      const categoriesArray: CategoryData[] = Object.entries(categoryMap).map(
-        ([name, count]) => ({
-          name,
-          icon: categoryIcons[name]?.icon || "apps",
-          color: categoryIcons[name]?.color || "#666",
-          count,
-        }),
-      );
+      // Build UI categories
+      const uiCategories: CategoryUI[] = categories
+        .filter((c) => c.isActive)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((c) => ({
+          _id: c._id,
+          name: c.name,
+          slug: c.slug,
+          icon: categoryIcons[c.slug]?.icon || "apps",
+          color: categoryIcons[c.slug]?.color || "#607D8B",
+          count: countMap[c._id] || 0,
+        }));
 
-      // Sort by count (descending)
-      categoriesArray.sort((a, b) => b.count - a.count);
-
-      setCategories(categoriesArray);
-    } catch (error) {
-      console.error("Failed to load categories:", error);
+      setCategories(uiCategories);
+    } catch (err) {
+      console.error("Failed to load categories", err);
     } finally {
       setLoading(false);
     }
@@ -85,12 +97,13 @@ export default function CategoriesScreen() {
     cat.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const handleCategoryPress = (category: CategoryData) => {
+  const handleCategoryPress = (category: CategoryUI) => {
     router.push({
       pathname: "/category",
       params: {
-        category: category.name,
-        title: category.name.charAt(0).toUpperCase() + category.name.slice(1),
+        categoryId: category._id,
+        categorySlug: category?.slug,
+        title: category.name,
       },
     });
   };
