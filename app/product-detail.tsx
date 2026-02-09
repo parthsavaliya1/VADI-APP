@@ -95,7 +95,7 @@ type Review = {
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { items, addToCart, updateQuantity } = useCart();
+  const { items, addToCart, updateQuantity, getCartItemCount } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -225,8 +225,11 @@ export default function ProductDetailScreen() {
     ]).start();
 
     addToCart({
-      id: product._id,
-      name: `${product.name} (${selectedVariant.packSize}${selectedVariant.packUnit})`,
+      id: `${product._id}_${selectedVariant._id}`,
+      productId: product._id,
+      variantId: selectedVariant._id,
+      name: product.name,
+      variantLabel: `${selectedVariant.packSize}${selectedVariant.packUnit}`,
       price: selectedVariant.price,
       qty: 1,
     });
@@ -234,23 +237,22 @@ export default function ProductDetailScreen() {
 
   const getCartItem = () => {
     if (!product) return null;
-    return items.find((i) => i.id === product._id);
+    return items.find(
+      (i) =>
+        i.productId === product._id && i.variantId === selectedVariant?._id,
+    );
   };
 
   const cartItem = getCartItem();
 
   const handleIncrement = () => {
-    if (!product || !cartItem) return;
-    updateQuantity(product._id, cartItem.qty + 1);
+    if (!cartItem) return;
+    updateQuantity(cartItem.id, cartItem.qty + 1);
   };
 
   const handleDecrement = () => {
-    if (!product || !cartItem) return;
-    if (cartItem.qty === 1) {
-      updateQuantity(product._id, 0);
-    } else {
-      updateQuantity(product._id, cartItem.qty - 1);
-    }
+    if (!cartItem) return;
+    updateQuantity(cartItem.id, cartItem.qty - 1);
   };
 
   const handleSubmitReview = async () => {
@@ -589,7 +591,7 @@ export default function ProductDetailScreen() {
                       </View>
                       {isSelected && (
                         <View style={styles.selectedCheck}>
-                          <Ionicons name="checkmark" size={14} color="#fff" />
+                          <Ionicons name="checkmark" size={8} color="#fff" />
                         </View>
                       )}
                       {variant.stock < variant.lowStockThreshold && (
@@ -977,7 +979,7 @@ export default function ProductDetailScreen() {
           <Ionicons name="cart" size={24} color="#2E7D32" />
           {items.length > 0 && (
             <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{items.length}</Text>
+              <Text style={styles.cartBadgeText}>{getCartItemCount()}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -1362,10 +1364,10 @@ const styles = StyleSheet.create({
 
   selectedCheck: {
     position: "absolute",
-    top: -2,
-    right: -2,
-    width: 20,
-    height: 20,
+    top: 2,
+    right: 2,
+    width: 16,
+    height: 16,
     borderRadius: 10,
     backgroundColor: "#2E7D32",
     justifyContent: "center",

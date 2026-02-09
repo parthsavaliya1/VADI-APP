@@ -85,7 +85,6 @@ export const AddressProvider = ({
   children: React.ReactNode;
 }) => {
   const { user } = useAuth();
-  console.log("SSS", user);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [defaultAddress, setDefaultAddressState] = useState<Address | null>(
     null,
@@ -108,14 +107,12 @@ export const AddressProvider = ({
 
   // 📥 LOAD ADDRESSES FROM SERVER
   const loadAddresses = async () => {
-    console.log("ALOAOAOAO");
     if (!user?._id) return;
 
     setLoading(true);
     try {
       // Updated endpoint to match backend route: GET /addresses/:userId
       const res = await API.get(`/addresses/${user._id}`);
-      console.log("SSS", res.data);
       setAddresses(res.data);
 
       // Set default address
@@ -266,7 +263,6 @@ export const AddressProvider = ({
 
   // ⭐ SET DEFAULT ADDRESS
   const setDefaultAddress = async (addressId: string) => {
-    console.log("USUS", user);
     if (!user?._id) return;
 
     try {

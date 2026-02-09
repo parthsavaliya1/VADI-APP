@@ -124,15 +124,16 @@ export default function AllProductsScreen() {
   };
 
   const handleAddToCart = (product: Product) => {
-    if (!product.variants || product.variants.length === 0) {
-      console.warn("Product has no variants:", product.name);
-      return;
-    }
+    if (!product.variants || product.variants.length === 0) return;
 
     const variant = getDefaultVariant(product);
+
     addToCart({
-      id: product._id,
-      name: `${product.name} (${variant.packSize}${variant.packUnit})`,
+      id: `${product._id}_${variant._id}`, // ✅ UNIQUE PER VARIANT
+      productId: product._id, // ✅ REQUIRED
+      variantId: variant._id, // ✅ REQUIRED
+      name: product.name,
+      variantLabel: `${variant.packSize}${variant.packUnit}`,
       price: variant.price,
       qty: 1,
     });
@@ -195,7 +196,9 @@ export default function AllProductsScreen() {
     const price = variant.price;
     const mrp = variant.mrp;
     const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
-    const inCart = items.some((i) => i.id === item._id);
+    const inCart = items.some(
+      (i) => i.productId === item._id && i.variantId === variant._id,
+    );
 
     const handlePress = () => {
       setIsAdding(true);
@@ -303,6 +306,9 @@ export default function AllProductsScreen() {
               ]}
               onPress={(e) => {
                 e.stopPropagation();
+
+                if (inCart) return; // ✅ BLOCK re-adding
+
                 handlePress();
               }}
               disabled={isAdding || variant.stock === 0}

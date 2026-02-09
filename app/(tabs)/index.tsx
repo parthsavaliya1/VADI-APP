@@ -183,7 +183,7 @@ const ProductSkeleton = () => {
 
 export default function HomeScreen() {
   const { user, loading: authLoading } = useAuth();
-  const { items, addToCart } = useCart();
+  const { items, addToCart, getCartItemCount } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -201,8 +201,6 @@ export default function HomeScreen() {
   const searchFocusAnim = useRef(new Animated.Value(0)).current;
   const bannerScrollRef = useRef<FlatList>(null);
   const { defaultAddress } = useAddress();
-
-  console.log("DDD", defaultAddress);
 
   const total = items.reduce((s, i) => s + i.price * i.qty, 0);
 
@@ -277,15 +275,16 @@ export default function HomeScreen() {
   };
 
   const handleAddToCart = (product: Product) => {
-    if (!product.variants || product.variants.length === 0) {
-      console.warn("Product has no variants:", product.name);
-      return;
-    }
+    if (!product.variants || product.variants.length === 0) return;
 
     const variant = getDefaultVariant(product);
+
     addToCart({
-      id: product._id,
-      name: `${product.name} (${variant.packSize}${variant.packUnit})`,
+      id: `${product._id}_${variant._id}`,
+      productId: product._id,
+      variantId: variant._id,
+      name: product.name,
+      variantLabel: `${variant.packSize}${variant.packUnit}`,
       price: variant.price,
       qty: 1,
     });
@@ -474,7 +473,7 @@ export default function HomeScreen() {
               onPress={() => router.push("/cart")}
             >
               <Ionicons name="cart-outline" size={26} color="#1B5E20" />
-              {items.length > 0 && (
+              {getCartItemCount() > 0 && (
                 <Animated.View
                   style={[
                     styles.cartBadge,
@@ -490,7 +489,7 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  <Text style={styles.cartBadgeText}>{items.length}</Text>
+                  <Text style={styles.cartBadgeText}>{getCartItemCount()}</Text>
                 </Animated.View>
               )}
             </TouchableOpacity>
@@ -697,21 +696,31 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.productsGrid}>
-              {trendingProducts.slice(0, 4).map((item) => (
-                <ProductCard
-                  key={item._id}
-                  item={item}
-                  onAdd={() => handleAddToCart(item)}
-                  inCart={items.some((i) => i.id === item._id)}
-                  onPress={() => {
-                    router.push({
-                      pathname: "/product-detail",
-                      params: { id: item._id },
-                    });
-                  }}
-                  showTrendingBadge
-                />
-              ))}
+              {trendingProducts.slice(0, 4).map((item) => {
+                const defaultVariant = getDefaultVariant(item);
+
+                const cartItem = items.find(
+                  (i) =>
+                    i.productId === item._id &&
+                    i.variantId === defaultVariant._id,
+                );
+
+                return (
+                  <ProductCard
+                    key={item._id}
+                    item={item}
+                    onAdd={() => handleAddToCart(item)}
+                    inCart={!!cartItem}
+                    onPress={() => {
+                      router.push({
+                        pathname: "/product-detail",
+                        params: { id: item._id },
+                      });
+                    }}
+                    showTrendingBadge
+                  />
+                );
+              })}
             </View>
           </View>
         )}
@@ -741,20 +750,29 @@ export default function HomeScreen() {
             </View>
           ) : filteredProducts.length > 0 ? (
             <View style={styles.productsGrid}>
-              {filteredProducts.map((item) => (
-                <ProductCard
-                  key={item._id}
-                  item={item}
-                  onAdd={() => handleAddToCart(item)}
-                  inCart={items.some((i) => i.id === item._id)}
-                  onPress={() => {
-                    router.push({
-                      pathname: "/product-detail",
-                      params: { id: item._id },
-                    });
-                  }}
-                />
-              ))}
+              {filteredProducts.map((item) => {
+                const defaultVariant = getDefaultVariant(item);
+
+                const cartItem = items.find(
+                  (i) =>
+                    i.productId === item._id &&
+                    i.variantId === defaultVariant._id,
+                );
+                return (
+                  <ProductCard
+                    key={item._id}
+                    item={item}
+                    onAdd={() => handleAddToCart(item)}
+                    inCart={!!cartItem}
+                    onPress={() => {
+                      router.push({
+                        pathname: "/product-detail",
+                        params: { id: item._id },
+                      });
+                    }}
+                  />
+                );
+              })}
             </View>
           ) : (
             <View style={styles.emptyState}>
@@ -863,8 +881,9 @@ export default function HomeScreen() {
             </View>
             <View>
               <Text style={styles.cartFooterItems}>
-                {items.length} item{items.length > 1 ? "s" : ""}
+                {getCartItemCount()} item{getCartItemCount() > 1 ? "s" : ""}
               </Text>
+
               <Text style={styles.cartFooterTotal}>₹{total.toFixed(2)}</Text>
             </View>
           </View>
@@ -926,16 +945,18 @@ const ProductCard = ({
     <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
         {/* Only show ONE badge based on priority: Trending > Discount */}
-        {showTrendingBadge ? (
-          <View style={styles.trendingCardBadge}>
+        {showTrendingBadge && (
+          <View style={[styles.badgeContainer, styles.badgeTrending]}>
             <Ionicons name="trending-up" size={10} color="#fff" />
-            <Text style={styles.trendingCardBadgeText}>TRENDING</Text>
+            <Text style={styles.badgeText}>TRENDING</Text>
           </View>
-        ) : item.discount && item.discount > 0 ? (
-          <View style={styles.productDiscountBadge}>
-            <Text style={styles.productDiscountText}>{item.discount}% OFF</Text>
+        )}
+
+        {!showTrendingBadge && item.discount && item.discount > 0 && (
+          <View style={[styles.badgeContainer, styles.badgeDiscount]}>
+            <Text style={styles.badgeText}>{item.discount}% OFF</Text>
           </View>
-        ) : null}
+        )}
 
         <Image
           source={{
@@ -969,6 +990,9 @@ const ProductCard = ({
             ]}
             onPress={(e) => {
               e.stopPropagation();
+
+              if (inCart) return;
+
               handlePress();
             }}
             disabled={isAdding}
@@ -1260,55 +1284,33 @@ const styles = StyleSheet.create({
     position: "relative",
   },
 
-  /* TRENDING BADGE */
-  trendingCardBadge: {
+  /* COMMON BADGE */
+  badgeContainer: {
     position: "absolute",
-    top: 8,
-    left: 8,
-    backgroundColor: "#2196F3",
+    top: 1,
+    right: 4,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
     zIndex: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
+    gap: 4,
   },
 
-  trendingCardBadgeText: {
+  badgeText: {
     color: "#fff",
     fontSize: 9,
     fontWeight: "700",
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
 
-  /* DISCOUNT BADGE */
-  productDiscountBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
+  badgeTrending: {
+    backgroundColor: "#2196F3",
+  },
+
+  badgeDiscount: {
     backgroundColor: "#F44336",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    zIndex: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-
-  productDiscountText: {
-    color: "#fff",
-    fontSize: 9,
-    fontWeight: "700",
-    letterSpacing: 0.5,
   },
 
   /* PRODUCT IMAGE */

@@ -11,20 +11,31 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useCart } from "../context/CartContext";
+import { CartItem, useCart } from "../context/CartContext";
 
 export default function CartScreen() {
-  const { items, updateQty, removeFromCart, clearCart, getCartTotal } =
-    useCart();
+  const {
+    items,
+    updateQty,
+    removeFromCart,
+    clearCart,
+    getCartTotal,
+    getCartItemCount,
+  } = useCart();
+
   const [loading, setLoading] = useState(false);
 
-  const handleRemoveItem = (id: string, name: string) => {
+  const handleRemoveItem = (
+    productId: string,
+    variantId: string,
+    name: string,
+  ) => {
     Alert.alert("Remove Item", `Remove ${name} from cart?`, [
       { text: "Cancel", style: "cancel" },
       {
         text: "Remove",
         style: "destructive",
-        onPress: () => removeFromCart(id),
+        onPress: () => removeFromCart(productId, variantId),
       },
     ]);
   };
@@ -51,16 +62,15 @@ export default function CartScreen() {
     }, 500);
   };
 
-  const incrementQty = (id: string, currentQty: number) => {
-    updateQty(id, currentQty + 1);
+  const incrementQty = (item: CartItem) => {
+    updateQty(item.productId, item.variantId, item.qty + 1);
   };
 
-  const decrementQty = (id: string, currentQty: number) => {
-    if (currentQty > 1) {
-      updateQty(id, currentQty - 1);
+  const decrementQty = (item: CartItem) => {
+    if (item.qty > 1) {
+      updateQty(item.productId, item.variantId, item.qty - 1);
     } else {
-      const item = items.find((i) => i.id === id);
-      if (item) handleRemoveItem(id, item.name);
+      removeFromCart(item.productId, item.variantId);
     }
   };
 
@@ -111,7 +121,7 @@ export default function CartScreen() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>My Cart</Text>
-          <Text style={styles.headerSubtitle}>{items.length} items</Text>
+          <Text style={styles.headerSubtitle}>{getCartItemCount()} items</Text>
         </View>
         <TouchableOpacity onPress={handleClearCart} style={styles.clearBtn}>
           <Ionicons name="trash-outline" size={22} color="#F44336" />
@@ -133,15 +143,16 @@ export default function CartScreen() {
 
             <View style={styles.itemDetails}>
               <Text style={styles.itemName} numberOfLines={2}>
-                {item.name}
+                {item.name} ({item.variantLabel})
               </Text>
+
               <Text style={styles.itemPrice}>₹{item.price}</Text>
 
               {/* Quantity Controls */}
               <View style={styles.qtyContainer}>
                 <TouchableOpacity
                   style={styles.qtyBtn}
-                  onPress={() => decrementQty(item.id, item.qty)}
+                  onPress={() => decrementQty(item)}
                 >
                   <Ionicons
                     name={item.qty === 1 ? "trash-outline" : "remove"}
@@ -154,7 +165,7 @@ export default function CartScreen() {
 
                 <TouchableOpacity
                   style={styles.qtyBtn}
-                  onPress={() => incrementQty(item.id, item.qty)}
+                  onPress={() => incrementQty(item)}
                 >
                   <Ionicons name="add" size={18} color="#2E7D32" />
                 </TouchableOpacity>
@@ -163,7 +174,9 @@ export default function CartScreen() {
 
             <View style={styles.itemRight}>
               <TouchableOpacity
-                onPress={() => handleRemoveItem(item.id, item.name)}
+                onPress={() =>
+                  handleRemoveItem(item.productId, item.variantId, item.name)
+                }
                 style={styles.removeBtn}
               >
                 <Ionicons name="close" size={20} color="#999" />
