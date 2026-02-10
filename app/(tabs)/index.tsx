@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Redirect, router } from "expo-router";
+import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -7,6 +7,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
@@ -146,6 +147,79 @@ const getProductMRP = (product: Product): number => {
   return variant.mrp;
 };
 
+function GuestBanner() {
+  const { user } = useAuth();
+  const [visible, setVisible] = useState(true);
+  const slideAnim = useRef(new Animated.Value(-70)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!user && visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 380,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 55,
+          friction: 9,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [user, visible]);
+
+  const dismiss = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: -70,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setVisible(false));
+  };
+
+  if (user || !visible) return null;
+
+  return (
+    <Animated.View
+      style={[
+        styles.guestBanner,
+        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+      ]}
+    >
+      <View style={styles.guestLeft}>
+        <View style={styles.guestIconWrap}>
+          <Ionicons name="person-outline" size={16} color="#2E7D32" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.guestTitle}>Browsing as guest</Text>
+          <Text style={styles.guestSub}>Log in to add items & checkout</Text>
+        </View>
+      </View>
+      <View style={styles.guestRight}>
+        <TouchableOpacity
+          style={styles.guestLoginBtn}
+          onPress={() => router.push("/login")}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.guestLoginText}>Log In</Text>
+        </TouchableOpacity>
+        <Pressable onPress={dismiss} style={styles.guestDismiss} hitSlop={10}>
+          <Ionicons name="close" size={15} color="#999" />
+        </Pressable>
+      </View>
+    </Animated.View>
+  );
+}
+
 // Skeleton loader component
 const ProductSkeleton = () => {
   const shimmerAnim = useRef(new Animated.Value(0)).current;
@@ -263,9 +337,16 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    if (!user) return;
-    loadProducts();
-  }, [user]);
+    if (!authLoading) loadProducts();
+  }, [authLoading]);
+
+  if (authLoading) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color="#2E7D32" />
+      </View>
+    );
+  }
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -407,8 +488,8 @@ export default function HomeScreen() {
 
   // Get unique categories for quick actions
 
-  if (authLoading) return null;
-  if (!user) return <Redirect href="/signup" />;
+  // if (authLoading) return null;
+  // if (!user) return <Redirect href="/signup" />;
 
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 100],
@@ -495,6 +576,8 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </Animated.View>
+
+        <GuestBanner />
 
         {/* 🔍 SEARCH */}
         <Animated.View
@@ -1652,5 +1735,57 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "700",
+  },
+  loadingScreen: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F5F7F2",
+  },
+
+  guestBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
+    marginHorizontal: 14,
+    marginBottom: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#C8E6C9",
+    shadowColor: "#2E7D32",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  guestLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  guestIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#E8F5E9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  guestTitle: { fontSize: 13, fontWeight: "700", color: "#1A1A1A" },
+  guestSub: { fontSize: 11, color: "#888", fontWeight: "500", marginTop: 1 },
+  guestRight: { flexDirection: "row", alignItems: "center", gap: 8 },
+  guestLoginBtn: {
+    backgroundColor: "#2E7D32",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  guestLoginText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  guestDismiss: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#F5F5F5",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

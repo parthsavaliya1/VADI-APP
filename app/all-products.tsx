@@ -219,6 +219,8 @@ export default function AllProductsScreen() {
         setIsAdding(false);
       });
 
+      console.log("Ite,", item);
+
       handleAddToCart(item);
     };
 

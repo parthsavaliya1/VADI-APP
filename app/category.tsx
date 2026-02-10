@@ -74,7 +74,6 @@ const getDefaultVariant = (product: Product): ProductVariant => {
 export default function CategoryScreen() {
   const params = useLocalSearchParams();
   const { categoryId, title } = params;
-  console.log("pp", params);
   const { items, addToCart } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -111,12 +110,17 @@ export default function CategoryScreen() {
     p.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const handleAddToCart = (item: Product) => {
-    const variant = getDefaultVariant(item);
+  const handleAddToCart = (product: Product) => {
+    if (!product.variants || product.variants.length === 0) return;
+
+    const variant = getDefaultVariant(product);
 
     addToCart({
-      id: item._id,
-      name: `${item.name} (${variant.packSize}${variant.packUnit})`,
+      id: `${product._id}_${variant._id}`, // ✅ UNIQUE PER VARIANT
+      productId: product._id, // ✅ REQUIRED
+      variantId: variant._id, // ✅ REQUIRED
+      name: product.name,
+      variantLabel: `${variant.packSize}${variant.packUnit}`,
       price: variant.price,
       qty: 1,
     });

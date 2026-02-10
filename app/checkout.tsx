@@ -20,7 +20,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCart } from "../context/CartContext";
 
-// Enable LayoutAnimation for Android
 if (Platform.OS === "android") {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -38,7 +37,6 @@ export default function CheckoutScreen() {
     "upi" | "card" | "wallet" | "cod"
   >("upi");
 
-  // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -48,7 +46,6 @@ export default function CheckoutScreen() {
   const deliveryFee = total > 500 ? 0 : 40;
   const grandTotal = total + deliveryFee;
 
-  // Initial mount animation
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -63,11 +60,8 @@ export default function CheckoutScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-
-    // refreshAddress();
   }, []);
 
-  // Pulse animation for place order button
   useEffect(() => {
     if (!isProcessing && selectedAddress) {
       Animated.loop(
@@ -99,6 +93,18 @@ export default function CheckoutScreen() {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  const buildOrderAddress = () => ({
+    _id: selectedAddress!._id,
+    name: selectedAddress!.name!,
+    phone: selectedAddress!.phone!,
+    addressLine1: selectedAddress!.addressLine1!,
+    addressLine2: selectedAddress!.addressLine2,
+    city: selectedAddress!.city!,
+    state: selectedAddress!.state!,
+    pincode: selectedAddress!.pincode!,
+    landmark: selectedAddress!.landmark,
+  });
+
   const handlePlaceOrder = async () => {
     if (items.length === 0) {
       Alert.alert("Empty Cart", "Your cart is empty");
@@ -113,22 +119,10 @@ export default function CheckoutScreen() {
     setIsProcessing(true);
 
     try {
-      // ✅ CASH ON DELIVERY
+      // ✅ CASH ON DELIVERY — place order directly
       if (paymentMethod === "cod") {
-        const orderAddress = {
-          _id: selectedAddress._id,
-          name: selectedAddress.name!,
-          phone: selectedAddress.phone!,
-          addressLine1: selectedAddress.addressLine1!,
-          addressLine2: selectedAddress.addressLine2,
-          city: selectedAddress.city!,
-          state: selectedAddress.state!,
-          pincode: selectedAddress.pincode!,
-          landmark: selectedAddress.landmark,
-        };
-
         await placeOrder({
-          address: orderAddress,
+          address: buildOrderAddress(),
           paymentMethod,
           deliveryFee,
         });
@@ -136,51 +130,61 @@ export default function CheckoutScreen() {
         clearCart();
         setIsProcessing(false);
 
-        Alert.alert("Order Placed", "Your order has been placed successfully", [
-          {
-            text: "View Orders",
-            onPress: () => router.replace("/(tabs)/orders"),
-          },
-        ]);
-
-        return;
-      }
-
-      // ✅ ONLINE PAYMENT
-      openRazorpay({
-        amount: grandTotal,
-        onSuccess: async (paymentId) => {
-          const orderAddress = {
-            _id: selectedAddress._id,
-            name: selectedAddress.name!,
-            phone: selectedAddress.phone!,
-            addressLine1: selectedAddress.addressLine1!,
-            addressLine2: selectedAddress.addressLine2,
-            city: selectedAddress.city!,
-            state: selectedAddress.state!,
-            pincode: selectedAddress.pincode!,
-            landmark: selectedAddress.landmark,
-          };
-
-          await placeOrder({
-            address: orderAddress,
-            paymentMethod,
-            deliveryFee,
-          });
-
-          clearCart();
-          setIsProcessing(false);
-
-          Alert.alert("Payment Successful", `Order placed successfully`, [
+        Alert.alert(
+          "Order Placed! 🎉",
+          "Your order has been placed successfully",
+          [
             {
               text: "View Orders",
               onPress: () => router.replace("/(tabs)/orders"),
             },
-          ]);
+          ],
+        );
+        return;
+      }
+
+      // ✅ ONLINE PAYMENT — open Razorpay first, place order ONLY on success
+      openRazorpay({
+        amount: grandTotal,
+        onSuccess: async (paymentId: string) => {
+          try {
+            await placeOrder({
+              address: buildOrderAddress(),
+              paymentMethod,
+              deliveryFee,
+            });
+
+            clearCart();
+            setIsProcessing(false);
+
+            Alert.alert(
+              "Payment Successful! 🎉",
+              `Payment ID: ${paymentId}\nYour order has been placed.`,
+              [
+                {
+                  text: "View Orders",
+                  onPress: () => router.replace("/(tabs)/orders"),
+                },
+              ],
+            );
+          } catch (orderErr: any) {
+            // Payment succeeded but order placement failed
+            setIsProcessing(false);
+            Alert.alert(
+              "Order Error",
+              `Payment was successful (ID: ${paymentId}) but we couldn't place your order. Please contact support.`,
+              [{ text: "OK" }],
+            );
+          }
         },
         onFailure: () => {
+          // Payment was cancelled or failed — do NOT place order
           setIsProcessing(false);
-          Alert.alert("Payment Failed", "Payment was cancelled or failed");
+          Alert.alert(
+            "Payment Failed",
+            "Your payment was cancelled or failed. No order was placed.",
+            [{ text: "Try Again" }],
+          );
         },
       });
     } catch (err: any) {
@@ -194,10 +198,7 @@ export default function CheckoutScreen() {
       <Animated.View
         style={[
           styles.container,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
         ]}
       >
         <ScrollView
@@ -399,7 +400,6 @@ export default function CheckoutScreen() {
                   <Text style={styles.billLabel}>Item Total</Text>
                   <Text style={styles.billValue}>₹{total}</Text>
                 </View>
-
                 <View style={styles.billRow}>
                   <View style={styles.deliveryLabel}>
                     <Text style={styles.billLabel}>Delivery Fee</Text>
@@ -448,7 +448,6 @@ export default function CheckoutScreen() {
                 )}
 
                 <View style={styles.divider} />
-
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>Grand Total</Text>
                   <Text style={styles.totalAmount}>₹{grandTotal}</Text>
@@ -472,57 +471,82 @@ export default function CheckoutScreen() {
               <TouchableOpacity
                 style={[
                   styles.paymentOption,
-                  paymentMethod !== "cod" && {
-                    borderColor: "#2E7D32",
-                    borderWidth: 2,
-                  },
+                  paymentMethod !== "cod" && styles.paymentOptionSelected,
                 ]}
                 onPress={() => setPaymentMethod("upi")}
                 activeOpacity={0.8}
               >
-                <View style={styles.paymentIconCircle}>
+                <View
+                  style={[
+                    styles.paymentIconCircle,
+                    { backgroundColor: "#E3F2FD" },
+                  ]}
+                >
                   <Ionicons name="wallet" size={20} color="#4285F4" />
                 </View>
-
                 <View style={styles.paymentInfo}>
                   <Text style={styles.paymentText}>Online Payment</Text>
                   <Text style={styles.paymentSubtext}>
                     UPI, Cards, Wallets via Razorpay
                   </Text>
                 </View>
-
-                {paymentMethod !== "cod" && (
-                  <Ionicons name="checkmark-circle" size={22} color="#2E7D32" />
-                )}
+                <View
+                  style={[
+                    styles.radioOuter,
+                    paymentMethod !== "cod" && styles.radioOuterSelected,
+                  ]}
+                >
+                  {paymentMethod !== "cod" && (
+                    <View style={styles.radioInner} />
+                  )}
+                </View>
               </TouchableOpacity>
 
               {/* CASH ON DELIVERY */}
               <TouchableOpacity
                 style={[
                   styles.paymentOption,
-                  paymentMethod === "cod" && {
-                    borderColor: "#2E7D32",
-                    borderWidth: 2,
-                  },
+                  paymentMethod === "cod" && styles.paymentOptionSelected,
+                  { marginTop: 10 },
                 ]}
                 onPress={() => setPaymentMethod("cod")}
                 activeOpacity={0.8}
               >
-                <View style={styles.paymentIconCircle}>
+                <View
+                  style={[
+                    styles.paymentIconCircle,
+                    { backgroundColor: "#E8F5E9" },
+                  ]}
+                >
                   <Ionicons name="cash" size={20} color="#4CAF50" />
                 </View>
-
                 <View style={styles.paymentInfo}>
                   <Text style={styles.paymentText}>Cash on Delivery</Text>
                   <Text style={styles.paymentSubtext}>
                     Pay when order is delivered
                   </Text>
                 </View>
-
-                {paymentMethod === "cod" && (
-                  <Ionicons name="checkmark-circle" size={22} color="#2E7D32" />
-                )}
+                <View
+                  style={[
+                    styles.radioOuter,
+                    paymentMethod === "cod" && styles.radioOuterSelected,
+                  ]}
+                >
+                  {paymentMethod === "cod" && (
+                    <View style={styles.radioInner} />
+                  )}
+                </View>
               </TouchableOpacity>
+
+              {/* Security note for online payment */}
+              {paymentMethod !== "cod" && (
+                <View style={styles.secureNotice}>
+                  <Ionicons name="lock-closed" size={14} color="#2E7D32" />
+                  <Text style={styles.secureNoticeText}>
+                    100% secure payment powered by Razorpay
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -570,8 +594,16 @@ export default function CheckoutScreen() {
                 </>
               ) : (
                 <>
-                  <Ionicons name="shield-checkmark" size={20} color="#fff" />
-                  <Text style={styles.placeOrderText}>PLACE ORDER</Text>
+                  <Ionicons
+                    name={paymentMethod === "cod" ? "cash" : "shield-checkmark"}
+                    size={20}
+                    color="#fff"
+                  />
+                  <Text style={styles.placeOrderText}>
+                    {paymentMethod === "cod"
+                      ? "PLACE ORDER"
+                      : "PAY ₹" + grandTotal}
+                  </Text>
                   <Ionicons name="arrow-forward" size={20} color="#fff" />
                 </>
               )}
@@ -584,16 +616,9 @@ export default function CheckoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 20,
-  },
+  safe: { flex: 1, backgroundColor: "#F8F9FA" },
+  container: { flex: 1 },
+  scrollContent: { paddingBottom: 20 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -619,22 +644,9 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
   },
-  stepIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: 40,
-  },
-  stepDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#E0E0E0",
-  },
-  stepActive: {
-    backgroundColor: "#2E7D32",
-    width: 10,
-    height: 10,
-  },
+  stepIndicator: { flexDirection: "row", alignItems: "center", width: 40 },
+  stepDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#E0E0E0" },
+  stepActive: { backgroundColor: "#2E7D32", width: 10, height: 10 },
   stepLine: {
     width: 12,
     height: 2,
@@ -676,11 +688,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1A1A1A",
-  },
+  sectionTitle: { fontSize: 16, fontWeight: "700", color: "#1A1A1A" },
   itemCountBadge: {
     backgroundColor: "#2E7D32",
     paddingHorizontal: 8,
@@ -689,14 +697,8 @@ const styles = StyleSheet.create({
     minWidth: 24,
     alignItems: "center",
   },
-  itemCountText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  cardContent: {
-    padding: 16,
-  },
+  itemCountText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  cardContent: { padding: 16 },
   addressBox: {
     backgroundColor: "#F8F9FA",
     padding: 16,
@@ -711,16 +713,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  addressTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  addressTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1A1A1A",
-  },
+  addressTitleRow: { flexDirection: "row", alignItems: "center", flex: 1 },
+  addressTitle: { fontSize: 15, fontWeight: "700", color: "#1A1A1A" },
   defaultBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -730,22 +724,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     gap: 3,
   },
-  defaultText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  address: {
-    color: "#666",
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  addressCity: {
-    color: "#888",
-    fontSize: 13,
-    fontWeight: "500",
-  },
+  defaultText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+  address: { color: "#666", fontSize: 14, lineHeight: 20, marginBottom: 4 },
+  addressCity: { color: "#888", fontSize: 13, fontWeight: "500" },
   changeBtn: {
     alignSelf: "flex-start",
     flexDirection: "row",
@@ -756,11 +737,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
-  changeBtnText: {
-    color: "#2E7D32",
-    fontWeight: "700",
-    fontSize: 14,
-  },
+  changeBtnText: { color: "#2E7D32", fontWeight: "700", fontSize: 14 },
   addAddressBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -771,38 +748,23 @@ const styles = StyleSheet.create({
     borderColor: "#FFD700",
     borderStyle: "dashed",
   },
-  addIconCircle: {
-    marginRight: 12,
-  },
-  addAddressTextContainer: {
-    flex: 1,
-  },
+  addIconCircle: { marginRight: 12 },
+  addAddressTextContainer: { flex: 1 },
   addAddressTitle: {
     fontSize: 15,
     fontWeight: "700",
     color: "#1A1A1A",
     marginBottom: 2,
   },
-  addAddressSubtitle: {
-    fontSize: 13,
-    color: "#666",
-  },
+  addAddressSubtitle: { fontSize: 13, color: "#666" },
   itemRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 14,
   },
-  itemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  itemLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
+  itemBorder: { borderBottomWidth: 1, borderBottomColor: "#F0F0F0" },
+  itemLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
   qtyBadge: {
     backgroundColor: "#E8F5E9",
     paddingHorizontal: 10,
@@ -811,50 +773,25 @@ const styles = StyleSheet.create({
     minWidth: 36,
     alignItems: "center",
   },
-  qtyText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#2E7D32",
-  },
-  itemInfo: {
-    flex: 1,
-  },
+  qtyText: { fontSize: 13, fontWeight: "700", color: "#2E7D32" },
+  itemInfo: { flex: 1 },
   itemName: {
     fontSize: 15,
     fontWeight: "600",
     color: "#1A1A1A",
     marginBottom: 2,
   },
-  itemVariant: {
-    fontSize: 12,
-    color: "#888",
-  },
-  itemPrice: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1A1A1A",
-  },
+  itemVariant: { fontSize: 12, color: "#888" },
+  itemPrice: { fontSize: 15, fontWeight: "700", color: "#1A1A1A" },
   billRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 12,
     alignItems: "center",
   },
-  billLabel: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
-  },
-  billValue: {
-    fontSize: 15,
-    color: "#1A1A1A",
-    fontWeight: "600",
-  },
-  deliveryLabel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+  billLabel: { fontSize: 14, color: "#666", fontWeight: "500" },
+  billValue: { fontSize: 15, color: "#1A1A1A", fontWeight: "600" },
+  deliveryLabel: { flexDirection: "row", alignItems: "center", gap: 8 },
   freeTag: {
     flexDirection: "row",
     alignItems: "center",
@@ -864,15 +801,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     gap: 2,
   },
-  freeTagText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  strikethrough: {
-    textDecorationLine: "line-through",
-    color: "#999",
-  },
+  freeTagText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+  strikethrough: { textDecorationLine: "line-through", color: "#999" },
   savingTip: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -884,9 +814,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: "#FF9800",
   },
-  savingTipContent: {
-    flex: 1,
-  },
+  savingTipContent: { flex: 1 },
   savingText: {
     fontSize: 13,
     color: "#E65100",
@@ -899,32 +827,16 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     overflow: "hidden",
   },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#FF9800",
-    borderRadius: 3,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E8E8E8",
-    marginVertical: 14,
-  },
+  progressFill: { height: "100%", backgroundColor: "#FF9800", borderRadius: 3 },
+  divider: { height: 1, backgroundColor: "#E8E8E8", marginVertical: 14 },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingTop: 4,
   },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1A1A1A",
-  },
-  totalAmount: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#2E7D32",
-  },
+  totalLabel: { fontSize: 16, fontWeight: "700", color: "#1A1A1A" },
+  totalAmount: { fontSize: 20, fontWeight: "700", color: "#2E7D32" },
   paymentOption: {
     flexDirection: "row",
     alignItems: "center",
@@ -932,43 +844,58 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     gap: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "#E8E8E8",
+  },
+  paymentOptionSelected: {
+    borderColor: "#2E7D32",
+    backgroundColor: "#F1F8F1",
   },
   paymentIconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#E3F2FD",
     alignItems: "center",
     justifyContent: "center",
   },
-  paymentInfo: {
-    flex: 1,
-  },
+  paymentInfo: { flex: 1 },
   paymentText: {
     fontSize: 15,
     fontWeight: "700",
     color: "#1A1A1A",
     marginBottom: 2,
   },
-  paymentSubtext: {
-    fontSize: 12,
-    color: "#888",
+  paymentSubtext: { fontSize: 12, color: "#888" },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: "#BDBDBD",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  secureBadge: {
+  radioOuterSelected: { borderColor: "#2E7D32" },
+  radioInner: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: "#2E7D32",
+  },
+  secureNotice: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 6,
     backgroundColor: "#E8F5E9",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 3,
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 12,
   },
-  secureText: {
-    fontSize: 11,
-    fontWeight: "700",
+  secureNoticeText: {
+    fontSize: 12,
     color: "#2E7D32",
+    fontWeight: "600",
+    flex: 1,
   },
   bottomBar: {
     position: "absolute",
@@ -989,20 +916,14 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 10,
   },
-  bottomLeft: {
-    flex: 1,
-  },
+  bottomLeft: { flex: 1 },
   bottomLabel: {
     fontSize: 12,
     color: "#888",
     marginBottom: 2,
     fontWeight: "500",
   },
-  bottomTotal: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#2E7D32",
-  },
+  bottomTotal: { fontSize: 22, fontWeight: "700", color: "#2E7D32" },
   placeOrderBtn: {
     backgroundColor: "#2E7D32",
     paddingVertical: 14,

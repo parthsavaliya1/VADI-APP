@@ -1,4 +1,5 @@
 import { cartApi } from "@/lib/cartAPI";
+import { router } from "expo-router";
 import {
   createContext,
   ReactNode,
@@ -12,7 +13,7 @@ import { useAuth } from "./AuthContext";
 /* ================= TYPES ================= */
 
 export type CartItem = {
-  id: string; // UI only
+  id: string;
   productId: string;
   variantId: string;
   name: string;
@@ -57,7 +58,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  /* ================= HELPERS ================= */
+  /* ─── helpers ─── */
 
   const mapDbItemToCartItem = (item: any): CartItem => ({
     id: `${item.product._id || item.product}_${item.variantId}`,
@@ -70,7 +71,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
     image: item.image,
   });
 
-  /* ================= FETCH CART ================= */
+  /* ─── guest guard ─── */
+
+  const requireLogin = (): boolean => {
+    if (!userId) {
+      Alert.alert(
+        "Login Required",
+        "Please log in or sign up to add items to your cart.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Log In",
+            onPress: () => router.push("/login"),
+          },
+          {
+            text: "Sign Up",
+            onPress: () => router.push("/signup"),
+          },
+        ],
+      );
+      return true; // is guest → blocked
+    }
+    return false; // is logged in → allow
+  };
+
+  /* ─── fetch cart ─── */
 
   const refreshCart = async () => {
     if (!userId) {
@@ -103,19 +128,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refreshCart();
   }, [userId]);
 
-  /* ================= ACTIONS ================= */
+  /* ─── add to cart ─── */
 
   const addToCart = async (item: CartItem) => {
-    if (!userId) {
-      Alert.alert("Login Required", "Please login to add items to cart");
-      return;
-    }
+    if (requireLogin()) return; // 🔒 guest blocked here
 
     try {
       setLoading(true);
 
+      console.log("Item", item);
+
       const res = await cartApi.addToCart({
-        userId,
+        userId: userId!,
         productId: item.productId,
         variantId: item.variantId,
         quantity: item.qty,
@@ -135,6 +159,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   };
+
+  /* ─── update qty ─── */
 
   const updateQty = async (
     productId: string,
@@ -170,6 +196,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const updateQuantity = updateQty;
 
+  /* ─── remove from cart ─── */
+
   const removeFromCart = async (productId: string, variantId: string) => {
     if (!userId) return;
 
@@ -197,6 +225,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /* ─── clear cart ─── */
+
   const clearCart = async () => {
     if (!userId) return;
 
@@ -209,7 +239,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  /* ================= DERIVED ================= */
+  /* ─── derived ─── */
 
   const getCartTotal = () =>
     items.reduce((total, item) => total + item.price * item.qty, 0);
@@ -217,7 +247,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const getCartItemCount = () =>
     items.reduce((count, item) => count + item.qty, 0);
 
-  /* ================= PROVIDER ================= */
+  /* ─── provider ─── */
 
   return (
     <CartContext.Provider
