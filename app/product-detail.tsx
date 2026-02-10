@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { API } from "@/utils/api";
 
@@ -95,7 +96,8 @@ type Review = {
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { items, addToCart, updateQuantity, getCartItemCount } = useCart();
+  const { items, addToCart, updateQty, getCartItemCount } = useCart();
+  const { user } = useAuth();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -236,26 +238,57 @@ export default function ProductDetailScreen() {
   };
 
   const getCartItem = () => {
-    if (!product) return null;
+    if (!product || !selectedVariant) return null;
     return items.find(
-      (i) =>
-        i.productId === product._id && i.variantId === selectedVariant?._id,
+      (i) => i.productId === product._id && i.variantId === selectedVariant._id,
     );
   };
 
   const cartItem = getCartItem();
 
+  // ✅ FIXED: Increment handler
   const handleIncrement = () => {
-    if (!cartItem) return;
-    updateQuantity(cartItem.id, cartItem.qty + 1);
+    if (!cartItem || !product || !selectedVariant) return;
+
+    // Check stock limit
+    if (cartItem.qty >= selectedVariant.stock) {
+      Alert.alert(
+        "Stock Limit",
+        `Only ${selectedVariant.stock} items available in stock`,
+      );
+      return;
+    }
+
+    updateQty(product._id, selectedVariant._id, cartItem.qty + 1);
   };
 
+  // ✅ FIXED: Decrement handler
   const handleDecrement = () => {
-    if (!cartItem) return;
-    updateQuantity(cartItem.id, cartItem.qty - 1);
+    if (!cartItem || !product || !selectedVariant) return;
+    updateQty(product._id, selectedVariant._id, cartItem.qty - 1);
+  };
+
+  // ✅ FIXED: Login-gated review submission
+  const handleWriteReview = () => {
+    if (!user) {
+      Alert.alert("Login Required", "Please log in to write a review", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log In",
+          onPress: () => router.push("/(auth)/login"),
+        },
+      ]);
+      return;
+    }
+    setShowReviewModal(true);
   };
 
   const handleSubmitReview = async () => {
+    if (!user) {
+      Alert.alert("Login Required", "Please log in to submit a review");
+      return;
+    }
+
     if (userRating === 0) {
       Alert.alert("Rating Required", "Please select a rating");
       return;
@@ -269,20 +302,16 @@ export default function ProductDetailScreen() {
     try {
       setSubmittingReview(true);
 
-      // Replace with actual user data from auth context
-      const userId = "6789abcd1234567890abcdef"; // Get from auth
-      const userName = "User Name"; // Get from auth
-
       await API.post("/reviews", {
         product: product?._id,
         user: {
-          userId,
-          name: userName,
+          userId: user._id,
+          name: user.name || user.phone,
         },
         rating: userRating,
         title: reviewTitle.trim() || undefined,
         comment: reviewComment.trim(),
-        verified: false, // Set based on purchase history
+        verified: false,
       });
 
       Alert.alert("Success", "Review submitted successfully!");
@@ -362,6 +391,7 @@ export default function ProductDetailScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2E7D32" />
+          <Text style={styles.loadingText}>Loading product...</Text>
         </View>
       </SafeAreaView>
     );
@@ -401,14 +431,14 @@ export default function ProductDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      {/* Animated Header with fixed padding */}
+      {/* Animated Header */}
       <Animated.View
         style={[
           styles.header,
           {
             backgroundColor: headerOpacity.interpolate({
               inputRange: [0, 1],
-              outputRange: ["transparent", "#fff"],
+              outputRange: ["rgba(255,255,255,0)", "rgba(255,255,255,1)"],
             }),
             borderBottomWidth: headerOpacity,
             borderBottomColor: "#eee",
@@ -485,6 +515,7 @@ export default function ProductDetailScreen() {
 
           {discount > 0 && (
             <View style={styles.discountBadge}>
+              <Ionicons name="pricetag" size={14} color="#fff" />
               <Text style={styles.discountText}>{discount}% OFF</Text>
             </View>
           )}
@@ -503,11 +534,12 @@ export default function ProductDetailScreen() {
           <View style={styles.metaRow}>
             {product.brand && (
               <View style={styles.brandBadge}>
+                <Ionicons name="ribbon" size={12} color="#2E7D32" />
                 <Text style={styles.brandText}>{product.brand}</Text>
               </View>
             )}
             <View style={styles.categoryBadge}>
-              <Ionicons name="pricetag" size={12} color="#666" />
+              <Ionicons name="grid" size={12} color="#666" />
               <Text style={styles.categoryText}>{product.category.name}</Text>
             </View>
           </View>
@@ -532,20 +564,29 @@ export default function ProductDetailScreen() {
                   </Text>
                 </View>
                 <Text style={styles.reviewsText}>
-                  ({product.reviewsCount} reviews)
+                  ({product.reviewsCount}{" "}
+                  {product.reviewsCount === 1 ? "review" : "reviews"})
                 </Text>
+                <Ionicons name="chevron-forward" size={14} color="#999" />
               </>
             ) : (
-              <Text style={styles.noReviewsText}>
-                No reviews yet - Be the first!
-              </Text>
+              <View style={styles.noReviewsBadge}>
+                <Ionicons name="chatbubble-outline" size={14} color="#999" />
+                <Text style={styles.noReviewsText}>
+                  No reviews yet - Be the first!
+                </Text>
+              </View>
             )}
           </TouchableOpacity>
 
           {/* Variant Selector */}
           <View style={styles.variantSection}>
             <Text style={styles.sectionTitle}>Select Size</Text>
-            <View style={styles.variantGrid}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.variantScrollContent}
+            >
               {product.variants
                 .filter((v) => v.isActive)
                 .map((variant) => {
@@ -563,15 +604,18 @@ export default function ProductDetailScreen() {
                       style={[
                         styles.variantCard,
                         isSelected && styles.variantCardSelected,
+                        variant.stock === 0 && styles.variantCardDisabled,
                       ]}
                       onPress={() => handleVariantSelect(variant)}
                       activeOpacity={0.7}
+                      disabled={variant.stock === 0}
                     >
                       <View style={styles.variantInfo}>
                         <Text
                           style={[
                             styles.variantSize,
                             isSelected && styles.variantSizeSelected,
+                            variant.stock === 0 && styles.variantDisabledText,
                           ]}
                         >
                           {variant.packSize}
@@ -581,6 +625,7 @@ export default function ProductDetailScreen() {
                           style={[
                             styles.variantPrice,
                             isSelected && styles.variantPriceSelected,
+                            variant.stock === 0 && styles.variantDisabledText,
                           ]}
                         >
                           ₹{variant.price}
@@ -589,22 +634,28 @@ export default function ProductDetailScreen() {
                           <Text style={styles.variantMRP}>₹{variant.mrp}</Text>
                         )}
                       </View>
-                      {isSelected && (
+                      {isSelected && variant.stock > 0 && (
                         <View style={styles.selectedCheck}>
-                          <Ionicons name="checkmark" size={8} color="#fff" />
+                          <Ionicons name="checkmark" size={10} color="#fff" />
                         </View>
                       )}
-                      {variant.stock < variant.lowStockThreshold && (
-                        <View style={styles.lowStockBadge}>
-                          <Text style={styles.lowStockText}>
-                            Only {variant.stock} left
-                          </Text>
+                      {variant.stock === 0 && (
+                        <View style={styles.outOfStockOverlay}>
+                          <Text style={styles.outOfStockOverlayText}>Out</Text>
                         </View>
                       )}
+                      {variant.stock > 0 &&
+                        variant.stock < variant.lowStockThreshold && (
+                          <View style={styles.lowStockBadge}>
+                            <Text style={styles.lowStockText}>
+                              {variant.stock} left
+                            </Text>
+                          </View>
+                        )}
                     </TouchableOpacity>
                   );
                 })}
-            </View>
+            </ScrollView>
           </View>
 
           {/* Price Section */}
@@ -616,7 +667,7 @@ export default function ProductDetailScreen() {
                   {
                     scale: variantAnimation.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [1, 1.05],
+                      outputRange: [1, 1.03],
                     }),
                   },
                 ],
@@ -624,29 +675,37 @@ export default function ProductDetailScreen() {
             ]}
           >
             <View style={styles.priceRow}>
-              <Text style={styles.currentPrice}>
-                ₹{selectedVariant.price.toFixed(2)}
-              </Text>
-              {discount > 0 && (
-                <>
+              <View style={styles.priceLeft}>
+                <Text style={styles.currentPrice}>
+                  ₹{selectedVariant.price.toFixed(2)}
+                </Text>
+                {discount > 0 && (
                   <Text style={styles.originalPrice}>
                     ₹{selectedVariant.mrp.toFixed(2)}
                   </Text>
-                  <View style={styles.savingsBadge}>
-                    <Text style={styles.savingsText}>
-                      Save ₹{savings.toFixed(0)}
-                    </Text>
-                  </View>
-                </>
+                )}
+              </View>
+              {discount > 0 && (
+                <View style={styles.savingsBadge}>
+                  <Ionicons name="arrow-down" size={12} color="#C62828" />
+                  <Text style={styles.savingsText}>
+                    Save ₹{savings.toFixed(0)}
+                  </Text>
+                </View>
               )}
             </View>
             {selectedVariant.stock > 0 ? (
               <View style={styles.stockIndicator}>
                 <View style={styles.stockDot} />
-                <Text style={styles.stockText}>In Stock</Text>
+                <Text style={styles.stockText}>
+                  {selectedVariant.stock < selectedVariant.lowStockThreshold
+                    ? `Only ${selectedVariant.stock} left in stock`
+                    : "In Stock"}
+                </Text>
               </View>
             ) : (
               <View style={styles.outOfStockIndicator}>
+                <Ionicons name="close-circle" size={16} color="#F44336" />
                 <Text style={styles.outOfStockText}>Out of Stock</Text>
               </View>
             )}
@@ -665,10 +724,16 @@ export default function ProductDetailScreen() {
               {product.description.length > 100 && (
                 <TouchableOpacity
                   onPress={() => setShowFullDescription(!showFullDescription)}
+                  style={styles.readMoreBtn}
                 >
                   <Text style={styles.readMore}>
-                    {showFullDescription ? "Read less" : "Read more"}
+                    {showFullDescription ? "Show less" : "Read more"}
                   </Text>
+                  <Ionicons
+                    name={showFullDescription ? "chevron-up" : "chevron-down"}
+                    size={14}
+                    color="#2E7D32"
+                  />
                 </TouchableOpacity>
               )}
             </View>
@@ -680,41 +745,57 @@ export default function ProductDetailScreen() {
 
             {product.shelfLife && (
               <View style={styles.detailRow}>
-                <Ionicons name="time-outline" size={18} color="#666" />
-                <Text style={styles.detailLabel}>Shelf Life:</Text>
-                <Text style={styles.detailValue}>
-                  {product.shelfLife.value} {product.shelfLife.unit}
-                </Text>
+                <View style={styles.detailIconWrap}>
+                  <Ionicons name="time-outline" size={18} color="#2E7D32" />
+                </View>
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>Shelf Life</Text>
+                  <Text style={styles.detailValue}>
+                    {product.shelfLife.value} {product.shelfLife.unit}
+                  </Text>
+                </View>
               </View>
             )}
 
             {product.storageInstructions && (
               <View style={styles.detailRow}>
-                <Ionicons name="snow-outline" size={18} color="#666" />
-                <Text style={styles.detailLabel}>Storage:</Text>
-                <Text style={styles.detailValue} numberOfLines={2}>
-                  {product.storageInstructions}
-                </Text>
+                <View style={styles.detailIconWrap}>
+                  <Ionicons name="snow-outline" size={18} color="#2E7D32" />
+                </View>
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>Storage</Text>
+                  <Text style={styles.detailValue}>
+                    {product.storageInstructions}
+                  </Text>
+                </View>
               </View>
             )}
 
             <View style={styles.detailRow}>
-              <Ionicons name="business-outline" size={18} color="#666" />
-              <Text style={styles.detailLabel}>Seller:</Text>
-              <Text style={styles.detailValue}>
-                {product.seller.sellerName}
-              </Text>
+              <View style={styles.detailIconWrap}>
+                <Ionicons name="business-outline" size={18} color="#2E7D32" />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Seller</Text>
+                <Text style={styles.detailValue}>
+                  {product.seller.sellerName}
+                </Text>
+              </View>
             </View>
 
             {product.seller.location && (
               <View style={styles.detailRow}>
-                <Ionicons name="location-outline" size={18} color="#666" />
-                <Text style={styles.detailLabel}>Location:</Text>
-                <Text style={styles.detailValue}>
-                  {product.seller.location.city}
-                  {product.seller.location.area &&
-                    `, ${product.seller.location.area}`}
-                </Text>
+                <View style={styles.detailIconWrap}>
+                  <Ionicons name="location-outline" size={18} color="#2E7D32" />
+                </View>
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>Location</Text>
+                  <Text style={styles.detailValue}>
+                    {product.seller.location.city}
+                    {product.seller.location.area &&
+                      `, ${product.seller.location.area}`}
+                  </Text>
+                </View>
               </View>
             )}
           </View>
@@ -726,17 +807,18 @@ export default function ProductDetailScreen() {
               <View style={styles.tagsContainer}>
                 {product.tags.map((tag, index) => (
                   <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{tag}</Text>
+                    <Text style={styles.tagText}>#{tag}</Text>
                   </View>
                 ))}
               </View>
             </View>
           )}
 
+          {/* Similar Products */}
           {similarProducts.length > 0 && (
             <View style={styles.similarSection}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Similar Products</Text>
+                <Text style={styles.sectionTitle}>You may also like</Text>
                 <TouchableOpacity>
                   <Text style={styles.seeAll}>See all</Text>
                 </TouchableOpacity>
@@ -745,7 +827,11 @@ export default function ProductDetailScreen() {
               {similarLoading ? (
                 <ActivityIndicator color="#2E7D32" />
               ) : (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.similarScrollContent}
+                >
                   {similarProducts.map((item) => {
                     const variant =
                       item.variants.find((v) => v.isDefault) ||
@@ -780,9 +866,16 @@ export default function ProductDetailScreen() {
                           {variant.packUnit}
                         </Text>
 
-                        <Text style={styles.similarPrice}>
-                          ₹{variant.price}
-                        </Text>
+                        <View style={styles.similarPriceRow}>
+                          <Text style={styles.similarPrice}>
+                            ₹{variant.price}
+                          </Text>
+                          {variant.mrp > variant.price && (
+                            <Text style={styles.similarMRP}>
+                              ₹{variant.mrp}
+                            </Text>
+                          )}
+                        </View>
                       </TouchableOpacity>
                     );
                   })}
@@ -795,14 +888,15 @@ export default function ProductDetailScreen() {
           <View style={styles.reviewsSection}>
             <View style={styles.reviewsHeader}>
               <Text style={styles.sectionTitle}>
-                Ratings & Reviews ({product.reviewsCount})
+                Ratings & Reviews{" "}
+                {product.reviewsCount > 0 && `(${product.reviewsCount})`}
               </Text>
               <TouchableOpacity
                 style={styles.writeReviewBtn}
-                onPress={() => setShowReviewModal(true)}
+                onPress={handleWriteReview}
               >
-                <Ionicons name="create-outline" size={18} color="#2E7D32" />
-                <Text style={styles.writeReviewText}>Write Review</Text>
+                <Ionicons name="create-outline" size={18} color="#fff" />
+                <Text style={styles.writeReviewText}>Write</Text>
               </TouchableOpacity>
             </View>
 
@@ -816,7 +910,8 @@ export default function ProductDetailScreen() {
                     </Text>
                     {renderStarRating(Math.round(product.rating), 20)}
                     <Text style={styles.ratingTotal}>
-                      Based on {product.reviewsCount} reviews
+                      Based on {product.reviewsCount}{" "}
+                      {product.reviewsCount === 1 ? "review" : "reviews"}
                     </Text>
                   </View>
                   {renderRatingDistribution()}
@@ -839,7 +934,7 @@ export default function ProductDetailScreen() {
                                 {review.user.name.charAt(0).toUpperCase()}
                               </Text>
                             </View>
-                            <View>
+                            <View style={styles.reviewUserInfo}>
                               <View style={styles.reviewUserRow}>
                                 <Text style={styles.reviewUserName}>
                                   {review.user.name}
@@ -848,19 +943,21 @@ export default function ProductDetailScreen() {
                                   <View style={styles.verifiedBadge}>
                                     <Ionicons
                                       name="checkmark-circle"
-                                      size={14}
+                                      size={12}
                                       color="#4CAF50"
                                     />
-                                    <Text style={styles.verifiedText}>
-                                      Verified
-                                    </Text>
                                   </View>
                                 )}
                               </View>
                               <Text style={styles.reviewDate}>
-                                {new Date(
-                                  review.createdAt,
-                                ).toLocaleDateString()}
+                                {new Date(review.createdAt).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  },
+                                )}
                               </Text>
                             </View>
                           </View>
@@ -910,7 +1007,13 @@ export default function ProductDetailScreen() {
 
             {product.reviewsCount === 0 && (
               <View style={styles.noReviewsContainer}>
-                <Ionicons name="chatbubble-outline" size={48} color="#ccc" />
+                <View style={styles.noReviewsIcon}>
+                  <Ionicons
+                    name="chatbubble-outline"
+                    size={48}
+                    color="#2E7D32"
+                  />
+                </View>
                 <Text style={styles.noReviewsTitle}>No reviews yet</Text>
                 <Text style={styles.noReviewsSubtext}>
                   Be the first to review this product
@@ -952,22 +1055,38 @@ export default function ProductDetailScreen() {
             <TouchableOpacity
               style={styles.quantityButton}
               onPress={handleDecrement}
+              activeOpacity={0.7}
             >
               <Ionicons
                 name={cartItem.qty === 1 ? "trash-outline" : "remove"}
                 size={20}
-                color="#2E7D32"
+                color={cartItem.qty === 1 ? "#F44336" : "#2E7D32"}
               />
             </TouchableOpacity>
             <View style={styles.quantityDisplay}>
               <Text style={styles.quantityText}>{cartItem.qty}</Text>
+              <Text style={styles.quantityUnit}>
+                {selectedVariant.packSize}
+                {selectedVariant.packUnit}
+              </Text>
             </View>
             <TouchableOpacity
-              style={styles.quantityButton}
+              style={[
+                styles.quantityButton,
+                cartItem.qty >= selectedVariant.stock &&
+                  styles.quantityButtonDisabled,
+              ]}
               onPress={handleIncrement}
               disabled={cartItem.qty >= selectedVariant.stock}
+              activeOpacity={0.7}
             >
-              <Ionicons name="add" size={20} color="#2E7D32" />
+              <Ionicons
+                name="add"
+                size={20}
+                color={
+                  cartItem.qty >= selectedVariant.stock ? "#BDBDBD" : "#2E7D32"
+                }
+              />
             </TouchableOpacity>
           </View>
         )}
@@ -1002,10 +1121,38 @@ export default function ProductDetailScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Product Preview */}
+              <View style={styles.modalProductPreview}>
+                <Image
+                  source={{
+                    uri: product.image || "https://via.placeholder.com/60",
+                  }}
+                  style={styles.modalProductImage}
+                />
+                <View>
+                  <Text style={styles.modalProductName} numberOfLines={2}>
+                    {product.name}
+                  </Text>
+                  <Text style={styles.modalProductVariant}>
+                    {selectedVariant.packSize}
+                    {selectedVariant.packUnit}
+                  </Text>
+                </View>
+              </View>
+
               {/* Rating Selection */}
               <View style={styles.modalSection}>
                 <Text style={styles.modalLabel}>Your Rating *</Text>
-                {renderStarRating(userRating, 32, true, setUserRating)}
+                {renderStarRating(userRating, 36, true, setUserRating)}
+                {userRating > 0 && (
+                  <Text style={styles.ratingHint}>
+                    {userRating === 1 && "Poor"}
+                    {userRating === 2 && "Fair"}
+                    {userRating === 3 && "Good"}
+                    {userRating === 4 && "Very Good"}
+                    {userRating === 5 && "Excellent"}
+                  </Text>
+                )}
               </View>
 
               {/* Title Input */}
@@ -1014,6 +1161,7 @@ export default function ProductDetailScreen() {
                 <TextInput
                   style={styles.modalInput}
                   placeholder="Summarize your experience"
+                  placeholderTextColor="#999"
                   value={reviewTitle}
                   onChangeText={setReviewTitle}
                   maxLength={100}
@@ -1026,6 +1174,7 @@ export default function ProductDetailScreen() {
                 <TextInput
                   style={[styles.modalInput, styles.modalTextArea]}
                   placeholder="Share your thoughts about this product"
+                  placeholderTextColor="#999"
                   value={reviewComment}
                   onChangeText={setReviewComment}
                   multiline
@@ -1053,7 +1202,10 @@ export default function ProductDetailScreen() {
                 {submittingReview ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.submitReviewText}>Submit Review</Text>
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                    <Text style={styles.submitReviewText}>Submit Review</Text>
+                  </>
                 )}
               </TouchableOpacity>
             </ScrollView>
@@ -1074,6 +1226,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    gap: 12,
+  },
+
+  loadingText: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
   },
 
   errorContainer: {
@@ -1095,7 +1254,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 12,
     backgroundColor: "#2E7D32",
-    borderRadius: 8,
+    borderRadius: 12,
   },
 
   backButtonText: {
@@ -1104,7 +1263,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  /* Header - Fixed with proper padding */
+  /* Header */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1130,7 +1289,7 @@ const styles = StyleSheet.create({
 
   headerTitle: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
     color: "#1B5E20",
     marginHorizontal: 12,
@@ -1186,6 +1345,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    shadowColor: "#F44336",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   discountText: {
@@ -1205,6 +1372,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    shadowColor: "#2196F3",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   trendingText: {
@@ -1222,14 +1394,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 10,
   },
 
   brandBadge: {
     backgroundColor: "#E8F5E9",
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingVertical: 5,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
 
   brandText: {
@@ -1244,8 +1419,8 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: "#F5F5F5",
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
 
   categoryText: {
@@ -1258,23 +1433,24 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "800",
     color: "#1B1B1B",
-    marginBottom: 8,
+    marginBottom: 12,
     lineHeight: 32,
+    letterSpacing: -0.5,
   },
 
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
   },
 
   ratingContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFF9E6",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
     gap: 4,
   },
 
@@ -1288,18 +1464,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginLeft: 8,
+    marginRight: 4,
+  },
+
+  noReviewsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#F5F5F5",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
 
   noReviewsText: {
-    fontSize: 14,
-    color: "#999",
-    fontStyle: "italic",
+    fontSize: 13,
+    color: "#666",
+    fontWeight: "500",
   },
 
   /* Variant Section */
   variantSection: {
-    marginTop: 20,
-    marginBottom: 16,
+    marginBottom: 20,
   },
 
   sectionTitle: {
@@ -1307,19 +1493,19 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#1B1B1B",
     marginBottom: 12,
+    letterSpacing: -0.3,
   },
 
-  variantGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
+  variantScrollContent: {
+    paddingRight: 16,
   },
 
   variantCard: {
-    width: (width - 52) / 3,
+    minWidth: 100,
     backgroundColor: "#F9F9F9",
     borderRadius: 12,
-    padding: 12,
+    padding: 14,
+    marginRight: 10,
     borderWidth: 2,
     borderColor: "transparent",
     position: "relative",
@@ -1330,12 +1516,16 @@ const styles = StyleSheet.create({
     borderColor: "#2E7D32",
   },
 
+  variantCardDisabled: {
+    opacity: 0.5,
+  },
+
   variantInfo: {
     alignItems: "center",
   },
 
   variantSize: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: "#1B1B1B",
     marginBottom: 4,
@@ -1343,6 +1533,10 @@ const styles = StyleSheet.create({
 
   variantSizeSelected: {
     color: "#2E7D32",
+  },
+
+  variantDisabledText: {
+    color: "#999",
   },
 
   variantPrice: {
@@ -1364,24 +1558,39 @@ const styles = StyleSheet.create({
 
   selectedCheck: {
     position: "absolute",
-    top: 2,
-    right: 2,
-    width: 16,
-    height: 16,
-    borderRadius: 10,
+    top: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: "#2E7D32",
     justifyContent: "center",
     alignItems: "center",
   },
 
+  outOfStockOverlay: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "#F44336",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+
+  outOfStockOverlayText: {
+    fontSize: 9,
+    color: "#fff",
+    fontWeight: "700",
+  },
+
   lowStockBadge: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+    bottom: 4,
+    left: 4,
+    right: 4,
     backgroundColor: "#FFF3E0",
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    borderRadius: 6,
     paddingVertical: 3,
   },
 
@@ -1396,35 +1605,44 @@ const styles = StyleSheet.create({
   priceSection: {
     backgroundColor: "#F9F9F9",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 20,
   },
 
   priceRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
+  },
+
+  priceLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
 
   currentPrice: {
     fontSize: 28,
     fontWeight: "800",
     color: "#2E7D32",
+    letterSpacing: -0.5,
   },
 
   originalPrice: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#999",
     textDecorationLine: "line-through",
-    marginLeft: 12,
   },
 
   savingsBadge: {
     backgroundColor: "#FFEBEE",
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginLeft: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
 
   savingsText: {
@@ -1455,6 +1673,7 @@ const styles = StyleSheet.create({
   outOfStockIndicator: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 6,
   },
 
   outOfStockText: {
@@ -1474,39 +1693,60 @@ const styles = StyleSheet.create({
     color: "#666",
   },
 
+  readMoreBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 8,
+  },
+
   readMore: {
     fontSize: 14,
     fontWeight: "600",
     color: "#2E7D32",
-    marginTop: 8,
   },
 
   /* Details */
   detailsSection: {
     backgroundColor: "#F9F9F9",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 20,
   },
 
   detailRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: 14,
+    gap: 12,
+  },
+
+  detailIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E8F5E9",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  detailContent: {
+    flex: 1,
   },
 
   detailLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
-    color: "#666",
-    width: 80,
+    color: "#999",
+    marginBottom: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 
   detailValue: {
-    flex: 1,
     fontSize: 14,
     color: "#1B1B1B",
+    fontWeight: "500",
   },
 
   /* Tags */
@@ -1530,12 +1770,86 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     color: "#2E7D32",
-    fontWeight: "500",
+    fontWeight: "600",
+  },
+
+  /* Similar Products */
+  similarSection: {
+    marginBottom: 20,
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  seeAll: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2E7D32",
+  },
+
+  similarScrollContent: {
+    paddingRight: 16,
+  },
+
+  similarCard: {
+    width: 150,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 12,
+    marginRight: 12,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: "#F5F5F5",
+  },
+
+  similarImage: {
+    width: "100%",
+    height: 100,
+    resizeMode: "contain",
+    marginBottom: 10,
+  },
+
+  similarName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#222",
+    marginBottom: 4,
+  },
+
+  similarUnit: {
+    fontSize: 11,
+    color: "#999",
+    marginBottom: 6,
+  },
+
+  similarPriceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  similarPrice: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#2E7D32",
+  },
+
+  similarMRP: {
+    fontSize: 11,
+    color: "#999",
+    textDecorationLine: "line-through",
   },
 
   /* Reviews Section */
   reviewsSection: {
-    marginTop: 20,
     marginBottom: 20,
   },
 
@@ -1549,23 +1863,28 @@ const styles = StyleSheet.create({
   writeReviewBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#E8F5E9",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    gap: 6,
+    backgroundColor: "#2E7D32",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    shadowColor: "#2E7D32",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   writeReviewText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#2E7D32",
+    fontWeight: "700",
+    color: "#fff",
   },
 
   ratingSummary: {
     backgroundColor: "#F9F9F9",
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 14,
     marginBottom: 16,
   },
 
@@ -1579,6 +1898,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#1B1B1B",
     marginBottom: 8,
+    letterSpacing: -1,
   },
 
   ratingTotal: {
@@ -1593,13 +1913,13 @@ const styles = StyleSheet.create({
   },
 
   distributionContainer: {
-    gap: 8,
+    gap: 10,
   },
 
   distributionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
 
   distributionLabel: {
@@ -1611,20 +1931,22 @@ const styles = StyleSheet.create({
 
   distributionBar: {
     flex: 1,
-    height: 6,
+    height: 8,
     backgroundColor: "#E0E0E0",
-    borderRadius: 3,
+    borderRadius: 4,
     overflow: "hidden",
   },
 
   distributionFill: {
     height: "100%",
     backgroundColor: "#FFB800",
+    borderRadius: 4,
   },
 
   distributionCount: {
     fontSize: 12,
     color: "#666",
+    fontWeight: "600",
     width: 32,
     textAlign: "right",
   },
@@ -1636,7 +1958,7 @@ const styles = StyleSheet.create({
   reviewCard: {
     backgroundColor: "#F9F9F9",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
   },
 
   reviewHeader: {
@@ -1667,10 +1989,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
+  reviewUserInfo: {
+    flex: 1,
+  },
+
   reviewUserRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
 
   reviewUserName: {
@@ -1683,20 +2009,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
-    backgroundColor: "#E8F5E9",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-
-  verifiedText: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#4CAF50",
   },
 
   reviewDate: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#999",
     marginTop: 2,
   },
@@ -1739,8 +2055,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     backgroundColor: "#E8F5E9",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     marginTop: 8,
   },
 
@@ -1755,17 +2071,26 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
 
+  noReviewsIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#E8F5E9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
   noReviewsTitle: {
     fontSize: 16,
     fontWeight: "700",
     color: "#666",
-    marginTop: 16,
+    marginBottom: 6,
   },
 
   noReviewsSubtext: {
     fontSize: 14,
     color: "#999",
-    marginTop: 8,
   },
 
   /* Footer */
@@ -1784,7 +2109,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 8,
   },
 
@@ -1795,21 +2120,29 @@ const styles = StyleSheet.create({
   addButton: {
     backgroundColor: "#2E7D32",
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
+    shadowColor: "#2E7D32",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   addButtonDisabled: {
     backgroundColor: "#BDBDBD",
+    shadowOpacity: 0,
+    elevation: 0,
   },
 
   addButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
+    letterSpacing: 0.3,
   },
 
   quantityControls: {
@@ -1817,17 +2150,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#E8F5E9",
-    borderRadius: 12,
-    padding: 4,
+    borderRadius: 14,
+    padding: 6,
+    gap: 8,
   },
 
   quantityButton: {
     width: 44,
     height: 44,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
+  quantityButtonDisabled: {
+    opacity: 0.5,
   },
 
   quantityDisplay: {
@@ -1836,19 +2179,32 @@ const styles = StyleSheet.create({
   },
 
   quantityText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "800",
     color: "#2E7D32",
+    letterSpacing: -0.5,
+  },
+
+  quantityUnit: {
+    fontSize: 10,
+    color: "#666",
+    fontWeight: "600",
+    marginTop: 2,
   },
 
   cartButton: {
     width: 56,
     height: 56,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: "#E8F5E9",
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   cartBadge: {
@@ -1873,7 +2229,7 @@ const styles = StyleSheet.create({
   /* Review Modal */
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "flex-end",
   },
 
@@ -1881,7 +2237,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 20,
+    paddingTop: 24,
     paddingHorizontal: 20,
     paddingBottom: 40,
     maxHeight: "90%",
@@ -1891,24 +2247,61 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 20,
   },
 
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "800",
     color: "#1B1B1B",
+    letterSpacing: -0.5,
+  },
+
+  modalProductPreview: {
+    flexDirection: "row",
+    gap: 12,
+    backgroundColor: "#F9F9F9",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+
+  modalProductImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+
+  modalProductName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1B1B1B",
+    marginBottom: 4,
+    flex: 1,
+  },
+
+  modalProductVariant: {
+    fontSize: 12,
+    color: "#666",
   },
 
   modalSection: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
 
   modalLabel: {
     fontSize: 14,
     fontWeight: "700",
     color: "#1B1B1B",
-    marginBottom: 8,
+    marginBottom: 10,
+  },
+
+  ratingHint: {
+    fontSize: 13,
+    color: "#2E7D32",
+    fontWeight: "600",
+    marginTop: 8,
   },
 
   modalInput: {
@@ -1927,80 +2320,38 @@ const styles = StyleSheet.create({
   },
 
   charCount: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#999",
     textAlign: "right",
-    marginTop: 4,
+    marginTop: 6,
   },
 
   submitReviewBtn: {
     backgroundColor: "#2E7D32",
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
     marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: "#2E7D32",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   submitReviewBtnDisabled: {
     backgroundColor: "#BDBDBD",
+    shadowOpacity: 0,
+    elevation: 0,
   },
 
   submitReviewText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "700",
-  },
-
-  similarSection: {
-    marginTop: 24,
-  },
-
-  seeAll: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#2E7D32",
-  },
-
-  similarCard: {
-    width: 140,
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 12,
-    marginLeft: 14,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-  },
-
-  similarImage: {
-    width: "100%",
-    height: 80,
-    resizeMode: "contain",
-    marginBottom: 8,
-  },
-
-  similarName: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#222",
-  },
-
-  similarUnit: {
-    fontSize: 11,
-    color: "#777",
-    marginVertical: 4,
-  },
-
-  similarPrice: {
-    fontSize: 14,
     fontWeight: "800",
-    color: "#2E7D32",
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
+    letterSpacing: 0.3,
   },
 });
