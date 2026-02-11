@@ -81,7 +81,7 @@ type Product = {
 type Review = {
   _id: string;
   user: {
-    userId: string;
+    _id: string; // ✅ THIS IS WHAT MONGO RETURNS
     name: string;
     avatar?: string;
   };
@@ -108,6 +108,8 @@ export default function ProductDetailScreen() {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [similarLoading, setSimilarLoading] = useState(false);
+  const [existingReview, setExistingReview] = useState<Review | null>(null);
+  const [isEditingReview, setIsEditingReview] = useState(false);
 
   // Reviews
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -182,10 +184,25 @@ export default function ProductDetailScreen() {
   const loadReviews = async () => {
     try {
       setReviewsLoading(true);
+
       const res = await API.get(`/reviews/product/${id}`);
+
       if (res.data.success) {
-        setReviews(res.data.data);
-        setRatingDistribution(res.data.distribution);
+        const reviewList = res.data.data;
+        setReviews(reviewList);
+        setRatingDistribution(res.data.distribution || {});
+
+        if (user) {
+          const myReview = reviewList.find(
+            (r: Review) => r.user?._id === user._id || r.user?._id === user._id,
+          );
+
+          if (myReview) {
+            setExistingReview(myReview);
+          } else {
+            setExistingReview(null);
+          }
+        }
       }
     } catch (error) {
       console.error("Failed to load reviews:", error);
@@ -280,14 +297,24 @@ export default function ProductDetailScreen() {
       ]);
       return;
     }
+
+    if (existingReview) {
+      // EDIT MODE
+      setIsEditingReview(true);
+      setUserRating(existingReview.rating);
+      setReviewComment(existingReview.comment);
+    } else {
+      // CREATE MODE
+      setIsEditingReview(false);
+      setUserRating(0);
+      setReviewComment("");
+    }
+
     setShowReviewModal(true);
   };
 
   const handleSubmitReview = async () => {
-    if (!user) {
-      Alert.alert("Login Required", "Please log in to submit a review");
-      return;
-    }
+    if (!user) return;
 
     if (userRating === 0) {
       Alert.alert("Rating Required", "Please select a rating");
@@ -302,25 +329,32 @@ export default function ProductDetailScreen() {
     try {
       setSubmittingReview(true);
 
-      await API.post("/reviews", {
-        product: product?._id,
-        user: {
+      if (isEditingReview && existingReview) {
+        // ✅ UPDATE REVIEW
+        await API.put(`/reviews/${existingReview._id}`, {
           userId: user._id,
-          name: user.name || user.phone,
-        },
-        rating: userRating,
-        title: reviewTitle.trim() || undefined,
-        comment: reviewComment.trim(),
-        verified: false,
-      });
+          rating: userRating,
+          comment: reviewComment.trim(),
+        });
 
-      Alert.alert("Success", "Review submitted successfully!");
+        Alert.alert("Success", "Review updated successfully!");
+      } else {
+        // ✅ CREATE REVIEW
+        await API.post("/reviews", {
+          userId: user._id,
+          productId: product?._id,
+          rating: userRating,
+          comment: reviewComment.trim(),
+        });
+
+        Alert.alert("Success", "Review submitted successfully!");
+      }
+
       setShowReviewModal(false);
       setUserRating(0);
-      setReviewTitle("");
       setReviewComment("");
+      setIsEditingReview(false);
 
-      // Reload reviews and product
       loadReviews();
       loadProduct();
     } catch (error: any) {
@@ -1114,7 +1148,9 @@ export default function ProductDetailScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Write a Review</Text>
+              <Text style={styles.submitReviewText}>
+                {isEditingReview ? "Update Review" : "Submit Review"}
+              </Text>
               <TouchableOpacity onPress={() => setShowReviewModal(false)}>
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
