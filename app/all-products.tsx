@@ -67,7 +67,7 @@ const getDefaultVariant = (product: Product): ProductVariant => {
 
 export default function AllProductsScreen() {
   const params = useLocalSearchParams();
-  const { type, title, categoryId } = params; // type: "popular", "deals", "trending", "featured"
+  const { type, title, categoryId } = params;
   const { items, addToCart } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -78,10 +78,58 @@ export default function AllProductsScreen() {
 
   // Animation refs
   const searchFocusAnim = useRef(new Animated.Value(0)).current;
+  const headerAnim = useRef(new Animated.Value(0)).current;
+  const logoRotate = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    // Header entrance animation
+    Animated.spring(headerAnim, {
+      toValue: 1,
+      tension: 50,
+      friction: 7,
+      useNativeDriver: true,
+    }).start();
+
     loadProducts();
   }, [type, categoryId]);
+
+  useEffect(() => {
+    // Logo loading animation
+    if (loading) {
+      Animated.loop(
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(logoRotate, {
+              toValue: 1,
+              duration: 2000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(logoRotate, {
+              toValue: 0,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(logoScale, {
+              toValue: 1.1,
+              duration: 1000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(logoScale, {
+              toValue: 1,
+              duration: 1000,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+      ).start();
+    } else {
+      logoRotate.setValue(0);
+      logoScale.setValue(1);
+    }
+  }, [loading]);
 
   const loadProducts = async () => {
     try {
@@ -90,14 +138,11 @@ export default function AllProductsScreen() {
       const allProducts = res.data.data || res.data || [];
       let filtered = [...allProducts];
 
-      // Filter based on type
       if (type === "deals" || type === "bestDeal") {
-        // Products marked as best deals
         const markedDeals = filtered.filter((p) => p.bestDeal === true);
         if (markedDeals.length > 0) {
           filtered = markedDeals;
         } else {
-          // Fallback to high discount products
           filtered = filtered.filter((p) => p.discount && p.discount >= 15);
         }
       } else if (type === "trending") {
@@ -105,11 +150,9 @@ export default function AllProductsScreen() {
       } else if (type === "featured") {
         filtered = filtered.filter((p) => p.featured === true);
       } else if (categoryId) {
-        // Filter by category
         filtered = filtered.filter((p) => p.category._id === categoryId);
       }
 
-      // Fallback to all products if no results
       if (filtered.length === 0 && type !== "category") {
         filtered = allProducts;
       }
@@ -129,9 +172,9 @@ export default function AllProductsScreen() {
     const variant = getDefaultVariant(product);
 
     addToCart({
-      id: `${product._id}_${variant._id}`, // ✅ UNIQUE PER VARIANT
-      productId: product._id, // ✅ REQUIRED
-      variantId: variant._id, // ✅ REQUIRED
+      id: `${product._id}_${variant._id}`,
+      productId: product._id,
+      variantId: variant._id,
       name: product.name,
       variantLabel: `${variant.packSize}${variant.packUnit}`,
       price: variant.price,
@@ -139,7 +182,6 @@ export default function AllProductsScreen() {
     });
   };
 
-  // Filter and sort products
   const getFilteredAndSortedProducts = () => {
     let filtered = products.filter(
       (p) =>
@@ -148,7 +190,6 @@ export default function AllProductsScreen() {
         p.brand?.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
-    // Apply sorting
     switch (sortBy) {
       case "price-low":
         filtered.sort((a, b) => {
@@ -171,7 +212,6 @@ export default function AllProductsScreen() {
         filtered.sort((a, b) => b.rating - a.rating);
         break;
       default:
-        // Keep default order (can be by createdAt or featured status)
         break;
     }
 
@@ -181,16 +221,35 @@ export default function AllProductsScreen() {
   const displayProducts = getFilteredAndSortedProducts();
 
   const sortOptions = [
-    { value: "default", label: "Relevance" },
-    { value: "price-low", label: "Price: Low to High" },
-    { value: "price-high", label: "Price: High to Low" },
-    { value: "name", label: "Name: A to Z" },
-    { value: "rating", label: "Rating: High to Low" },
+    { value: "default", label: "Relevance", icon: "sparkles-outline" },
+    { value: "price-low", label: "Price: Low to High", icon: "arrow-up" },
+    { value: "price-high", label: "Price: High to Low", icon: "arrow-down" },
+    { value: "name", label: "Name: A to Z", icon: "text-outline" },
+    { value: "rating", label: "Rating: High to Low", icon: "star" },
   ];
 
-  const ProductCard = ({ item }: { item: Product }) => {
-    const scaleAnim = useRef(new Animated.Value(1)).current;
+  const ProductCard = ({ item, index }: { item: Product; index: number }) => {
+    const scaleAnim = useRef(new Animated.Value(0)).current;
+    const fadeAnim = useRef(new Animated.Value(0)).current;
     const [isAdding, setIsAdding] = useState(false);
+
+    useEffect(() => {
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          delay: index * 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 400,
+          delay: index * 50,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, []);
 
     const variant = getDefaultVariant(item);
     const price = variant.price;
@@ -205,7 +264,7 @@ export default function AllProductsScreen() {
 
       Animated.sequence([
         Animated.timing(scaleAnim, {
-          toValue: 0.95,
+          toValue: 0.92,
           duration: 100,
           useNativeDriver: true,
         }),
@@ -219,14 +278,18 @@ export default function AllProductsScreen() {
         setIsAdding(false);
       });
 
-      console.log("Ite,", item);
-
       handleAddToCart(item);
     };
 
     return (
       <Animated.View
-        style={[styles.card, { transform: [{ scale: scaleAnim }] }]}
+        style={[
+          styles.card,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
       >
         <TouchableOpacity
           activeOpacity={0.9}
@@ -237,94 +300,136 @@ export default function AllProductsScreen() {
             })
           }
         >
-          {/* Badges */}
-          {item.trending && (
-            <View style={styles.trendingBadge}>
-              <Ionicons name="trending-up" size={10} color="#fff" />
-              <Text style={styles.trendingText}>HOT</Text>
-            </View>
-          )}
+          {/* Badges Container - Right Top */}
+          <View style={styles.badgesContainer}>
+            {discount > 0 && (
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>{discount}%</Text>
+                <Text style={styles.discountSubtext}>OFF</Text>
+              </View>
+            )}
+          </View>
 
-          {!item.trending && discount > 0 && (
-            <View style={styles.discountBadge}>
-              <Text style={styles.discountText}>{discount}% OFF</Text>
-            </View>
-          )}
+          {/* Additional Badges - Left Side */}
+          <View style={styles.leftBadgesContainer}>
+            {item.trending && (
+              <View style={styles.trendingBadge}>
+                <Ionicons name="flame" size={12} color="#fff" />
+                <Text style={styles.badgeLabel}>HOT</Text>
+              </View>
+            )}
+            {item.featured && (
+              <View style={styles.featuredBadge}>
+                <Ionicons name="star" size={12} color="#FFD700" />
+                <Text style={styles.badgeLabel}>FEATURED</Text>
+              </View>
+            )}
+          </View>
 
-          {item.featured && (
-            <View style={styles.featuredBadge}>
-              <Ionicons name="star" size={10} color="#FFD700" />
-            </View>
-          )}
-
-          {/* Image */}
-          <Image
-            source={{
-              uri: item.image || "https://via.placeholder.com/150",
-            }}
-            style={styles.image}
-          />
-
-          {/* Brand */}
-          {item.brand && (
-            <Text style={styles.brand} numberOfLines={1}>
-              {item.brand}
-            </Text>
-          )}
-
-          {/* Product Name */}
-          <Text numberOfLines={2} style={styles.name}>
-            {item.name}
-          </Text>
-
-          {/* Variant Size */}
-          <Text style={styles.unit}>
-            {variant.packSize}
-            {variant.packUnit}
-          </Text>
-
-          {/* Rating */}
-          {item.rating > 0 && (
-            <View style={styles.ratingContainer}>
-              <Ionicons name="star" size={12} color="#FFB800" />
-              <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
-            </View>
-          )}
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <View style={styles.priceColumn}>
-              <Text style={styles.price}>₹{price.toFixed(2)}</Text>
-              {discount > 0 && (
-                <Text style={styles.originalPrice}>₹{mrp.toFixed(2)}</Text>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.addBtn,
-                inCart && styles.addBtnActive,
-                isAdding && styles.addBtnAdding,
-              ]}
-              onPress={(e) => {
-                e.stopPropagation();
-
-                if (inCart) return; // ✅ BLOCK re-adding
-
-                handlePress();
+          {/* Image Container */}
+          <View style={styles.imageContainer}>
+            <Image
+              source={{
+                uri: item.image || "https://via.placeholder.com/150",
               }}
-              disabled={isAdding || variant.stock === 0}
-            >
-              {isAdding ? (
-                <ActivityIndicator size="small" color="#2E7D32" />
-              ) : inCart ? (
-                <Ionicons name="checkmark" size={16} color="#fff" />
-              ) : (
-                <Text style={[styles.addText, inCart && styles.addTextActive]}>
-                  {variant.stock === 0 ? "OUT" : "ADD"}
+              style={styles.image}
+            />
+          </View>
+
+          {/* Content */}
+          <View style={styles.cardContent}>
+            {/* Brand */}
+            {item.brand && (
+              <Text style={styles.brand} numberOfLines={1}>
+                {item.brand}
+              </Text>
+            )}
+
+            {/* Product Name */}
+            <Text numberOfLines={2} style={styles.name}>
+              {item.name}
+            </Text>
+
+            {/* Variant Size */}
+            <View style={styles.variantContainer}>
+              <View style={styles.variantBadge}>
+                <Text style={styles.variantText}>
+                  {variant.packSize}
+                  {variant.packUnit}
                 </Text>
+              </View>
+            </View>
+
+            {/* Rating */}
+            {item.rating > 0 && (
+              <View style={styles.ratingContainer}>
+                <Ionicons name="star" size={14} color="#FFB800" />
+                <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+                <Text style={styles.reviewsText}>
+                  ({item.reviewsCount || 0})
+                </Text>
+              </View>
+            )}
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <View style={styles.priceColumn}>
+                <Text style={styles.price}>₹{price.toFixed(2)}</Text>
+                {discount > 0 && (
+                  <Text style={styles.originalPrice}>₹{mrp.toFixed(2)}</Text>
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.addBtn,
+                  inCart && styles.addBtnActive,
+                  isAdding && styles.addBtnAdding,
+                  variant.stock === 0 && styles.addBtnDisabled,
+                ]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  if (inCart || variant.stock === 0) return;
+                  handlePress();
+                }}
+                disabled={isAdding || variant.stock === 0}
+              >
+                {isAdding ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : inCart ? (
+                  <>
+                    <Ionicons name="checkmark-circle" size={16} color="#fff" />
+                    <Text style={styles.addTextActive}>ADDED</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons
+                      name={variant.stock === 0 ? "close-circle" : "add-circle"}
+                      size={16}
+                      color={variant.stock === 0 ? "#999" : "#2E7D32"}
+                    />
+                    <Text
+                      style={[
+                        styles.addText,
+                        variant.stock === 0 && styles.addTextDisabled,
+                      ]}
+                    >
+                      {variant.stock === 0 ? "OUT" : "ADD"}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Stock Indicator */}
+            {variant.stock > 0 &&
+              variant.stock <= variant.lowStockThreshold && (
+                <View style={styles.stockWarning}>
+                  <Text style={styles.stockWarningText}>
+                    Only {variant.stock} left!
+                  </Text>
+                </View>
               )}
-            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -334,15 +439,47 @@ export default function AllProductsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       {/* HEADER */}
-      <View style={styles.header}>
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            opacity: headerAnim,
+            transform: [
+              {
+                translateY: headerAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-50, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+          <View style={styles.iconButton}>
+            <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+          </View>
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {title || "Products"}
-        </Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {title || "Products"}
+          </Text>
+          {type && (
+            <View style={styles.headerTypeBadge}>
+              <Text style={styles.headerTypeBadgeText}>
+                {type === "deals"
+                  ? "Best Deals"
+                  : type === "trending"
+                    ? "Trending"
+                    : type === "featured"
+                      ? "Featured"
+                      : "All Products"}
+              </Text>
+            </View>
+          )}
+        </View>
         <TouchableOpacity onPress={() => router.push("/cart")}>
-          <View style={styles.cartIcon}>
+          <View style={styles.iconButton}>
             <Ionicons name="cart-outline" size={24} color="#1B5E20" />
             {items.length > 0 && (
               <View style={styles.badge}>
@@ -351,7 +488,7 @@ export default function AllProductsScreen() {
             )}
           </View>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* SEARCH */}
       <Animated.View
@@ -362,16 +499,17 @@ export default function AllProductsScreen() {
               {
                 scale: searchFocusAnim.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [1, 1.01],
+                  outputRange: [1, 1.02],
                 }),
               },
             ],
           },
         ]}
       >
-        <Ionicons name="search" size={18} color="#777" />
+        <Ionicons name="search" size={20} color="#2E7D32" />
         <TextInput
-          placeholder="Search products"
+          placeholder="Search products, brands..."
+          placeholderTextColor="#999"
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -390,7 +528,7 @@ export default function AllProductsScreen() {
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={18} color="#999" />
+            <Ionicons name="close-circle" size={20} color="#999" />
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -398,55 +536,72 @@ export default function AllProductsScreen() {
       {/* FILTER & SORT BAR */}
       <View style={styles.filterBar}>
         <View style={styles.resultCountContainer}>
+          <Ionicons name="grid-outline" size={16} color="#2E7D32" />
           <Text style={styles.resultCount}>
             {displayProducts.length}{" "}
             {displayProducts.length === 1 ? "product" : "products"}
           </Text>
-          {type && (
-            <View style={styles.typeBadge}>
-              <Text style={styles.typeBadgeText}>
-                {type === "deals"
-                  ? "🔥"
-                  : type === "trending"
-                    ? "📈"
-                    : type === "featured"
-                      ? "⭐"
-                      : "🛒"}
-              </Text>
-            </View>
-          )}
         </View>
         <TouchableOpacity
           style={styles.sortBtn}
           onPress={() => setShowSortModal(!showSortModal)}
         >
-          <Ionicons name="swap-vertical" size={18} color="#2E7D32" />
-          <Text style={styles.sortText}>Sort</Text>
+          <Ionicons
+            name={showSortModal ? "funnel" : "funnel-outline"}
+            size={18}
+            color="#2E7D32"
+          />
+          <Text style={styles.sortText}>
+            {sortOptions.find((o) => o.value === sortBy)?.label || "Sort"}
+          </Text>
+          <Ionicons
+            name={showSortModal ? "chevron-up" : "chevron-down"}
+            size={16}
+            color="#2E7D32"
+          />
         </TouchableOpacity>
       </View>
 
       {/* SORT OPTIONS MODAL */}
       {showSortModal && (
         <Animated.View style={styles.sortModal}>
-          {sortOptions.map((option) => (
+          <View style={styles.sortModalHeader}>
+            <Text style={styles.sortModalTitle}>Sort By</Text>
+            <TouchableOpacity onPress={() => setShowSortModal(false)}>
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+          {sortOptions.map((option, index) => (
             <TouchableOpacity
               key={option.value}
-              style={styles.sortOption}
+              style={[
+                styles.sortOption,
+                index === sortOptions.length - 1 && styles.sortOptionLast,
+              ]}
               onPress={() => {
                 setSortBy(option.value as SortOption);
                 setShowSortModal(false);
               }}
             >
-              <Text
-                style={[
-                  styles.sortOptionText,
-                  sortBy === option.value && styles.sortOptionActive,
-                ]}
-              >
-                {option.label}
-              </Text>
+              <View style={styles.sortOptionLeft}>
+                <Ionicons
+                  name={option.icon as any}
+                  size={20}
+                  color={sortBy === option.value ? "#2E7D32" : "#999"}
+                />
+                <Text
+                  style={[
+                    styles.sortOptionText,
+                    sortBy === option.value && styles.sortOptionActive,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </View>
               {sortBy === option.value && (
-                <Ionicons name="checkmark" size={20} color="#2E7D32" />
+                <View style={styles.checkmarkContainer}>
+                  <Ionicons name="checkmark-circle" size={22} color="#2E7D32" />
+                </View>
               )}
             </TouchableOpacity>
           ))}
@@ -456,8 +611,31 @@ export default function AllProductsScreen() {
       {/* PRODUCTS LIST */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2E7D32" />
-          <Text style={styles.loadingText}>Loading products...</Text>
+          {/* Replace with your logo image */}
+          <Animated.View
+            style={{
+              transform: [
+                {
+                  rotate: logoRotate.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["0deg", "360deg"],
+                  }),
+                },
+                { scale: logoScale },
+              ],
+            }}
+          >
+            <Image
+              source={require("../assets/images/VADI.png")} // Replace with your logo path
+              style={styles.loadingLogo}
+            />
+          </Animated.View>
+          <Text style={styles.loadingText}>Loading fresh products...</Text>
+          <ActivityIndicator
+            size="small"
+            color="#2E7D32"
+            style={{ marginTop: 8 }}
+          />
         </View>
       ) : displayProducts.length > 0 ? (
         <FlatList
@@ -467,15 +645,19 @@ export default function AllProductsScreen() {
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => <ProductCard item={item} />}
+          renderItem={({ item, index }) => (
+            <ProductCard item={item} index={index} />
+          )}
         />
       ) : (
         <View style={styles.emptyState}>
-          <Ionicons name="search-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyText}>No products found</Text>
+          <View style={styles.emptyIconContainer}>
+            <Ionicons name="search-outline" size={80} color="#E0E0E0" />
+          </View>
+          <Text style={styles.emptyText}>No Products Found</Text>
           <Text style={styles.emptySubtext}>
             {searchQuery
-              ? "Try adjusting your search"
+              ? `No results for "${searchQuery}"`
               : "No products available in this category"}
           </Text>
           {searchQuery && (
@@ -483,6 +665,7 @@ export default function AllProductsScreen() {
               style={styles.clearSearchBtn}
               onPress={() => setSearchQuery("")}
             >
+              <Ionicons name="refresh" size={18} color="#fff" />
               <Text style={styles.clearSearchText}>Clear Search</Text>
             </TouchableOpacity>
           )}
@@ -495,7 +678,7 @@ export default function AllProductsScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F8FAF5",
   },
 
   /* HEADER */
@@ -503,48 +686,77 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: "#E8F5E9",
+    elevation: 4,
+    shadowColor: "#1B5E20",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
   },
 
-  backBtn: {
-    padding: 4,
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F1F8F4",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
   },
 
-  headerTitle: {
+  backBtn: {},
+
+  headerTitleContainer: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#1B5E20",
-    textAlign: "center",
+    alignItems: "center",
     marginHorizontal: 12,
   },
 
-  cartIcon: {
-    position: "relative",
-    padding: 4,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1B5E20",
+    letterSpacing: 0.3,
+  },
+
+  headerTypeBadge: {
+    marginTop: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: "#E8F5E9",
+    borderRadius: 10,
+  },
+
+  headerTypeBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#2E7D32",
+    textTransform: "uppercase",
   },
 
   badge: {
     position: "absolute",
-    top: 0,
-    right: 0,
-    backgroundColor: "#2E7D32",
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
+    top: -2,
+    right: -2,
+    backgroundColor: "#F44336",
+    borderRadius: 12,
+    minWidth: 22,
+    height: 22,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
+    borderWidth: 2,
+    borderColor: "#fff",
   },
 
   badgeText: {
     color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "800",
   },
 
   /* SEARCH */
@@ -552,23 +764,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginHorizontal: 14,
-    marginTop: 12,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginHorizontal: 16,
+    marginTop: 14,
     marginBottom: 12,
     elevation: 3,
-    shadowColor: "#000",
+    shadowColor: "#1B5E20",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: "#E8F5E9",
   },
 
   searchInput: {
-    marginLeft: 8,
+    marginLeft: 10,
     fontSize: 15,
     flex: 1,
+    color: "#333",
+    fontWeight: "500",
   },
 
   /* FILTER BAR */
@@ -576,12 +792,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: "#fff",
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -597,19 +813,8 @@ const styles = StyleSheet.create({
 
   resultCount: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#666",
-  },
-
-  typeBadge: {
-    backgroundColor: "#E8F5E9",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-
-  typeBadgeText: {
-    fontSize: 14,
+    fontWeight: "700",
+    color: "#2E7D32",
   },
 
   sortBtn: {
@@ -617,49 +822,84 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     backgroundColor: "#E8F5E9",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
   },
 
   sortText: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
     color: "#2E7D32",
   },
 
   /* SORT MODAL */
   sortModal: {
     backgroundColor: "#fff",
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 12,
-    elevation: 6,
+    borderRadius: 16,
+    elevation: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 6,
+    shadowRadius: 8,
     overflow: "hidden",
+  },
+
+  sortModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+    backgroundColor: "#FAFAFA",
+  },
+
+  sortModalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#333",
   },
 
   sortOption: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#F5F5F5",
+  },
+
+  sortOptionLast: {
+    borderBottomWidth: 0,
+  },
+
+  sortOptionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
 
   sortOptionText: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#666",
+    fontWeight: "500",
   },
 
   sortOptionActive: {
     color: "#2E7D32",
     fontWeight: "700",
+  },
+
+  checkmarkContainer: {
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   /* PRODUCTS */
@@ -669,14 +909,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  loadingLogo: {
+    width: 100,
+    height: 100,
+    resizeMode: "contain",
+  },
+
   loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: "#666",
+    marginTop: 20,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2E7D32",
   },
 
   list: {
-    padding: 14,
+    padding: 16,
     paddingBottom: 24,
   },
 
@@ -687,117 +934,175 @@ const styles = StyleSheet.create({
   /* PRODUCT CARD */
   card: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 18,
     width: "48%",
-    marginBottom: 14,
-    elevation: 3,
+    marginBottom: 16,
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    position: "relative",
+    shadowRadius: 6,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+  },
+
+  badgesContainer: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    zIndex: 10,
+    gap: 6,
+  },
+
+  leftBadgesContainer: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    zIndex: 10,
+    gap: 6,
   },
 
   trendingBadge: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    backgroundColor: "#2196F3",
-    borderTopLeftRadius: 16,
-    borderBottomRightRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    zIndex: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    gap: 4,
+    backgroundColor: "#FF5722",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: "#FF5722",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
   },
 
-  trendingText: {
+  featuredBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#1976D2",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: "#1976D2",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+
+  badgeLabel: {
     color: "#fff",
     fontSize: 9,
-    fontWeight: "700",
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
 
   discountBadge: {
-    position: "absolute",
-    top: 0,
-    right: 0,
     backgroundColor: "#F44336",
-    borderTopRightRadius: 16,
-    borderBottomLeftRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    zIndex: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#F44336",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    minWidth: 52,
   },
 
   discountText: {
     color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "900",
+    letterSpacing: 0.3,
   },
 
-  featuredBadge: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    backgroundColor: "rgba(255, 215, 0, 0.2)",
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: "center",
+  discountSubtext: {
+    color: "#fff",
+    fontSize: 8,
+    fontWeight: "700",
+    marginTop: -2,
+  },
+
+  imageContainer: {
+    backgroundColor: "#FAFAFA",
+    padding: 12,
     alignItems: "center",
-    zIndex: 9,
   },
 
   image: {
     width: "100%",
-    height: 100,
+    height: 110,
     resizeMode: "contain",
-    marginBottom: 8,
-    marginTop: 0,
+  },
+
+  cardContent: {
+    padding: 12,
   },
 
   brand: {
     fontSize: 11,
     color: "#999",
-    fontWeight: "500",
-    marginBottom: 2,
+    fontWeight: "600",
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 
   name: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#222",
-    minHeight: 36,
+    minHeight: 38,
+    lineHeight: 19,
   },
 
-  unit: {
+  variantContainer: {
+    marginVertical: 6,
+  },
+
+  variantBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+
+  variantText: {
     fontSize: 12,
-    color: "#777",
-    marginVertical: 4,
+    color: "#2E7D32",
+    fontWeight: "700",
   },
 
   ratingContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    marginBottom: 6,
+    gap: 4,
+    marginBottom: 8,
   },
 
   ratingText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#333",
+  },
+
+  reviewsText: {
     fontSize: 11,
-    fontWeight: "600",
-    color: "#1B1B1B",
+    color: "#999",
+    fontWeight: "500",
   },
 
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 6,
+    marginTop: 4,
   },
 
   priceColumn: {
@@ -805,44 +1110,77 @@ const styles = StyleSheet.create({
   },
 
   price: {
-    fontSize: 16,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: "900",
     color: "#2E7D32",
   },
 
   originalPrice: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#999",
     textDecorationLine: "line-through",
     marginTop: 2,
+    fontWeight: "500",
   },
 
   addBtn: {
-    borderWidth: 1.5,
-    borderColor: "#2E7D32",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    minWidth: 60,
+    flexDirection: "row",
     alignItems: "center",
+    gap: 4,
+    borderWidth: 2,
+    borderColor: "#2E7D32",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    minWidth: 50,
+    justifyContent: "center",
   },
 
   addBtnActive: {
     backgroundColor: "#2E7D32",
+    borderColor: "#2E7D32",
   },
 
   addBtnAdding: {
     opacity: 0.7,
   },
 
+  addBtnDisabled: {
+    borderColor: "#CCC",
+    backgroundColor: "#F5F5F5",
+  },
+
   addText: {
     color: "#2E7D32",
-    fontWeight: "700",
-    fontSize: 12,
+    fontWeight: "800",
+    fontSize: 10,
+    letterSpacing: 0.1,
   },
 
   addTextActive: {
     color: "#fff",
+    fontWeight: "800",
+    fontSize: 11,
+  },
+
+  addTextDisabled: {
+    color: "#999",
+  },
+
+  stockWarning: {
+    marginTop: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: "#FFF3E0",
+    borderRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: "#FF9800",
+  },
+
+  stockWarningText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#E65100",
   },
 
   /* EMPTY STATE */
@@ -853,31 +1191,51 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
+  emptyIconContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "#F5F5F5",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
   emptyText: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "800",
     color: "#666",
-    marginTop: 16,
+    marginTop: 8,
   },
 
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#999",
     marginTop: 8,
     textAlign: "center",
+    fontWeight: "500",
   },
 
   clearSearchBtn: {
-    marginTop: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 24,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
     backgroundColor: "#2E7D32",
-    borderRadius: 8,
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: "#2E7D32",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 
   clearSearchText: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
 });

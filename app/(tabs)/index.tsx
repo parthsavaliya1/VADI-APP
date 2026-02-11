@@ -886,6 +886,11 @@ export default function HomeScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               keyExtractor={(item) => item._id}
+              contentContainerStyle={{
+                paddingVertical: 12, // 👈 VERY IMPORTANT
+                paddingRight: 12,
+              }}
+              style={{ overflow: "visible" }}
               renderItem={({ item }) => {
                 const variant = getDefaultVariant(item);
                 return (
