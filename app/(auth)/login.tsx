@@ -327,7 +327,7 @@ export default function EnhancedLoginScreen() {
                 </View>
 
                 {/* Social Login Buttons */}
-                <View style={styles.socialContainer}>
+                {/* <View style={styles.socialContainer}>
                   <TouchableOpacity
                     style={styles.socialButton}
                     activeOpacity={0.8}
@@ -367,7 +367,7 @@ export default function EnhancedLoginScreen() {
                       />
                     </LinearGradient>
                   </TouchableOpacity>
-                </View>
+                </View> */}
 
                 {/* Signup Link */}
                 <TouchableOpacity
