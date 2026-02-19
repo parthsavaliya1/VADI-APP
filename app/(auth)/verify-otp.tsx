@@ -31,7 +31,6 @@ export default function VerifyOtpScreen() {
           params.phone,
           otp,
           params.name,
-          params.password,
           params.role || "user",
         );
       } else {
@@ -65,7 +64,7 @@ export default function VerifyOtpScreen() {
             value={otp}
             onChangeText={setOtp}
             maxLength={6}
-            style={styles.input}
+            style={[styles.input, otp.length > 0 && { letterSpacing: 8 }]}
           />
 
           <TouchableOpacity
@@ -112,10 +111,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
     fontSize: 18,
-    letterSpacing: 8,
     textAlign: "center",
     marginBottom: 20,
   },
+
   cta: {
     backgroundColor: "#2E7D32",
     paddingVertical: 16,

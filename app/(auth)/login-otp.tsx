@@ -28,7 +28,7 @@ export default function LoginOtpScreen() {
       setLoading(true);
 
       // 🔐 FIREBASE OTP SEND
-      await sendOtp(normalizedPhone);
+      await sendOtp(normalizedPhone, "login");
 
       // ➡️ GO TO VERIFY OTP
       router.push({
@@ -79,10 +79,6 @@ export default function LoginOtpScreen() {
             <Text style={styles.ctaText}>
               {loading ? "Sending..." : "Send OTP"}
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
-            <Text style={styles.link}>Login with password instead</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

@@ -26,10 +26,8 @@ export default function EnhancedSignupScreen() {
   const { sendOtp } = useAuth();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<"user" | "admin">("user");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -43,26 +41,10 @@ export default function EnhancedSignupScreen() {
   ]).current;
 
   const normalizedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
-  const isAdminNumber = normalizedPhone === "+919909049699";
 
   const isFormValid = useMemo(() => {
-    return name.length >= 2 && phone.length >= 10 && password.length >= 6;
-  }, [name, phone, password]);
-
-  const passwordStrength =
-    password.length === 0
-      ? ""
-      : password.length < 6
-        ? "Weak"
-        : password.length < 9
-          ? "Good"
-          : "Strong";
-
-  const getPasswordColor = () => {
-    if (passwordStrength === "Weak") return "#FF5252";
-    if (passwordStrength === "Good") return "#FFA726";
-    return "#4CAF50";
-  };
+    return name.length >= 2 && phone.length >= 10;
+  }, [name, phone]);
 
   // Entrance animations
   useEffect(() => {
@@ -120,7 +102,7 @@ export default function EnhancedSignupScreen() {
 
     try {
       setLoading(true);
-      await sendOtp(normalizedPhone);
+      await sendOtp(normalizedPhone, "signup");
 
       router.push({
         pathname: "/(auth)/verify-otp",
@@ -128,12 +110,14 @@ export default function EnhancedSignupScreen() {
           mode: "signup",
           phone: normalizedPhone,
           name,
-          password,
-          role: isAdminNumber ? role : "user",
+          role: "user",
         },
       });
-    } catch (err) {
-      console.log("❌ OTP send failed", err);
+    } catch (err: any) {
+      const message =
+        err?.message || err?.response?.data?.error || "Something went wrong";
+
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -261,123 +245,6 @@ export default function EnhancedSignupScreen() {
                     )}
                   </View>
                 </Animated.View>
-
-                {/* Password Input */}
-                <Animated.View
-                  style={[
-                    styles.inputWrapper,
-                    { transform: [{ scale: inputScaleAnims[2] }] },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.inputContainer,
-                      password && styles.inputActive,
-                    ]}
-                  >
-                    <Ionicons
-                      name="lock-closed-outline"
-                      size={20}
-                      color="#4CAF50"
-                    />
-                    <TextInput
-                      placeholder="Password (min 6 chars)"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={!showPassword}
-                      style={styles.input}
-                      placeholderTextColor="#999"
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Ionicons
-                        name={showPassword ? "eye-outline" : "eye-off-outline"}
-                        size={20}
-                        color="#4CAF50"
-                      />
-                    </TouchableOpacity>
-                  </View>
-
-                  {passwordStrength !== "" && (
-                    <View style={styles.strengthContainer}>
-                      <View style={styles.strengthBar}>
-                        <View
-                          style={[
-                            styles.strengthFill,
-                            {
-                              width:
-                                passwordStrength === "Weak"
-                                  ? "33%"
-                                  : passwordStrength === "Good"
-                                    ? "66%"
-                                    : "100%",
-                              backgroundColor: getPasswordColor(),
-                            },
-                          ]}
-                        />
-                      </View>
-                      <Text
-                        style={[
-                          styles.strengthText,
-                          { color: getPasswordColor() },
-                        ]}
-                      >
-                        {passwordStrength}
-                      </Text>
-                    </View>
-                  )}
-                </Animated.View>
-
-                {/* Admin Role Toggle */}
-                {isAdminNumber && (
-                  <TouchableOpacity
-                    style={styles.adminToggle}
-                    onPress={() => setRole(role === "user" ? "admin" : "user")}
-                    activeOpacity={0.8}
-                  >
-                    <LinearGradient
-                      colors={
-                        role === "admin"
-                          ? ["#FF6B6B", "#FF8E53"]
-                          : ["#E8F5E9", "#C8E6C9"]
-                      }
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.adminGradient}
-                    >
-                      <Ionicons
-                        name="shield-checkmark"
-                        size={20}
-                        color={role === "admin" ? "#fff" : "#2E7D32"}
-                      />
-                      <Text
-                        style={[
-                          styles.adminText,
-                          { color: role === "admin" ? "#fff" : "#2E7D32" },
-                        ]}
-                      >
-                        Admin Mode: {role.toUpperCase()}
-                      </Text>
-                      <View
-                        style={[
-                          styles.toggleSwitch,
-                          {
-                            backgroundColor:
-                              role === "admin" ? "#fff" : "#2E7D32",
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name={role === "admin" ? "checkmark" : "close"}
-                          size={14}
-                          color={role === "admin" ? "#FF6B6B" : "#fff"}
-                        />
-                      </View>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
 
                 {/* Continue Button */}
                 <TouchableOpacity
@@ -552,12 +419,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: "#333",
-  },
-
-  // PASSWORD STRENGTH
-  strengthContainer: {
-    marginTop: 8,
-    gap: 6,
   },
 
   strengthBar: {

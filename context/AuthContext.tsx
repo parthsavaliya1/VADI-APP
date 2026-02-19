@@ -28,13 +28,12 @@ type AuthContextType = {
   loading: boolean;
 
   // OTP Authentication
-  sendOtp: (phone: string) => Promise<void>;
+  sendOtp: (phone: string, mode: "login" | "signup") => Promise<void>;
   verifyOtpAndLogin: (phone: string, otp: string) => Promise<void>;
   verifyOtpAndSignup: (
     phone: string,
     otp: string,
     name: string,
-    password: string,
     role?: string,
   ) => Promise<void>;
 
@@ -82,12 +81,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /* ================= OTP AUTHENTICATION ================= */
 
   // 📤 SEND OTP
-  const sendOtp = async (phone: string) => {
+  const sendOtp = async (phone: string, mode: "login" | "signup") => {
     try {
-      await API.post("/api/auth/send-otp", { phone });
-      console.log("✅ OTP sent to", phone);
+      await API.post("/api/auth/send-otp", {
+        phone,
+        mode,
+      });
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || "Failed to send OTP");
+      throw new Error(error.response?.data?.error || "Failed to send OTP");
     }
   };
 
@@ -111,7 +112,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     phone: string,
     otp: string,
     name: string,
-    password: string,
     role: string = "user",
   ) => {
     try {
@@ -127,7 +127,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const signupRes = await API.post("/api/auth/signup", {
         name,
         phone,
-        password,
         role,
       });
 

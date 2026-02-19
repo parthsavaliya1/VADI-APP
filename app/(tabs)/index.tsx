@@ -1199,6 +1199,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 15,
     flex: 1,
+    letterSpacing: 0,
   },
 
   /* FILTER CHIP */

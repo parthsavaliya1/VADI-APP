@@ -26,9 +26,7 @@ export default function EnhancedLoginScreen() {
   const { sendOtp } = useAuth();
 
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -44,8 +42,8 @@ export default function EnhancedLoginScreen() {
   const normalizedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
 
   const isFormValid = useMemo(() => {
-    return phone.length >= 10 && password.length >= 6;
-  }, [phone, password]);
+    return phone.length >= 10;
+  }, [phone]);
 
   // Entrance animations
   useEffect(() => {
@@ -119,7 +117,7 @@ export default function EnhancedLoginScreen() {
 
     try {
       setLoading(true);
-      await sendOtp(normalizedPhone);
+      await sendOtp(normalizedPhone, "login");
 
       router.push({
         pathname: "/(auth)/verify-otp",
@@ -230,55 +228,6 @@ export default function EnhancedLoginScreen() {
                   </View>
                 </Animated.View>
 
-                {/* Password Input */}
-                <Animated.View
-                  style={[
-                    styles.inputWrapper,
-                    { transform: [{ scale: inputScaleAnims[1] }] },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.inputContainer,
-                      password && styles.inputActive,
-                    ]}
-                  >
-                    <View style={styles.iconCircle}>
-                      <Ionicons name="lock-closed" size={18} color="#4CAF50" />
-                    </View>
-                    <View style={styles.inputContent}>
-                      <Text style={styles.inputLabel}>Password</Text>
-                      <TextInput
-                        placeholder="Enter your password"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                        style={styles.input}
-                        placeholderTextColor="#999"
-                      />
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      style={styles.eyeButton}
-                    >
-                      <Ionicons
-                        name={showPassword ? "eye" : "eye-off"}
-                        size={20}
-                        color="#4CAF50"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </Animated.View>
-
-                {/* Forgot Password */}
-                <TouchableOpacity
-                  style={styles.forgotPassword}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.forgotText}>Forgot Password?</Text>
-                </TouchableOpacity>
-
                 {/* Login Button */}
                 <Animated.View
                   style={[
@@ -289,10 +238,6 @@ export default function EnhancedLoginScreen() {
                   ]}
                 >
                   <TouchableOpacity
-                    style={[
-                      styles.ctaButton,
-                      (!isFormValid || loading) && styles.ctaDisabled,
-                    ]}
                     onPress={handleLogin}
                     activeOpacity={0.8}
                     disabled={!isFormValid || loading}
@@ -301,11 +246,15 @@ export default function EnhancedLoginScreen() {
                       colors={
                         isFormValid
                           ? ["#4CAF50", "#2E7D32"]
-                          : ["#BDBDBD", "#9E9E9E"]
+                          : ["#E0E0E0", "#E0E0E0"]
                       }
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.ctaGradient}
+                      style={[
+                        styles.ctaGradient,
+                        !isFormValid && {
+                          elevation: 0,
+                          shadowOpacity: 0,
+                        },
+                      ]}
                     >
                       {loading ? (
                         <ActivityIndicator color="#fff" size="small" />
@@ -555,6 +504,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#333",
     paddingVertical: 0,
+    letterSpacing: 0,
   },
 
   checkCircle: {
@@ -568,12 +518,6 @@ const styles = StyleSheet.create({
 
   eyeButton: {
     padding: 4,
-  },
-
-  // FORGOT PASSWORD
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginTop: -8,
   },
 
   forgotText: {
@@ -609,10 +553,6 @@ const styles = StyleSheet.create({
         elevation: 8,
       },
     }),
-  },
-
-  ctaDisabled: {
-    opacity: 0.6,
   },
 
   ctaText: {
@@ -677,8 +617,8 @@ const styles = StyleSheet.create({
   // SIGNUP LINK
   signupLink: {
     alignItems: "center",
-    marginTop: 8,
-    paddingVertical: 8,
+    marginTop: 0,
+    paddingVertical: 0,
   },
 
   signupText: {

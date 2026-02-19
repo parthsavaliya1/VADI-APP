@@ -4,6 +4,7 @@ import { CartProvider } from "@/context/CartContext";
 import { OrderProvider } from "@/context/OrderContext";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import Toast from "react-native-toast-message";
 
 export default function RootLayout() {
   return (
@@ -15,6 +16,8 @@ export default function RootLayout() {
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
             </Stack>
+            <Toast />
+
             <StatusBar style="auto" />
           </OrderProvider>
         </CartProvider>

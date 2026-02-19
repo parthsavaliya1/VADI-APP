@@ -998,107 +998,110 @@ export default function ProductDetailScreen() {
                   />
                 ) : (
                   <View style={styles.reviewsList}>
-                    {reviews.slice(0, 3).map((review) => {
-                      const isOwnReview = !!(
-                        user && review.user?._id === user._id
-                      );
-                      return (
-                        <View key={review._id} style={styles.reviewCard}>
-                          <View style={styles.reviewHeader}>
-                            <View style={styles.reviewUser}>
-                              <View
-                                style={[
-                                  styles.userAvatar,
-                                  isOwnReview && styles.userAvatarOwn,
-                                ]}
-                              >
-                                <Text style={styles.userAvatarText}>
-                                  {review.user.name.charAt(0).toUpperCase()}
-                                </Text>
-                              </View>
-                              <View style={styles.reviewUserInfo}>
-                                <View style={styles.reviewUserRow}>
-                                  <Text style={styles.reviewUserName}>
-                                    {review.user.name}
+                    {reviews
+                      .slice(0, 3)
+                      .filter((review) => review.user) // 🔥 protect from null user
+                      .map((review) => {
+                        const isOwnReview = !!(
+                          user && review.user?._id === user._id
+                        );
+                        return (
+                          <View key={review._id} style={styles.reviewCard}>
+                            <View style={styles.reviewHeader}>
+                              <View style={styles.reviewUser}>
+                                <View
+                                  style={[
+                                    styles.userAvatar,
+                                    isOwnReview && styles.userAvatarOwn,
+                                  ]}
+                                >
+                                  <Text style={styles.userAvatarText}>
+                                    {review.user.name.charAt(0).toUpperCase()}
                                   </Text>
-                                  {isOwnReview && (
-                                    <View style={styles.youBadge}>
-                                      <Text style={styles.youBadgeText}>
-                                        You
-                                      </Text>
-                                    </View>
-                                  )}
-                                  {review.verified && !isOwnReview && (
-                                    <View style={styles.verifiedBadge}>
-                                      <Ionicons
-                                        name="checkmark-circle"
-                                        size={12}
-                                        color="#4CAF50"
-                                      />
-                                    </View>
-                                  )}
                                 </View>
-                                <Text style={styles.reviewDate}>
-                                  {new Date(
-                                    review.createdAt,
-                                  ).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  })}
-                                </Text>
+                                <View style={styles.reviewUserInfo}>
+                                  <View style={styles.reviewUserRow}>
+                                    <Text style={styles.reviewUserName}>
+                                      {review.user.name}
+                                    </Text>
+                                    {isOwnReview && (
+                                      <View style={styles.youBadge}>
+                                        <Text style={styles.youBadgeText}>
+                                          You
+                                        </Text>
+                                      </View>
+                                    )}
+                                    {review.verified && !isOwnReview && (
+                                      <View style={styles.verifiedBadge}>
+                                        <Ionicons
+                                          name="checkmark-circle"
+                                          size={12}
+                                          color="#4CAF50"
+                                        />
+                                      </View>
+                                    )}
+                                  </View>
+                                  <Text style={styles.reviewDate}>
+                                    {new Date(
+                                      review.createdAt,
+                                    ).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </Text>
+                                </View>
+                              </View>
+
+                              {/* Stars + Edit icon stacked on the right */}
+                              <View style={styles.reviewRightCol}>
+                                {renderStarRating(review.rating, 13)}
+                                {/* ✏️ Edit icon — only for own review */}
+                                {isOwnReview && (
+                                  <TouchableOpacity
+                                    style={styles.editReviewBtn}
+                                    onPress={handleWriteReview}
+                                    activeOpacity={0.7}
+                                  >
+                                    <Ionicons
+                                      name="create-outline"
+                                      size={13}
+                                      color="#0C831F"
+                                    />
+                                    <Text style={styles.editReviewText}>
+                                      Edit
+                                    </Text>
+                                  </TouchableOpacity>
+                                )}
                               </View>
                             </View>
 
-                            {/* Stars + Edit icon stacked on the right */}
-                            <View style={styles.reviewRightCol}>
-                              {renderStarRating(review.rating, 13)}
-                              {/* ✏️ Edit icon — only for own review */}
-                              {isOwnReview && (
-                                <TouchableOpacity
-                                  style={styles.editReviewBtn}
-                                  onPress={handleWriteReview}
-                                  activeOpacity={0.7}
-                                >
+                            {review.title && (
+                              <Text style={styles.reviewTitle}>
+                                {review.title}
+                              </Text>
+                            )}
+                            <Text style={styles.reviewComment}>
+                              {review.comment}
+                            </Text>
+
+                            {review.helpful > 0 && (
+                              <View style={styles.reviewFooter}>
+                                <TouchableOpacity style={styles.helpfulBtn}>
                                   <Ionicons
-                                    name="create-outline"
+                                    name="thumbs-up-outline"
                                     size={13}
-                                    color="#0C831F"
+                                    color="#666"
                                   />
-                                  <Text style={styles.editReviewText}>
-                                    Edit
+                                  <Text style={styles.helpfulText}>
+                                    Helpful ({review.helpful})
                                   </Text>
                                 </TouchableOpacity>
-                              )}
-                            </View>
+                              </View>
+                            )}
                           </View>
-
-                          {review.title && (
-                            <Text style={styles.reviewTitle}>
-                              {review.title}
-                            </Text>
-                          )}
-                          <Text style={styles.reviewComment}>
-                            {review.comment}
-                          </Text>
-
-                          {review.helpful > 0 && (
-                            <View style={styles.reviewFooter}>
-                              <TouchableOpacity style={styles.helpfulBtn}>
-                                <Ionicons
-                                  name="thumbs-up-outline"
-                                  size={13}
-                                  color="#666"
-                                />
-                                <Text style={styles.helpfulText}>
-                                  Helpful ({review.helpful})
-                                </Text>
-                              </TouchableOpacity>
-                            </View>
-                          )}
-                        </View>
-                      );
-                    })}
+                        );
+                      })}
 
                     {reviews.length > 3 && (
                       <TouchableOpacity style={styles.viewAllReviewsBtn}>
