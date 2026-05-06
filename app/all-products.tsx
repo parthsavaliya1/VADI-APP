@@ -252,9 +252,10 @@ export default function AllProductsScreen() {
     }, []);
 
     const variant = getDefaultVariant(item);
-    const price = variant.price;
-    const mrp = variant.mrp;
-    const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+    const discount =
+      variant.mrp > variant.price
+        ? Math.round(((variant.mrp - variant.price) / variant.mrp) * 100)
+        : item.discount || 0;
     const inCart = items.some(
       (i) => i.productId === item._id && i.variantId === variant._id,
     );
@@ -300,81 +301,42 @@ export default function AllProductsScreen() {
             })
           }
         >
-          {discount > 0 && (
-            <View style={styles.ribbonRightWrap}>
-              <View style={[styles.ribbon, styles.discountRibbon]}>
-                <Text style={styles.ribbonText}>{discount}% OFF</Text>
-              </View>
-            </View>
-          )}
-
-          {item.trending && (
-            <View style={styles.ribbonLeftWrap}>
-              <View style={[styles.ribbon, styles.trendingRibbon]}>
-                <Text style={styles.ribbonText}>TRENDING</Text>
-              </View>
-            </View>
-          )}
-
-          {!item.trending && item.featured && (
-            <View style={styles.ribbonLeftWrap}>
-              <View style={[styles.ribbon, styles.featuredRibbon]}>
-                <Text style={styles.ribbonText}>FEATURED</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Image Container */}
-          <View style={styles.imageContainer}>
+          <View style={styles.imageWrapper}>
             <Image
               source={{
                 uri: item.image || "https://via.placeholder.com/150",
               }}
               style={styles.image}
             />
+            {item.trending && (
+              <View style={styles.badgeTopLeft}>
+                <Text style={styles.badgeText}>TRENDING</Text>
+              </View>
+            )}
+            {discount > 0 && (
+              <View style={styles.badgeTopRight}>
+                <Text style={styles.badgeText}>{discount}% OFF</Text>
+              </View>
+            )}
           </View>
 
-          {/* Content */}
-          <View style={styles.cardContent}>
-            {/* Brand */}
-            {item.brand && (
-              <Text style={styles.brand} numberOfLines={1}>
-                {item.brand}
-              </Text>
-            )}
-
-            {/* Product Name */}
+          <View>
             <Text numberOfLines={2} style={styles.name}>
               {item.name}
             </Text>
 
-            {/* Variant Size */}
-            <View style={styles.variantContainer}>
-              <View style={styles.variantBadge}>
-                <Text style={styles.variantText}>
-                  {variant.packSize}
-                  {variant.packUnit}
-                </Text>
-              </View>
-            </View>
+            <Text style={styles.unit}>
+              {variant.packSize}
+              {variant.packUnit}
+            </Text>
 
-            {/* Rating */}
-            {item.rating > 0 && (
-              <View style={styles.ratingContainer}>
-                <Ionicons name="star" size={14} color="#FFB800" />
-                <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
-                <Text style={styles.reviewsText}>
-                  ({item.reviewsCount || 0})
-                </Text>
-              </View>
-            )}
-
-            {/* Footer */}
-            <View style={styles.footer}>
+            <View style={styles.footerRow}>
               <View style={styles.priceColumn}>
-                <Text style={styles.price}>₹{price.toFixed(2)}</Text>
+                <Text style={styles.price}>₹{variant.price.toFixed(2)}</Text>
                 {discount > 0 && (
-                  <Text style={styles.originalPrice}>₹{mrp.toFixed(2)}</Text>
+                  <Text style={styles.originalPriceSmall}>
+                    ₹{variant.mrp.toFixed(2)}
+                  </Text>
                 )}
               </View>
 
@@ -393,28 +355,18 @@ export default function AllProductsScreen() {
                 disabled={isAdding || variant.stock === 0}
               >
                 {isAdding ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color="#2E7D32" />
                 ) : inCart ? (
-                  <>
-                    <Ionicons name="checkmark-circle" size={16} color="#fff" />
-                    <Text style={styles.addTextActive}>ADDED</Text>
-                  </>
+                  <Ionicons name="checkmark" size={15} color="#fff" />
                 ) : (
-                  <>
-                    <Ionicons
-                      name={variant.stock === 0 ? "close-circle" : "add-circle"}
-                      size={16}
-                      color={variant.stock === 0 ? "#999" : "#2E7D32"}
-                    />
-                    <Text
-                      style={[
-                        styles.addText,
-                        variant.stock === 0 && styles.addTextDisabled,
-                      ]}
-                    >
-                      {variant.stock === 0 ? "OUT" : "ADD"}
-                    </Text>
-                  </>
+                  <Text
+                    style={[
+                      styles.addText,
+                      variant.stock === 0 && styles.addTextDisabled,
+                    ]}
+                  >
+                    {variant.stock === 0 ? "OUT" : "ADD"}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -932,164 +884,111 @@ const styles = StyleSheet.create({
   /* PRODUCT CARD */
   card: {
     backgroundColor: "#fff",
-    borderRadius: 18,
+    borderRadius: 16,
     width: "48%",
-    marginBottom: 16,
-    elevation: 4,
+    marginBottom: 12,
+    elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.07,
     shadowRadius: 6,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#F0F0F0",
+    borderColor: "#F3F4F6",
   },
 
-  ribbonLeftWrap: {
+  imageWrapper: {
+    backgroundColor: "#F5F7F2",
+    height: 110,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+
+  image: {
+    width: "80%",
+    height: 80,
+    resizeMode: "contain",
+  },
+
+  badgeTopLeft: {
     position: "absolute",
-    top: 14,
-    left: -34,
-    zIndex: 12,
-    width: 130,
-    alignItems: "center",
-    transform: [{ rotate: "-45deg" }],
+    top: 8,
+    left: 8,
+    backgroundColor: "#3B82F6",
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
-  ribbonRightWrap: {
+  badgeTopRight: {
     position: "absolute",
-    top: 14,
-    right: -34,
-    zIndex: 12,
-    width: 130,
-    alignItems: "center",
-    transform: [{ rotate: "45deg" }],
+    top: 8,
+    right: 8,
+    backgroundColor: "#EF4444",
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
   },
-  ribbon: {
-    width: 120,
-    paddingVertical: 4,
-    alignItems: "center",
-    borderRadius: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  discountRibbon: { backgroundColor: "#F44336" },
-  trendingRibbon: { backgroundColor: "#FF6D00" },
-  featuredRibbon: { backgroundColor: "#1976D2" },
-  ribbonText: {
+  badgeText: {
     color: "#fff",
     fontSize: 8,
     fontWeight: "800",
     letterSpacing: 0.3,
   },
 
-  imageContainer: {
-    backgroundColor: "#FAFAFA",
-    padding: 12,
-    alignItems: "center",
-  },
-
-  image: {
-    width: "100%",
-    height: 110,
-    resizeMode: "contain",
-  },
-
-  cardContent: {
-    padding: 12,
-  },
-
-  brand: {
-    fontSize: 11,
-    color: "#999",
-    fontWeight: "600",
-    marginBottom: 4,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-
   name: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#222",
-    minHeight: 38,
-    lineHeight: 19,
-  },
-
-  variantContainer: {
-    marginVertical: 6,
-  },
-
-  variantBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "#E8F5E9",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-
-  variantText: {
-    fontSize: 12,
-    color: "#2E7D32",
-    fontWeight: "700",
-  },
-
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginBottom: 8,
-  },
-
-  ratingText: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#333",
+    fontWeight: "600",
+    color: "#1F2937",
+    minHeight: 34,
+    paddingHorizontal: 10,
+    paddingTop: 8,
   },
 
-  reviewsText: {
+  unit: {
     fontSize: 11,
-    color: "#999",
+    color: "#9CA3AF",
+    marginTop: 2,
+    marginBottom: 8,
     fontWeight: "500",
+    paddingHorizontal: 10,
   },
 
-  footer: {
+  footerRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 4,
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    paddingBottom: 10,
   },
 
   priceColumn: {
     flex: 1,
+    marginRight: 6,
   },
 
   price: {
-    fontSize: 18,
-    fontWeight: "900",
+    fontSize: 15,
+    fontWeight: "800",
     color: "#2E7D32",
   },
 
-  originalPrice: {
-    fontSize: 12,
-    color: "#999",
+  originalPriceSmall: {
+    fontSize: 10,
+    color: "#D1D5DB",
     textDecorationLine: "line-through",
-    marginTop: 2,
-    fontWeight: "500",
+    marginTop: 1,
   },
 
   addBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "#2E7D32",
     borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    minWidth: 50,
+    width: 52,
+    height: 32,
+    alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
 
   addBtnActive: {
@@ -1108,13 +1007,6 @@ const styles = StyleSheet.create({
 
   addText: {
     color: "#2E7D32",
-    fontWeight: "800",
-    fontSize: 10,
-    letterSpacing: 0.1,
-  },
-
-  addTextActive: {
-    color: "#fff",
     fontWeight: "800",
     fontSize: 11,
   },
