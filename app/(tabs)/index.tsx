@@ -24,6 +24,7 @@ import { useCart } from "../../context/CartContext";
 import { API } from "../../utils/api";
 
 const { width } = Dimensions.get("window");
+const HORIZONTAL_CARD_WIDTH = (width - 16 * 2 - 10) / 2;
 
 const banners = [
   {
@@ -1109,9 +1110,6 @@ export default function HomeScreen() {
   }
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const CARD_WIDTH = (width - 16 * 2 - 10) / 2; // 2-col grid with 10px gap and 16px padding each side
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#FFFDF4" },
   loadingScreen: {
@@ -1319,8 +1317,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    // Fixed width based on screen — no percentage to avoid misalignment
-    width: CARD_WIDTH,
+    width: "48%",
     marginBottom: 0, // gap handles spacing
     elevation: 2,
     shadowColor: "#000",
@@ -1416,7 +1413,7 @@ const styles = StyleSheet.create({
   dealCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    width: 148,
+    width: HORIZONTAL_CARD_WIDTH,
     marginRight: 12,
     elevation: 2,
     shadowColor: "#000",
@@ -1497,7 +1494,7 @@ const styles = StyleSheet.create({
   featuredCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    width: 155,
+    width: HORIZONTAL_CARD_WIDTH,
     marginRight: 12,
     elevation: 2,
     shadowColor: "#000",

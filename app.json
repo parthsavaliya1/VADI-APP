@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "vadi-app",
+    "name": "VADI",
     "slug": "vadi-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,9 +14,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/images/vadi-brand-logo.png",
-        "backgroundImage": "./assets/images/vadi-brand-logo.png",
-        "monochromeImage": "./assets/images/vadi-brand-logo.png"
+        "foregroundImage": "./assets/images/favicon.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -38,8 +36,8 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/vadi-brand-logo.png",
-          "imageWidth": 200,
+          "image": "./assets/images/favicon.png",
+          "imageWidth": 140,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
