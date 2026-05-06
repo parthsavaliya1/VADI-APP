@@ -673,7 +673,7 @@ export default function HomeScreen() {
   const homeCategories = categories
     .filter((c) => c.showOnHome && c.isActive)
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  const quickCategories = homeCategories.slice(0, 4);
+  const quickCategories = homeCategories;
   const dealProducts = getBestDeals();
   const trendingProducts = getTrendingProducts();
   const featuredProducts = getFeaturedProducts();
@@ -854,19 +854,23 @@ export default function HomeScreen() {
         {!isFiltering && quickCategories.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitlePadded}>Shop by Category</Text>
-            <View style={styles.quickRow}>
-              {quickCategories.map((cat, i) => {
-                const action = quickActions[i] || quickActions[0];
-                const isSelected = selectedCategoryId === cat._id;
+            <FlatList
+              horizontal
+              data={quickCategories}
+              keyExtractor={(item) => item._id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.quickRow}
+              renderItem={({ item, index }) => {
+                const action = quickActions[index % quickActions.length];
+                const isSelected = selectedCategoryId === item._id;
                 return (
                   <TouchableOpacity
-                    key={cat._id}
                     style={[
                       styles.quickCard,
                       isSelected && styles.quickCardSelected,
                     ]}
                     activeOpacity={0.75}
-                    onPress={() => handleCategoryClick(cat._id)}
+                    onPress={() => handleCategoryClick(item._id)}
                   >
                     <View
                       style={[
@@ -874,11 +878,18 @@ export default function HomeScreen() {
                         { backgroundColor: action.bg },
                       ]}
                     >
-                      <Ionicons
-                        name={action.icon as any}
-                        size={22}
-                        color={action.color}
-                      />
+                      {item.image ? (
+                        <Image
+                          source={{ uri: item.image }}
+                          style={styles.quickCategoryImage}
+                        />
+                      ) : (
+                        <Ionicons
+                          name={action.icon as any}
+                          size={22}
+                          color={action.color}
+                        />
+                      )}
                     </View>
                     <Text
                       style={[
@@ -887,12 +898,12 @@ export default function HomeScreen() {
                       ]}
                       numberOfLines={1}
                     >
-                      {cat.name}
+                      {item.name}
                     </Text>
                   </TouchableOpacity>
                 );
-              })}
-            </View>
+              }}
+            />
           </View>
         )}
 
@@ -1283,13 +1294,12 @@ const styles = StyleSheet.create({
 
   /* QUICK CATEGORIES */
   quickRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     paddingHorizontal: 16,
+    gap: 10,
   },
   quickCard: {
     backgroundColor: "#fff",
-    width: "23%",
+    width: 88,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
@@ -1309,6 +1319,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
+    overflow: "hidden",
+  },
+  quickCategoryImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   quickText: {
     fontSize: 11,
