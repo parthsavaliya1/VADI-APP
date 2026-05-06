@@ -30,6 +30,7 @@ type CategoryUI = {
   _id: string;
   name: string;
   slug: string;
+  image?: string;
   icon: string;
   color: string;
   count: number;
@@ -81,6 +82,7 @@ export default function CategoriesScreen() {
           _id: c._id,
           name: c.name,
           slug: c.slug,
+          image: c.image,
           icon: categoryIcons[c.slug]?.icon || "apps",
           color: categoryIcons[c.slug]?.color || "#607D8B",
           count: countMap[c._id] || 0,
@@ -173,11 +175,15 @@ export default function CategoriesScreen() {
                   { backgroundColor: item.color + "20" },
                 ]}
               >
-                <Ionicons
-                  name={item.icon as any}
-                  size={32}
-                  color={item.color}
-                />
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={styles.categoryImage} />
+                ) : (
+                  <Ionicons
+                    name={item.icon as any}
+                    size={32}
+                    color={item.color}
+                  />
+                )}
               </View>
               <Text style={styles.categoryName}>
                 {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
@@ -305,6 +311,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
+    overflow: "hidden",
+  },
+  categoryImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   categoryName: {
     fontSize: 15,

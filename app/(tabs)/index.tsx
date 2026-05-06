@@ -26,18 +26,10 @@ import { API } from "../../utils/api";
 const { width } = Dimensions.get("window");
 const HORIZONTAL_CARD_WIDTH = (width - 16 * 2 - 10) / 2;
 
-const banners = [
+const fallbackBanners = [
   {
-    id: "1",
+    id: "fallback-1",
     image: "https://i.ibb.co/dzHx6kp/8d6f94e6-8f2b-41ab-a8af-a7b0a6f876ef.png",
-  },
-  {
-    id: "2",
-    image: "https://i.ibb.co/dzHx6kp/8d6f94e6-8f2b-41ab-a8af-a7b0a6f876ef.png",
-  },
-  {
-    id: "3",
-    image: "local-farm-banner",
   },
 ];
 
@@ -97,6 +89,11 @@ type Category = {
   sortOrder: number;
   showOnHome: boolean;
   isActive: boolean;
+};
+
+type Banner = {
+  _id: string;
+  image: string;
 };
 
 const getDefaultVariant = (product: Product): ProductVariant => {
@@ -501,6 +498,7 @@ export default function HomeScreen() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [homeBanners, setHomeBanners] = useState<Banner[]>([]);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const cartFooterAnim = useRef(new Animated.Value(0)).current;
@@ -526,11 +524,17 @@ export default function HomeScreen() {
     }, [selectedCategoryId, searchQuery]),
   );
 
+  const bannerData =
+    homeBanners.length > 0
+      ? homeBanners.map((banner) => ({ id: banner._id, image: banner.image }))
+      : fallbackBanners;
+
   // ── Banner auto-scroll ────────────────────────────────────────────────────
   useEffect(() => {
+    if (!bannerData.length) return;
     const interval = setInterval(() => {
       setCurrentBannerIndex((prev) => {
-        const nextIndex = (prev + 1) % banners.length;
+        const nextIndex = (prev + 1) % bannerData.length;
         bannerScrollRef.current?.scrollToIndex({
           index: nextIndex,
           animated: true,
@@ -539,7 +543,7 @@ export default function HomeScreen() {
       });
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [bannerData.length]);
 
   const loadCategories = async () => {
     try {
@@ -552,6 +556,19 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadCategories();
+  }, []);
+
+  const loadBanners = async () => {
+    try {
+      const res = await API.get("/banners");
+      setHomeBanners(res.data.data || []);
+    } catch {
+      setHomeBanners([]);
+    }
+  };
+
+  useEffect(() => {
+    loadBanners();
   }, []);
 
   useEffect(() => {
@@ -803,7 +820,7 @@ export default function HomeScreen() {
           <View style={styles.bannerContainer}>
             <FlatList
               ref={bannerScrollRef}
-              data={banners}
+              data={bannerData}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
@@ -816,18 +833,14 @@ export default function HomeScreen() {
               renderItem={({ item }) => (
                 <TouchableOpacity activeOpacity={0.9}>
                   <Image
-                    source={
-                      item.image === "local-farm-banner"
-                        ? require("../../assets/images/farm-banner-vadi.png")
-                        : { uri: item.image }
-                    }
+                    source={{ uri: item.image }}
                     style={styles.banner}
                   />
                 </TouchableOpacity>
               )}
             />
             <View style={styles.bannerDots}>
-              {banners.map((_, i) => (
+              {bannerData.map((_, i) => (
                 <View
                   key={i}
                   style={[styles.dot, currentBannerIndex === i && styles.activeDot]}
