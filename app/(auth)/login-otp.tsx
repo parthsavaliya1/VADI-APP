@@ -54,7 +54,7 @@ export default function LoginOtpScreen() {
         <View style={styles.container}>
           <View style={styles.logoWrap}>
             <Image
-              source={require("../../assets/images/VADI.png")}
+              source={require("../../assets/images/vadi-brand-logo.png")}
               style={styles.logo}
             />
           </View>

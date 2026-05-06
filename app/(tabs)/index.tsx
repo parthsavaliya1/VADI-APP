@@ -34,13 +34,17 @@ const banners = [
     id: "2",
     image: "https://i.ibb.co/dzHx6kp/8d6f94e6-8f2b-41ab-a8af-a7b0a6f876ef.png",
   },
+  {
+    id: "3",
+    image: "local-farm-banner",
+  },
 ];
 
 const quickActions = [
-  { id: "1", title: "Vegetables", icon: "leaf", color: "#22C55E" },
-  { id: "2", title: "Fruits", icon: "nutrition", color: "#F97316" },
-  { id: "3", title: "Dairy", icon: "ice-cream", color: "#3B82F6" },
-  { id: "4", title: "Dry Fruits", icon: "basket-outline", color: "#A78BFA" },
+  { id: "1", title: "Vegetables", icon: "leaf", color: "#22C55E", bg: "#DCFCE7" },
+  { id: "2", title: "Fruits", icon: "nutrition", color: "#F97316", bg: "#FFEDD5" },
+  { id: "3", title: "Dairy", icon: "ice-cream", color: "#3B82F6", bg: "#DBEAFE" },
+  { id: "4", title: "Dry Fruits", icon: "basket-outline", color: "#A78BFA", bg: "#EDE9FE" },
 ];
 
 type ProductVariant = {
@@ -248,11 +252,11 @@ const ProductCard = ({
   const [isAdding, setIsAdding] = useState(false);
   const variant = getDefaultVariant(item);
 
-  const handlePress = () => {
+  const handleAdd = () => {
     setIsAdding(true);
     Animated.sequence([
       Animated.timing(scaleAnim, {
-        toValue: 0.94,
+        toValue: 0.96,
         duration: 80,
         useNativeDriver: true,
       }),
@@ -273,23 +277,31 @@ const ProductCard = ({
 
   return (
     <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
-      <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
-        {showTrendingBadge ? (
-          <View style={[styles.badgeContainer, styles.badgeTrending]}>
-            <Ionicons name="trending-up" size={9} color="#fff" />
-            <Text style={styles.badgeText}>TRENDING</Text>
-          </View>
-        ) : discountPct > 0 ? (
-          <View style={[styles.badgeContainer, styles.badgeDiscount]}>
-            <Text style={styles.badgeText}>{discountPct}% OFF</Text>
-          </View>
-        ) : null}
-
+      <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={{ flex: 1 }}>
+        {/* Image area with badges absolutely positioned inside */}
         <View style={styles.imageWrapper}>
           <Image
             source={{ uri: item.image || "https://via.placeholder.com/150" }}
             style={styles.image}
           />
+          {/* Trending badge — top left inside image area */}
+          {showTrendingBadge && (
+            <View style={styles.badgeTopLeft}>
+              <Text style={styles.badgeText}>TRENDING</Text>
+            </View>
+          )}
+          {/* Discount badge — top right inside image area */}
+          {!showTrendingBadge && discountPct > 0 && (
+            <View style={styles.badgeTopRight}>
+              <Text style={styles.badgeText}>{discountPct}% OFF</Text>
+            </View>
+          )}
+          {/* Show both if trending AND has discount */}
+          {showTrendingBadge && discountPct > 0 && (
+            <View style={styles.badgeTopRight}>
+              <Text style={styles.badgeText}>{discountPct}% OFF</Text>
+            </View>
+          )}
         </View>
 
         <Text numberOfLines={2} style={styles.name}>
@@ -300,6 +312,7 @@ const ProductCard = ({
           {variant.packUnit}
         </Text>
 
+        {/* Footer: price left, button right — no overlap possible */}
         <View style={styles.footerRow}>
           <View style={styles.priceColumn}>
             <Text style={styles.price}>₹{variant.price.toFixed(2)}</Text>
@@ -317,7 +330,7 @@ const ProductCard = ({
             ]}
             onPress={(e) => {
               e.stopPropagation();
-              if (!inCart) handlePress();
+              if (!inCart) handleAdd();
             }}
             disabled={isAdding}
             activeOpacity={0.8}
@@ -325,7 +338,7 @@ const ProductCard = ({
             {isAdding ? (
               <ActivityIndicator size="small" color="#2E7D32" />
             ) : inCart ? (
-              <Ionicons name="checkmark" size={16} color="#fff" />
+              <Ionicons name="checkmark" size={15} color="#fff" />
             ) : (
               <Text style={styles.addText}>ADD</Text>
             )}
@@ -333,6 +346,144 @@ const ProductCard = ({
         </View>
       </TouchableOpacity>
     </Animated.View>
+  );
+};
+
+// ─── Deal Card ────────────────────────────────────────────────────────────────
+const DealCard = ({
+  item,
+  onAdd,
+}: {
+  item: Product;
+  onAdd: () => void;
+}) => {
+  const variant = getDefaultVariant(item);
+  const discountPct =
+    variant.mrp > 0
+      ? Math.round(((variant.mrp - variant.price) / variant.mrp) * 100)
+      : item.discount || 0;
+
+  return (
+    <TouchableOpacity
+      style={styles.dealCard}
+      activeOpacity={0.85}
+      onPress={() =>
+        router.push({
+          pathname: "/product-detail",
+          params: { id: item._id },
+        })
+      }
+    >
+      {/* Image zone */}
+      <View style={styles.dealImageZone}>
+        {discountPct > 0 && (
+          <View style={styles.dealBadge}>
+            <Text style={styles.dealBadgeText}>{discountPct}% OFF</Text>
+          </View>
+        )}
+        {!discountPct && item.discount && (
+          <View style={styles.dealBadge}>
+            <Text style={styles.dealBadgeText}>DEAL</Text>
+          </View>
+        )}
+        <Image
+          source={{ uri: item.image || "https://via.placeholder.com/150" }}
+          style={styles.dealImage}
+        />
+      </View>
+
+      {/* Info zone */}
+      <View style={styles.dealInfo}>
+        <Text numberOfLines={1} style={styles.dealName}>
+          {item.name}
+        </Text>
+        <Text style={styles.dealUnit}>
+          {variant.packSize}{variant.packUnit}
+        </Text>
+        {/* Price row + Add button separated cleanly */}
+        <View style={styles.dealFooterRow}>
+          <View style={styles.dealPriceCol}>
+            <Text style={styles.dealPrice}>₹{variant.price.toFixed(2)}</Text>
+            {discountPct > 0 && (
+              <Text style={styles.dealOriginalPrice}>
+                ₹{variant.mrp.toFixed(2)}
+              </Text>
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.dealAddBtn}
+            onPress={(e) => {
+              e.stopPropagation();
+              onAdd();
+            }}
+            activeOpacity={0.8}
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          >
+            <Ionicons name="add" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// ─── Featured Card ────────────────────────────────────────────────────────────
+const FeaturedCard = ({
+  item,
+  onAdd,
+}: {
+  item: Product;
+  onAdd: () => void;
+}) => {
+  const variant = getDefaultVariant(item);
+
+  return (
+    <TouchableOpacity
+      style={styles.featuredCard}
+      activeOpacity={0.85}
+      onPress={() =>
+        router.push({
+          pathname: "/product-detail",
+          params: { id: item._id },
+        })
+      }
+    >
+      {/* Image zone with star badge */}
+      <View style={styles.featuredImageZone}>
+        <View style={styles.featuredStarBadge}>
+          <Ionicons name="star" size={11} color="#fff" />
+        </View>
+        <Image
+          source={{ uri: item.image || "https://via.placeholder.com/150" }}
+          style={styles.featuredImage}
+        />
+      </View>
+
+      {/* Content zone */}
+      <View style={styles.featuredContent}>
+        <Text numberOfLines={2} style={styles.featuredName}>
+          {item.name}
+        </Text>
+        <Text style={styles.featuredUnit}>
+          {variant.packSize}{variant.packUnit}
+        </Text>
+        {/* Price + Add cleanly separated */}
+        <View style={styles.featuredFooter}>
+          <Text style={styles.featuredPrice}>₹{variant.price}</Text>
+          <TouchableOpacity
+            style={styles.featuredAddBtn}
+            onPress={(e) => {
+              e.stopPropagation();
+              onAdd();
+            }}
+            activeOpacity={0.8}
+            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+          >
+            <Ionicons name="add" size={16} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 };
 
@@ -347,9 +498,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    null,
-  );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
 
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -371,10 +520,7 @@ export default function HomeScreen() {
         }
         return true;
       };
-      const sub = BackHandler.addEventListener(
-        "hardwareBackPress",
-        onBackPress,
-      );
+      const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
       return () => sub.remove();
     }, [selectedCategoryId, searchQuery]),
   );
@@ -485,26 +631,20 @@ export default function HomeScreen() {
     if (!selectedCategoryId) return "";
     const cat = categories.find((c) => c._id === selectedCategoryId);
     if (cat) return cat.name;
-    const prod = allProducts.find(
-      (p) => p.category?._id === selectedCategoryId,
-    );
+    const prod = allProducts.find((p) => p.category?._id === selectedCategoryId);
     return prod?.category?.name || "";
   };
 
   const getBestDeals = () => {
     const marked = allProducts.filter((p) => p.bestDeal === true);
     if (marked.length > 0) return marked.slice(0, 8);
-    const highDiscount = allProducts.filter(
-      (p) => p.discount && p.discount >= 20,
-    );
+    const highDiscount = allProducts.filter((p) => p.discount && p.discount >= 20);
     return highDiscount.slice(0, 8);
   };
 
   const getTrendingProducts = () => {
     const trending = allProducts.filter((p) => p.trending === true);
-    return trending.length > 0
-      ? trending.slice(0, 8)
-      : allProducts.slice(6, 14);
+    return trending.length > 0 ? trending.slice(0, 8) : allProducts.slice(6, 14);
   };
 
   const getFeaturedProducts = () => {
@@ -556,6 +696,10 @@ export default function HomeScreen() {
         {/* ── HEADER ─────────────────────────────────────────────────────── */}
         <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
           <View style={{ flex: 1 }}>
+            <Image
+              source={require("../../assets/images/vadi-brand-logo.png")}
+              style={styles.headerLogo}
+            />
             <Text style={styles.location}>📍 Delivering to</Text>
             <TouchableOpacity style={styles.addressRow}>
               <Text style={styles.address} numberOfLines={1}>
@@ -568,11 +712,7 @@ export default function HomeScreen() {
           </View>
           <View style={styles.headerIcons}>
             <TouchableOpacity style={styles.iconBtn}>
-              <Ionicons
-                name="notifications-outline"
-                size={22}
-                color="#1B5E20"
-              />
+              <Ionicons name="notifications-outline" size={22} color="#1B5E20" />
               <View style={styles.notificationDot} />
             </TouchableOpacity>
             <TouchableOpacity
@@ -674,7 +814,14 @@ export default function HomeScreen() {
               }}
               renderItem={({ item }) => (
                 <TouchableOpacity activeOpacity={0.9}>
-                  <Image source={{ uri: item.image }} style={styles.banner} />
+                  <Image
+                    source={
+                      item.image === "local-farm-banner"
+                        ? require("../../assets/images/farm-banner-vadi.png")
+                        : { uri: item.image }
+                    }
+                    style={styles.banner}
+                  />
                 </TouchableOpacity>
               )}
             />
@@ -682,10 +829,7 @@ export default function HomeScreen() {
               {banners.map((_, i) => (
                 <View
                   key={i}
-                  style={[
-                    styles.dot,
-                    currentBannerIndex === i && styles.activeDot,
-                  ]}
+                  style={[styles.dot, currentBannerIndex === i && styles.activeDot]}
                 />
               ))}
             </View>
@@ -695,14 +839,7 @@ export default function HomeScreen() {
         {/* ── QUICK CATEGORIES ────────────────────────────────────────────── */}
         {!isFiltering && quickCategories.length > 0 && (
           <View style={styles.section}>
-            <Text
-              style={[
-                styles.sectionTitle,
-                { paddingHorizontal: 16, marginBottom: 12 },
-              ]}
-            >
-              Shop by Category
-            </Text>
+            <Text style={styles.sectionTitlePadded}>Shop by Category</Text>
             <View style={styles.quickRow}>
               {quickCategories.map((cat, i) => {
                 const action = quickActions[i] || quickActions[0];
@@ -720,7 +857,7 @@ export default function HomeScreen() {
                     <View
                       style={[
                         styles.iconCircle,
-                        { backgroundColor: action.color + "20" },
+                        { backgroundColor: action.bg },
                       ]}
                     >
                       <Ionicons
@@ -773,50 +910,7 @@ export default function HomeScreen() {
               keyExtractor={(item) => item._id}
               contentContainerStyle={{ paddingLeft: 16, paddingRight: 8 }}
               renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.dealCard}
-                  activeOpacity={0.85}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/product-detail",
-                      params: { id: item._id },
-                    })
-                  }
-                >
-                  <View style={styles.dealBadge}>
-                    <Text style={styles.dealBadgeText}>
-                      {item.discount ? `${item.discount}% OFF` : "DEAL"}
-                    </Text>
-                  </View>
-                  <Image
-                    source={{
-                      uri: item.image || "https://via.placeholder.com/150",
-                    }}
-                    style={styles.dealImage}
-                  />
-                  <Text numberOfLines={1} style={styles.dealName}>
-                    {item.name}
-                  </Text>
-                  <View style={styles.dealPriceRow}>
-                    <Text style={styles.dealPrice}>
-                      ₹{getProductPrice(item).toFixed(2)}
-                    </Text>
-                    {item.discount && item.discount > 0 && (
-                      <Text style={styles.dealOriginalPrice}>
-                        ₹{getProductMRP(item).toFixed(2)}
-                      </Text>
-                    )}
-                  </View>
-                  <TouchableOpacity
-                    style={styles.quickAddBtn}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleAddToCart(item);
-                    }}
-                  >
-                    <Ionicons name="add" size={18} color="#fff" />
-                  </TouchableOpacity>
-                </TouchableOpacity>
+                <DealCard item={item} onAdd={() => handleAddToCart(item)} />
               )}
             />
           </View>
@@ -847,8 +941,7 @@ export default function HomeScreen() {
               {trendingProducts.slice(0, 4).map((item) => {
                 const variant = getDefaultVariant(item);
                 const cartItem = items.find(
-                  (i) =>
-                    i.productId === item._id && i.variantId === variant._id,
+                  (i) => i.productId === item._id && i.variantId === variant._id,
                 );
                 return (
                   <ProductCard
@@ -905,8 +998,7 @@ export default function HomeScreen() {
               {filteredProducts.map((item) => {
                 const variant = getDefaultVariant(item);
                 const cartItem = items.find(
-                  (i) =>
-                    i.productId === item._id && i.variantId === variant._id,
+                  (i) => i.productId === item._id && i.variantId === variant._id,
                 );
                 return (
                   <ProductCard
@@ -933,9 +1025,7 @@ export default function HomeScreen() {
             <View style={styles.emptyState}>
               <Ionicons name="search-outline" size={56} color="#D1D5DB" />
               <Text style={styles.emptyText}>No products found</Text>
-              <Text style={styles.emptySubtext}>
-                Try a different search term
-              </Text>
+              <Text style={styles.emptySubtext}>Try a different search term</Text>
             </View>
           )}
         </View>
@@ -970,54 +1060,9 @@ export default function HomeScreen() {
                 paddingVertical: 8,
               }}
               style={{ overflow: "visible" }}
-              renderItem={({ item }) => {
-                const variant = getDefaultVariant(item);
-                return (
-                  <TouchableOpacity
-                    style={styles.featuredCard}
-                    activeOpacity={0.85}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/product-detail",
-                        params: { id: item._id },
-                      })
-                    }
-                  >
-                    <View style={styles.featuredBadge}>
-                      <Ionicons name="star" size={12} color="#fff" />
-                    </View>
-                    <Image
-                      source={{
-                        uri: item.image || "https://via.placeholder.com/150",
-                      }}
-                      style={styles.featuredImage}
-                    />
-                    <View style={styles.featuredContent}>
-                      <Text numberOfLines={2} style={styles.featuredName}>
-                        {item.name}
-                      </Text>
-                      <Text style={styles.featuredUnit}>
-                        {variant.packSize}
-                        {variant.packUnit}
-                      </Text>
-                      <View style={styles.featuredFooter}>
-                        <Text style={styles.featuredPrice}>
-                          ₹{variant.price}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.featuredAddBtn}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleAddToCart(item);
-                          }}
-                        >
-                          <Ionicons name="add" size={16} color="#fff" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              }}
+              renderItem={({ item }) => (
+                <FeaturedCard item={item} onAdd={() => handleAddToCart(item)} />
+              )}
             />
           </View>
         )}
@@ -1065,14 +1110,15 @@ export default function HomeScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+const CARD_WIDTH = (width - 16 * 2 - 10) / 2; // 2-col grid with 10px gap and 16px padding each side
+
 const styles = StyleSheet.create({
-  // ── original background preserved everywhere ───────────────────────────────
-  safe: { flex: 1, backgroundColor: "#F5F7F2" },
+  safe: { flex: 1, backgroundColor: "#FFFDF4" },
   loadingScreen: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#FFFDF4",
   },
 
   /* HEADER */
@@ -1084,12 +1130,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
   },
-  location: {
-    fontSize: 11,
-    color: "#6B7280",
-    fontWeight: "500",
-    marginBottom: 2,
-  },
+  location: { fontSize: 11, color: "#6B7280", fontWeight: "500", marginBottom: 2 },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   address: {
     fontSize: 15,
@@ -1195,12 +1236,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#C8E6C9" },
-  activeDot: {
-    width: 18,
-    height: 5,
-    backgroundColor: "#2E7D32",
-    borderRadius: 3,
-  },
+  activeDot: { width: 18, height: 5, backgroundColor: "#2E7D32", borderRadius: 3 },
 
   /* SECTION */
   section: { marginBottom: 24 },
@@ -1213,6 +1249,13 @@ const styles = StyleSheet.create({
   },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   sectionTitle: { fontSize: 17, fontWeight: "800", color: "#1B5E20" },
+  sectionTitlePadded: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#1B5E20",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
   fireBadge: {
     backgroundColor: "#FEF2F2",
     borderRadius: 8,
@@ -1269,15 +1312,16 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     paddingHorizontal: 16,
+    gap: 10,
   },
 
-  /* PRODUCT CARD */
+  /* ─── PRODUCT CARD (grid) ──────────────────────────────────────────────── */
   card: {
     backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 12,
-    width: "48%",
-    marginBottom: 14,
+    borderRadius: 16,
+    // Fixed width based on screen — no percentage to avoid misalignment
+    width: CARD_WIDTH,
+    marginBottom: 0, // gap handles spacing
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -1285,75 +1329,94 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     borderWidth: 1,
     borderColor: "#F3F4F6",
+    overflow: "hidden", // keeps badges clipped to card
   },
-  badgeContainer: {
-    position: "absolute",
-    top: 1,
-    right: 4,
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    zIndex: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 0.3,
-  },
-  badgeTrending: { backgroundColor: "#3B82F6" },
-  badgeDiscount: { backgroundColor: "#EF4444" },
+  // Image area — contains all badges absolutely
   imageWrapper: {
     backgroundColor: "#F5F7F2",
-    borderRadius: 12,
-    marginBottom: 8,
-    marginTop: 4,
-    overflow: "hidden",
+    borderRadius: 0, // card has overflow:hidden, so top corners are handled
+    marginBottom: 0,
+    height: 110,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
   },
-  image: { width: "100%", height: 100, resizeMode: "contain" },
-  name: { fontSize: 13, fontWeight: "600", color: "#1F2937", minHeight: 34 },
+  image: { width: "80%", height: 80, resizeMode: "contain" },
+
+  // Badges sit INSIDE imageWrapper — no rotation, no clipping issues
+  badgeTopLeft: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: "#3B82F6",
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  badgeTopRight: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "#EF4444",
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  badgeText: { color: "#fff", fontSize: 8, fontWeight: "800", letterSpacing: 0.3 },
+
+  // Text content below image
+  name: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#1F2937",
+    minHeight: 34,
+    paddingHorizontal: 10,
+    paddingTop: 8,
+  },
   unit: {
     fontSize: 11,
     color: "#9CA3AF",
     marginTop: 2,
-    marginBottom: 6,
+    marginBottom: 8,
     fontWeight: "500",
+    paddingHorizontal: 10,
   },
+  // Footer row: price left, button right — explicit sizing prevents overlap
   footerRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    paddingBottom: 10,
   },
-  priceColumn: { flex: 1 },
+  priceColumn: { flex: 1, marginRight: 6 },
   price: { fontSize: 15, fontWeight: "800", color: "#2E7D32" },
   originalPriceSmall: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#D1D5DB",
     textDecorationLine: "line-through",
     marginTop: 1,
   },
+  // ADD button — fixed size, never overlaps price
   addBtn: {
     borderWidth: 1.5,
     borderColor: "#2E7D32",
     borderRadius: 10,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    minWidth: 55,
+    width: 52,
+    height: 32,
     alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
-  addBtnActive: { backgroundColor: "#2E7D32" },
+  addBtnActive: { backgroundColor: "#2E7D32", borderColor: "#2E7D32" },
   addBtnAdding: { opacity: 0.6 },
   addText: { color: "#2E7D32", fontWeight: "800", fontSize: 11 },
 
-  /* DEAL CARD */
+  /* ─── DEAL CARD ─────────────────────────────────────────────────────────── */
   dealCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 12,
-    width: 138,
+    width: 148,
     marginRight: 12,
     elevation: 2,
     shadowColor: "#000",
@@ -1362,6 +1425,14 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     borderWidth: 1,
     borderColor: "#F3F4F6",
+    overflow: "hidden",
+  },
+  // Image zone — separate from info zone, badge is inside here
+  dealImageZone: {
+    height: 100,
+    backgroundColor: "#F8FBF5",
+    alignItems: "center",
+    justifyContent: "center",
     position: "relative",
   },
   dealBadge: {
@@ -1374,66 +1445,84 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     zIndex: 10,
   },
-  dealBadgeText: {
-    color: "#fff",
-    fontSize: 8,
-    fontWeight: "800",
-    letterSpacing: 0.4,
-  },
+  dealBadgeText: { color: "#fff", fontSize: 8, fontWeight: "800", letterSpacing: 0.4 },
   dealImage: {
-    width: "100%",
-    height: 80,
+    width: 72,
+    height: 72,
     resizeMode: "contain",
-    marginTop: 16,
-    marginBottom: 8,
+  },
+  // Info zone — completely separate from image zone
+  dealInfo: {
+    padding: 10,
   },
   dealName: {
     fontSize: 12,
     fontWeight: "600",
     color: "#1F2937",
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  dealPriceRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  dealUnit: {
+    fontSize: 10,
+    color: "#9CA3AF",
+    fontWeight: "500",
+    marginBottom: 8,
+  },
+  // Footer: price col + add btn — no overlap since they're in a flex row
+  dealFooterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  dealPriceCol: { flex: 1, marginRight: 6 },
   dealPrice: { fontSize: 13, fontWeight: "800", color: "#2E7D32" },
   dealOriginalPrice: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#D1D5DB",
     textDecorationLine: "line-through",
+    marginTop: 1,
   },
-  quickAddBtn: {
-    position: "absolute",
-    bottom: 10,
-    right: 10,
+  // Add button — fixed square, never pushed by price text
+  dealAddBtn: {
     backgroundColor: "#2E7D32",
     width: 30,
     height: 30,
-    borderRadius: 15,
+    borderRadius: 9,
+    flexShrink: 0,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 3,
+    elevation: 2,
   },
 
-  /* FEATURED */
+  /* ─── FEATURED CARD ─────────────────────────────────────────────────────── */
   featuredCard: {
     backgroundColor: "#fff",
-    borderRadius: 18,
+    borderRadius: 16,
     width: 155,
     marginRight: 12,
-    elevation: 3,
+    elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
-    position: "relative",
     borderWidth: 1,
     borderColor: "#F3F4F6",
+    overflow: "hidden",
   },
-  featuredBadge: {
+  // Image zone — star badge is absolutely inside here
+  featuredImageZone: {
+    height: 110,
+    backgroundColor: "#F8FBF5",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  // Star badge inside image zone — always visible, no clipping
+  featuredStarBadge: {
     position: "absolute",
     top: 8,
     right: 8,
     backgroundColor: "#FBBF24",
-    borderRadius: 6,
+    borderRadius: 7,
     width: 26,
     height: 26,
     justifyContent: "center",
@@ -1441,13 +1530,11 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   featuredImage: {
-    width: "100%",
-    height: 110,
+    width: 80,
+    height: 80,
     resizeMode: "contain",
-    backgroundColor: "#F5F7F2",
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
   },
+  // Content zone
   featuredContent: { padding: 10 },
   featuredName: {
     fontSize: 12,
@@ -1455,6 +1542,7 @@ const styles = StyleSheet.create({
     color: "#1F2937",
     minHeight: 32,
     marginBottom: 3,
+    lineHeight: 16,
   },
   featuredUnit: {
     fontSize: 10,
@@ -1462,17 +1550,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontWeight: "500",
   },
+  // Footer: price + add button side by side
   featuredFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  featuredPrice: { fontSize: 14, fontWeight: "800", color: "#2E7D32" },
+  featuredPrice: { fontSize: 14, fontWeight: "800", color: "#2E7D32", flex: 1 },
   featuredAddBtn: {
     backgroundColor: "#2E7D32",
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    flexShrink: 0,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1483,12 +1573,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 48,
   },
-  emptyText: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#6B7280",
-    marginTop: 14,
-  },
+  emptyText: { fontSize: 17, fontWeight: "700", color: "#6B7280", marginTop: 14 },
   emptySubtext: { fontSize: 13, color: "#9CA3AF", marginTop: 6 },
   emptyCategory: {
     alignItems: "center",
@@ -1620,5 +1705,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
+  },
+  headerLogo: {
+    width: 34,
+    height: 34,
+    resizeMode: "contain",
+    marginBottom: 6,
   },
 });

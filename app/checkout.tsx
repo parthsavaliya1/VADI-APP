@@ -30,7 +30,8 @@ export default function CheckoutScreen() {
   const { items, clearCart } = useCart();
   const { user } = useAuth();
   const { placeOrder } = useOrders();
-  const { selectedAddress } = useAddress();
+  const { selectedAddress, defaultAddress, addresses, setSelectedAddress } =
+    useAddress();
   const [isProcessing, setIsProcessing] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<
@@ -45,6 +46,7 @@ export default function CheckoutScreen() {
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const deliveryFee = total > 500 ? 0 : 40;
   const grandTotal = total + deliveryFee;
+  const activeAddress = selectedAddress || defaultAddress || addresses[0] || null;
 
   useEffect(() => {
     Animated.parallel([
@@ -81,6 +83,12 @@ export default function CheckoutScreen() {
     }
   }, [isProcessing, selectedAddress]);
 
+  useEffect(() => {
+    if (!selectedAddress && activeAddress) {
+      setSelectedAddress(activeAddress);
+    }
+  }, [selectedAddress, activeAddress, setSelectedAddress]);
+
   const handleChangeAddress = () => {
     router.push({
       pathname: "/my-addresses",
@@ -94,15 +102,15 @@ export default function CheckoutScreen() {
   };
 
   const buildOrderAddress = () => ({
-    _id: selectedAddress!._id,
-    name: selectedAddress!.name!,
-    phone: selectedAddress!.phone!,
-    addressLine1: selectedAddress!.addressLine1!,
-    addressLine2: selectedAddress!.addressLine2,
-    city: selectedAddress!.city!,
-    state: selectedAddress!.state!,
-    pincode: selectedAddress!.pincode!,
-    landmark: selectedAddress!.landmark,
+    _id: activeAddress!._id,
+    name: activeAddress!.name!,
+    phone: activeAddress!.phone!,
+    addressLine1: activeAddress!.addressLine1!,
+    addressLine2: activeAddress!.addressLine2,
+    city: activeAddress!.city!,
+    state: activeAddress!.state!,
+    pincode: activeAddress!.pincode!,
+    landmark: activeAddress!.landmark,
   });
 
   const handlePlaceOrder = async () => {
@@ -111,7 +119,7 @@ export default function CheckoutScreen() {
       return;
     }
 
-    if (!selectedAddress) {
+    if (!activeAddress) {
       Alert.alert("No Address", "Please add a delivery address");
       return;
     }
@@ -246,7 +254,7 @@ export default function CheckoutScreen() {
 
             {(expandedSection === "address" || expandedSection === null) && (
               <View style={styles.cardContent}>
-                {selectedAddress ? (
+                {activeAddress ? (
                   <>
                     <View style={styles.addressBox}>
                       <View style={styles.addressTop}>
@@ -258,10 +266,10 @@ export default function CheckoutScreen() {
                             style={{ marginRight: 6 }}
                           />
                           <Text style={styles.addressTitle}>
-                            {selectedAddress.name}
+                            {activeAddress.name}
                           </Text>
                         </View>
-                        {selectedAddress.isDefault && (
+                        {activeAddress.isDefault && (
                           <View style={styles.defaultBadge}>
                             <Ionicons name="star" size={10} color="#fff" />
                             <Text style={styles.defaultText}>DEFAULT</Text>
@@ -269,11 +277,11 @@ export default function CheckoutScreen() {
                         )}
                       </View>
                       <Text style={styles.address}>
-                        {selectedAddress.addressLine1}
+                        {activeAddress.addressLine1}
                       </Text>
                       <Text style={styles.addressCity}>
-                        {selectedAddress.city}, {selectedAddress.state} -{" "}
-                        {selectedAddress.pincode}
+                        {activeAddress.city}, {activeAddress.state} -{" "}
+                        {activeAddress.pincode}
                       </Text>
                     </View>
                     <TouchableOpacity
@@ -567,11 +575,11 @@ export default function CheckoutScreen() {
             <TouchableOpacity
               style={[
                 styles.placeOrderBtn,
-                (isProcessing || !selectedAddress) &&
+                (isProcessing || !activeAddress) &&
                   styles.placeOrderBtnDisabled,
               ]}
               onPress={handlePlaceOrder}
-              disabled={isProcessing || !selectedAddress}
+              disabled={isProcessing || !activeAddress}
               activeOpacity={0.8}
             >
               {isProcessing ? (

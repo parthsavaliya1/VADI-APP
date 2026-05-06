@@ -429,14 +429,30 @@ export default function ProductDetailScreen() {
         >
           <Ionicons name="arrow-back" size={22} color="#1B5E20" />
         </TouchableOpacity>
-        <Animated.Text
-          style={[styles.headerTitle, { opacity: headerOpacity }]}
-          numberOfLines={1}
+
+        <View style={styles.headerCenter}>
+          <Image
+            source={require("../assets/images/vadi-brand-logo.png")}
+            style={styles.headerLogo}
+          />
+          <Animated.Text
+            style={[styles.headerTitle, { opacity: headerOpacity }]}
+            numberOfLines={1}
+          >
+            {product.name}
+          </Animated.Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.push("/cart")}
         >
-          {product.name}
-        </Animated.Text>
-        <TouchableOpacity style={styles.headerButton}>
-          <Ionicons name="share-outline" size={22} color="#1B5E20" />
+          <Ionicons name="cart-outline" size={22} color="#1B5E20" />
+          {getCartItemCount() > 0 && (
+            <View style={styles.headerCartBadge}>
+              <Text style={styles.headerCartBadgeText}>{getCartItemCount()}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </Animated.View>
 
@@ -1393,8 +1409,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#1B5E20",
-    marginHorizontal: 12,
+    marginHorizontal: 8,
   },
+  headerCenter: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 8,
+  },
+  headerLogo: {
+    width: 24,
+    height: 24,
+    resizeMode: "contain",
+  },
+  headerCartBadge: {
+    position: "absolute",
+    top: 1,
+    right: 1,
+    backgroundColor: "#2E7D32",
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  headerCartBadgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
 
   // ── Image ──
   imageContainer: { width, height: width, backgroundColor: "#fff" },

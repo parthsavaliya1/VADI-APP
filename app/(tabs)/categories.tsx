@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -112,9 +113,15 @@ export default function CategoriesScreen() {
     <SafeAreaView style={styles.safe}>
       {/* HEADER */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Categories</Text>
+        <View style={styles.headerLeft}>
+          <Image
+            source={require("../../assets/images/vadi-brand-logo.png")}
+            style={styles.headerLogo}
+          />
+          <Text style={styles.headerTitle}>Categories</Text>
+        </View>
         <TouchableOpacity onPress={() => router.push("/cart")}>
-          <View style={styles.cartIcon}>
+          <View style={styles.iconBtn}>
             <Ionicons name="cart-outline" size={26} color="#1B5E20" />
             {items.length > 0 && (
               <View style={styles.badge}>
@@ -201,17 +208,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerLogo: {
+    width: 30,
+    height: 30,
+    resizeMode: "contain",
+  },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "800",
     color: "#1B5E20",
   },
-  cartIcon: {
+  iconBtn: {
     position: "relative",
-    padding: 4,
+    padding: 6,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   badge: {
     position: "absolute",

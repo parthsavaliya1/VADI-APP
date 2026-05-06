@@ -300,31 +300,29 @@ export default function AllProductsScreen() {
             })
           }
         >
-          {/* Badges Container - Right Top */}
-          <View style={styles.badgesContainer}>
-            {discount > 0 && (
-              <View style={styles.discountBadge}>
-                <Text style={styles.discountText}>{discount}%</Text>
-                <Text style={styles.discountSubtext}>OFF</Text>
+          {discount > 0 && (
+            <View style={styles.ribbonRightWrap}>
+              <View style={[styles.ribbon, styles.discountRibbon]}>
+                <Text style={styles.ribbonText}>{discount}% OFF</Text>
               </View>
-            )}
-          </View>
+            </View>
+          )}
 
-          {/* Additional Badges - Left Side */}
-          <View style={styles.leftBadgesContainer}>
-            {item.trending && (
-              <View style={styles.trendingBadge}>
-                <Ionicons name="flame" size={12} color="#fff" />
-                <Text style={styles.badgeLabel}>HOT</Text>
+          {item.trending && (
+            <View style={styles.ribbonLeftWrap}>
+              <View style={[styles.ribbon, styles.trendingRibbon]}>
+                <Text style={styles.ribbonText}>TRENDING</Text>
               </View>
-            )}
-            {item.featured && (
-              <View style={styles.featuredBadge}>
-                <Ionicons name="star" size={12} color="#FFD700" />
-                <Text style={styles.badgeLabel}>FEATURED</Text>
+            </View>
+          )}
+
+          {!item.trending && item.featured && (
+            <View style={styles.ribbonLeftWrap}>
+              <View style={[styles.ribbon, styles.featuredRibbon]}>
+                <Text style={styles.ribbonText}>FEATURED</Text>
               </View>
-            )}
-          </View>
+            </View>
+          )}
 
           {/* Image Container */}
           <View style={styles.imageContainer}>
@@ -626,7 +624,7 @@ export default function AllProductsScreen() {
             }}
           >
             <Image
-              source={require("../assets/images/VADI.png")} // Replace with your logo path
+              source={require("../assets/images/vadi-brand-logo.png")}
               style={styles.loadingLogo}
             />
           </Animated.View>
@@ -947,85 +945,43 @@ const styles = StyleSheet.create({
     borderColor: "#F0F0F0",
   },
 
-  badgesContainer: {
+  ribbonLeftWrap: {
     position: "absolute",
-    top: 8,
-    right: 8,
-    zIndex: 10,
-    gap: 6,
+    top: 14,
+    left: -34,
+    zIndex: 12,
+    width: 130,
+    alignItems: "center",
+    transform: [{ rotate: "-45deg" }],
   },
-
-  leftBadgesContainer: {
+  ribbonRightWrap: {
     position: "absolute",
-    top: 8,
-    left: 8,
-    zIndex: 10,
-    gap: 6,
-  },
-
-  trendingBadge: {
-    flexDirection: "row",
+    top: 14,
+    right: -34,
+    zIndex: 12,
+    width: 130,
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#FF5722",
-    paddingHorizontal: 8,
+    transform: [{ rotate: "45deg" }],
+  },
+  ribbon: {
+    width: 120,
     paddingVertical: 4,
-    borderRadius: 12,
-    elevation: 3,
-    shadowColor: "#FF5722",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
-
-  featuredBadge: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#1976D2",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    elevation: 3,
-    shadowColor: "#1976D2",
+    borderRadius: 2,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 3,
+    elevation: 2,
   },
-
-  badgeLabel: {
-    color: "#fff",
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-
-  discountBadge: {
-    backgroundColor: "#F44336",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-    alignItems: "center",
-    elevation: 4,
-    shadowColor: "#F44336",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    minWidth: 52,
-  },
-
-  discountText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "900",
-    letterSpacing: 0.3,
-  },
-
-  discountSubtext: {
+  discountRibbon: { backgroundColor: "#F44336" },
+  trendingRibbon: { backgroundColor: "#FF6D00" },
+  featuredRibbon: { backgroundColor: "#1976D2" },
+  ribbonText: {
     color: "#fff",
     fontSize: 8,
-    fontWeight: "700",
-    marginTop: -2,
+    fontWeight: "800",
+    letterSpacing: 0.3,
   },
 
   imageContainer: {
