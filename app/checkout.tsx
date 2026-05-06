@@ -13,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   UIManager,
   View,
@@ -37,6 +38,16 @@ export default function CheckoutScreen() {
   const [paymentMethod, setPaymentMethod] = useState<
     "upi" | "card" | "wallet" | "cod"
   >("upi");
+  const [onlinePaymentType, setOnlinePaymentType] = useState<
+    "googlepay" | "upi" | "card" | "netbanking"
+  >("googlepay");
+  const [upiId, setUpiId] = useState("");
+  const [cardDetails, setCardDetails] = useState({
+    cardNumber: "",
+    cardHolder: "",
+    expiry: "",
+    cvv: "",
+  });
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -113,6 +124,26 @@ export default function CheckoutScreen() {
     landmark: activeAddress!.landmark,
   });
 
+  const formatCardNumber = (value: string) =>
+    value
+      .replace(/\D/g, "")
+      .slice(0, 16)
+      .replace(/(.{4})/g, "$1 ")
+      .trim();
+
+  const formatExpiry = (value: string) => {
+    const cleaned = value.replace(/\D/g, "").slice(0, 4);
+    if (cleaned.length <= 2) return cleaned;
+    return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+  };
+
+  const formatCvv = (value: string) => value.replace(/\D/g, "").slice(0, 3);
+
+  const upiRegex = /^[a-zA-Z0-9._-]{2,}@[a-zA-Z]{2,}$/;
+  const cardNumberRegex = /^\d{16}$/;
+  const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
+  const cvvRegex = /^\d{3}$/;
+
   const handlePlaceOrder = async () => {
     if (items.length === 0) {
       Alert.alert("Empty Cart", "Your cart is empty");
@@ -123,10 +154,52 @@ export default function CheckoutScreen() {
       Alert.alert("No Address", "Please add a delivery address");
       return;
     }
+    if (!user?._id) {
+      Alert.alert("Login Required", "Please login to place this order");
+      return;
+    }
+
+    if (paymentMethod !== "cod") {
+      if (onlinePaymentType === "upi" && !upiId.trim()) {
+        Alert.alert("UPI Required", "Please enter your UPI ID to continue.");
+        return;
+      }
+      if (onlinePaymentType === "upi" && !upiRegex.test(upiId.trim())) {
+        Alert.alert("Invalid UPI", "Please enter a valid UPI ID (example@upi).");
+        return;
+      }
+
+      if (onlinePaymentType === "card") {
+        const { cardNumber, cardHolder, expiry, cvv } = cardDetails;
+        if (!cardNumber.trim() || !cardHolder.trim() || !expiry.trim() || !cvv.trim()) {
+          Alert.alert("Card Details Required", "Please complete all card details.");
+          return;
+        }
+        if (!cardNumberRegex.test(cardNumber.replace(/\s/g, ""))) {
+          Alert.alert("Invalid Card Number", "Card number must be 16 digits.");
+          return;
+        }
+        if (!expiryRegex.test(expiry)) {
+          Alert.alert("Invalid Expiry", "Use expiry format MM/YY.");
+          return;
+        }
+        if (!cvvRegex.test(cvv)) {
+          Alert.alert("Invalid CVV", "CVV must be 3 digits.");
+          return;
+        }
+      }
+    }
 
     setIsProcessing(true);
 
     try {
+      const resolvedOnlineMethod: "upi" | "card" | "wallet" =
+        onlinePaymentType === "card"
+          ? "card"
+          : onlinePaymentType === "netbanking"
+            ? "wallet"
+            : "upi";
+
       // ✅ CASH ON DELIVERY — place order directly
       if (paymentMethod === "cod") {
         await placeOrder({
@@ -152,14 +225,26 @@ export default function CheckoutScreen() {
       }
 
       // ✅ ONLINE PAYMENT — open Razorpay first, place order ONLY on success
-      openRazorpay({
+      await openRazorpay({
+        userId: user!._id,
         amount: grandTotal,
-        onSuccess: async (paymentId: string) => {
+        deliveryFee,
+        paymentMethod: resolvedOnlineMethod,
+        customerName: user?.name,
+        customerPhone: user?.phone,
+        description: `Order payment - ₹${grandTotal}`,
+        onSuccess: async ({ paymentId, orderId, signature }) => {
           try {
             await placeOrder({
               address: buildOrderAddress(),
-              paymentMethod,
+              paymentMethod: resolvedOnlineMethod,
+              paymentDetails: {
+                razorpayPaymentId: paymentId,
+                razorpayOrderId: orderId,
+                razorpaySignature: signature,
+              },
               deliveryFee,
+              notes: `Preferred payment: ${onlinePaymentType}; Razorpay paymentId: ${paymentId}; Razorpay orderId: ${orderId}; Signature: ${signature}`,
             });
 
             clearCart();
@@ -185,12 +270,12 @@ export default function CheckoutScreen() {
             );
           }
         },
-        onFailure: () => {
+        onFailure: (message?: string) => {
           // Payment was cancelled or failed — do NOT place order
           setIsProcessing(false);
           Alert.alert(
             "Payment Failed",
-            "Your payment was cancelled or failed. No order was placed.",
+            message || "Your payment was cancelled or failed. No order was placed.",
             [{ text: "Try Again" }],
           );
         },
@@ -495,7 +580,7 @@ export default function CheckoutScreen() {
                 <View style={styles.paymentInfo}>
                   <Text style={styles.paymentText}>Online Payment</Text>
                   <Text style={styles.paymentSubtext}>
-                    UPI, Cards, Wallets via Razorpay
+                    Google Pay, UPI, Cards, Net Banking
                   </Text>
                 </View>
                 <View
@@ -509,6 +594,136 @@ export default function CheckoutScreen() {
                   )}
                 </View>
               </TouchableOpacity>
+
+              {paymentMethod !== "cod" && (
+                <View style={styles.paymentDetailsWrap}>
+                  <Text style={styles.paymentDetailsTitle}>Select payment option</Text>
+
+                  <View style={styles.paymentChipsRow}>
+                    {[
+                      { key: "googlepay", label: "Google Pay", icon: "logo-google" },
+                      { key: "upi", label: "UPI ID", icon: "at" },
+                      { key: "card", label: "Card", icon: "card" },
+                      { key: "netbanking", label: "Net Banking", icon: "business" },
+                    ].map((option) => (
+                      <TouchableOpacity
+                        key={option.key}
+                        style={[
+                          styles.paymentChip,
+                          onlinePaymentType === option.key && styles.paymentChipActive,
+                        ]}
+                        onPress={() =>
+                          setOnlinePaymentType(
+                            option.key as "googlepay" | "upi" | "card" | "netbanking",
+                          )
+                        }
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons
+                          name={option.icon as any}
+                          size={16}
+                          color={onlinePaymentType === option.key ? "#2E7D32" : "#666"}
+                        />
+                        <Text
+                          style={[
+                            styles.paymentChipText,
+                            onlinePaymentType === option.key && styles.paymentChipTextActive,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {onlinePaymentType === "googlepay" && (
+                    <View style={styles.inlineNotice}>
+                      <Ionicons name="phone-portrait" size={14} color="#2E7D32" />
+                      <Text style={styles.inlineNoticeText}>
+                        Google Pay will open in Razorpay at checkout.
+                      </Text>
+                    </View>
+                  )}
+
+                  {onlinePaymentType === "upi" && (
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter UPI ID (example@upi)"
+                      placeholderTextColor="#9E9E9E"
+                      value={upiId}
+                      onChangeText={(value) => setUpiId(value.trim().toLowerCase())}
+                      autoCapitalize="none"
+                    />
+                  )}
+
+                  {onlinePaymentType === "card" && (
+                    <View style={styles.cardFormWrap}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Card Number"
+                        placeholderTextColor="#9E9E9E"
+                        value={cardDetails.cardNumber}
+                        onChangeText={(value) =>
+                          setCardDetails((prev) => ({
+                            ...prev,
+                            cardNumber: formatCardNumber(value),
+                          }))
+                        }
+                        keyboardType="number-pad"
+                        maxLength={19}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Card Holder Name"
+                        placeholderTextColor="#9E9E9E"
+                        value={cardDetails.cardHolder}
+                        onChangeText={(value) =>
+                          setCardDetails((prev) => ({ ...prev, cardHolder: value }))
+                        }
+                      />
+                      <View style={styles.rowInputs}>
+                        <TextInput
+                          style={[styles.input, styles.halfInput]}
+                          placeholder="MM/YY"
+                          placeholderTextColor="#9E9E9E"
+                          value={cardDetails.expiry}
+                          onChangeText={(value) =>
+                          setCardDetails((prev) => ({
+                            ...prev,
+                            expiry: formatExpiry(value),
+                          }))
+                          }
+                          maxLength={5}
+                        />
+                        <TextInput
+                          style={[styles.input, styles.halfInput]}
+                          placeholder="CVV"
+                          placeholderTextColor="#9E9E9E"
+                          value={cardDetails.cvv}
+                          onChangeText={(value) =>
+                          setCardDetails((prev) => ({
+                            ...prev,
+                            cvv: formatCvv(value),
+                          }))
+                          }
+                          keyboardType="number-pad"
+                        maxLength={3}
+                          secureTextEntry
+                        />
+                      </View>
+                    </View>
+                  )}
+
+                  {onlinePaymentType === "netbanking" && (
+                    <View style={styles.inlineNotice}>
+                      <Ionicons name="business" size={14} color="#2E7D32" />
+                      <Text style={styles.inlineNoticeText}>
+                        Choose your bank securely on the Razorpay screen.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
 
               {/* CASH ON DELIVERY */}
               <TouchableOpacity
@@ -874,6 +1089,83 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   paymentSubtext: { fontSize: 12, color: "#888" },
+  paymentDetailsWrap: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#FAFAFA",
+    borderWidth: 1,
+    borderColor: "#EAEAEA",
+  },
+  paymentDetailsTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#1A1A1A",
+    marginBottom: 10,
+  },
+  paymentChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 10,
+  },
+  paymentChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#D5D5D5",
+    backgroundColor: "#fff",
+  },
+  paymentChipActive: {
+    borderColor: "#2E7D32",
+    backgroundColor: "#E8F5E9",
+  },
+  paymentChipText: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "600",
+  },
+  paymentChipTextActive: {
+    color: "#2E7D32",
+  },
+  input: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#1A1A1A",
+  },
+  cardFormWrap: {
+    gap: 8,
+  },
+  rowInputs: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  halfInput: {
+    flex: 1,
+  },
+  inlineNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "#E8F5E9",
+  },
+  inlineNoticeText: {
+    flex: 1,
+    color: "#2E7D32",
+    fontSize: 12,
+    fontWeight: "600",
+  },
   radioOuter: {
     width: 22,
     height: 22,
