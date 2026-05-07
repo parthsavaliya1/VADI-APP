@@ -158,7 +158,7 @@ export default function CategoriesScreen() {
       ) : filteredCategories.length > 0 ? (
         <FlatList
           data={filteredCategories}
-          numColumns={2}
+          numColumns={3}
           keyExtractor={(item) => item.name}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
@@ -294,8 +294,8 @@ const styles = StyleSheet.create({
   categoryCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 20,
-    width: "48%",
+    padding: 12,
+    width: "31%",
     marginBottom: 14,
     alignItems: "center",
     elevation: 3,
