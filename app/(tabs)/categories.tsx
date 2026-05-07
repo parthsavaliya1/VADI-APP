@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -29,6 +30,7 @@ type CategoryUI = {
   _id: string;
   name: string;
   slug: string;
+  image?: string;
   icon: string;
   color: string;
   count: number;
@@ -80,6 +82,7 @@ export default function CategoriesScreen() {
           _id: c._id,
           name: c.name,
           slug: c.slug,
+          image: c.image,
           icon: categoryIcons[c.slug]?.icon || "apps",
           color: categoryIcons[c.slug]?.color || "#607D8B",
           count: countMap[c._id] || 0,
@@ -112,9 +115,15 @@ export default function CategoriesScreen() {
     <SafeAreaView style={styles.safe}>
       {/* HEADER */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Categories</Text>
+        <View style={styles.headerLeft}>
+          <Image
+            source={require("../../assets/images/vadi-brand-logo.png")}
+            style={styles.headerLogo}
+          />
+          <Text style={styles.headerTitle}>Categories</Text>
+        </View>
         <TouchableOpacity onPress={() => router.push("/cart")}>
-          <View style={styles.cartIcon}>
+          <View style={styles.iconBtn}>
             <Ionicons name="cart-outline" size={26} color="#1B5E20" />
             {items.length > 0 && (
               <View style={styles.badge}>
@@ -166,11 +175,15 @@ export default function CategoriesScreen() {
                   { backgroundColor: item.color + "20" },
                 ]}
               >
-                <Ionicons
-                  name={item.icon as any}
-                  size={32}
-                  color={item.color}
-                />
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={styles.categoryImage} />
+                ) : (
+                  <Ionicons
+                    name={item.icon as any}
+                    size={32}
+                    color={item.color}
+                  />
+                )}
               </View>
               <Text style={styles.categoryName}>
                 {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
@@ -201,17 +214,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerLogo: {
+    width: 30,
+    height: 30,
+    resizeMode: "contain",
+  },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "800",
     color: "#1B5E20",
   },
-  cartIcon: {
+  iconBtn: {
     position: "relative",
-    padding: 4,
+    padding: 6,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   badge: {
     position: "absolute",
@@ -281,6 +311,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
+    overflow: "hidden",
+  },
+  categoryImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   categoryName: {
     fontSize: 15,

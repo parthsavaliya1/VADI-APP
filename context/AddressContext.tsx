@@ -119,9 +119,9 @@ export const AddressProvider = ({
       const defaultAddr = res.data.find((a: Address) => a.isDefault);
       setDefaultAddressState(defaultAddr || null);
 
-      // If no address is selected, use default
-      if (!selectedAddress && defaultAddr) {
-        setSelectedAddress(defaultAddr);
+      // If no address is selected, use default or fallback to first address
+      if (!selectedAddress) {
+        setSelectedAddress(defaultAddr || res.data[0] || null);
       }
     } catch (error) {
       console.error("Failed to load addresses:", error);
@@ -165,9 +165,12 @@ export const AddressProvider = ({
 
       setAddresses((prev) => [...prev, newAddress]);
 
-      // If this is set as default or first address, update default
+      // If this is set as default or first address, update default + selected
       if (newAddress.isDefault || addresses.length === 0) {
         setDefaultAddressState(newAddress);
+        setSelectedAddress(newAddress);
+      } else if (!selectedAddress) {
+        // Ensure checkout has an active address even when new one isn't default
         setSelectedAddress(newAddress);
       }
 

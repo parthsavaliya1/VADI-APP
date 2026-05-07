@@ -1,3 +1,5 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useCart } from "../../context/CartContext";
 import { useOrders } from "../../context/OrderContext";
 
 interface OrderItem {
@@ -73,6 +76,7 @@ interface Order {
 
 export default function OrdersScreen() {
   const { orders, fetchOrders, loading } = useOrders();
+  const { items } = useCart();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -174,10 +178,26 @@ export default function OrdersScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>My Orders</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{orders.length}</Text>
+          <View style={styles.headerLeft}>
+            <Image
+              source={require("../../assets/images/vadi-brand-logo.png")}
+              style={styles.headerLogo}
+            />
+            <Text style={styles.title}>My Orders</Text>
+            <View style={styles.ordersBadge}>
+              <Text style={styles.badgeText}>{orders.length}</Text>
+            </View>
           </View>
+          <TouchableOpacity onPress={() => router.push("/cart")}>
+            <View style={styles.iconBtn}>
+              <Ionicons name="cart-outline" size={24} color="#1B5E20" />
+              {items.length > 0 && (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.badgeText}>{items.length}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         <FlatList
@@ -440,16 +460,38 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 15,
-    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 2,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerLogo: {
+    width: 30,
+    height: 30,
+    resizeMode: "contain",
+  },
+  iconBtn: {
+    position: "relative",
+    padding: 6,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: "#1B5E20",
   },
-  badge: {
+  ordersBadge: {
     backgroundColor: "#4CAF50",
     borderRadius: 12,
     paddingHorizontal: 8,
@@ -459,8 +501,20 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
+  },
+  cartBadge: {
+    position: "absolute",
+    top: -1,
+    right: -1,
+    backgroundColor: "#2E7D32",
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
   },
   listContent: {
     paddingBottom: 20,

@@ -28,6 +28,11 @@ type PlaceOrderPayload = {
     landmark?: string;
   };
   paymentMethod: "cod" | "upi" | "card" | "wallet";
+  paymentDetails?: {
+    razorpayPaymentId: string;
+    razorpayOrderId: string;
+    razorpaySignature: string;
+  };
   deliveryFee: number;
   notes?: string;
 };
@@ -76,6 +81,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const placeOrder = async ({
     address,
     paymentMethod,
+    paymentDetails,
     deliveryFee,
     notes,
   }: PlaceOrderPayload) => {
@@ -97,6 +103,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         landmark: address.landmark,
       },
       paymentMethod,
+      paymentDetails,
       deliveryFee,
       notes,
     });

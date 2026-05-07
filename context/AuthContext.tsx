@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { API } from "../utils/api";
+import { getPushToken } from "../utils/pushNotifications";
 
 /* ================= TYPES ================= */
 
@@ -56,6 +58,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const syncPushToken = async (userId: string) => {
+    try {
+      const pushToken = await getPushToken();
+      if (!pushToken) return;
+
+      await API.post("/api/auth/push-token", {
+        userId,
+        pushToken,
+        platform: Platform.OS,
+      });
+    } catch (error) {
+      console.log("Push token sync failed", error);
+    }
+  };
+
   /* ---------- LOAD USER FROM STORAGE ---------- */
   useEffect(() => {
     const loadAuth = async () => {
@@ -68,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await API.patch(`/api/users/${userData._id}`, {
             lastLoginAt: new Date(),
           });
+          await syncPushToken(userData._id);
         }
       } catch (e) {
         console.log("❌ Auth load error", e);
@@ -101,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Save to storage and update state
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
       setUser(userData);
+      await syncPushToken(userData._id);
       console.log("✅ User logged in:", userData.name);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || "Invalid OTP");
@@ -135,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Save to storage and update state
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
       setUser(userData);
+      await syncPushToken(userData._id);
       console.log("✅ User signed up:", userData.name);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || "Signup failed");

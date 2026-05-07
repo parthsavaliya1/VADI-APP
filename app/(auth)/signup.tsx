@@ -163,7 +163,7 @@ export default function EnhancedSignupScreen() {
                   end={{ x: 1, y: 1 }}
                 >
                   <Image
-                    source={require("../../assets/images/VADI.png")}
+                    source={require("../../assets/images/vadi-brand-logo.png")}
                     style={styles.logo}
                   />
                 </LinearGradient>
