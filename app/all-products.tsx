@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 3,
   },
-  badgeText: {
+  badgeTextTopLeft: {
     color: "#fff",
     fontSize: 8,
     fontWeight: "800",
