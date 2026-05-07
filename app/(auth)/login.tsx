@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -27,6 +28,8 @@ export default function EnhancedLoginScreen() {
 
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
+  const [privacyTouched, setPrivacyTouched] = useState(false);
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -41,12 +44,21 @@ export default function EnhancedLoginScreen() {
 
   const normalizedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
 
-  const isFormValid = useMemo(() => {
-    return phone.length >= 10;
-  }, [phone]);
+  const isFormValid = useMemo(() => phone.length >= 10 && hasAcceptedPrivacy, [phone, hasAcceptedPrivacy]);
 
   // Entrance animations
   useEffect(() => {
+    const loadPrivacy = async () => {
+      try {
+        const stored = await AsyncStorage.getItem("PRIVACY_ACCEPTED");
+        if (stored === "true") setHasAcceptedPrivacy(true);
+      } catch (e) {
+        console.log("Privacy flag load failed", e);
+      }
+    };
+
+    loadPrivacy();
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -113,6 +125,8 @@ export default function EnhancedLoginScreen() {
   }, []);
 
   const handleLogin = async () => {
+    setPrivacyTouched(true);
+    if (!hasAcceptedPrivacy) return;
     if (!isFormValid || loading) return;
 
     try {
@@ -121,7 +135,10 @@ export default function EnhancedLoginScreen() {
 
       router.push({
         pathname: "/(auth)/verify-otp",
-        params: { phone: normalizedPhone },
+        params: {
+          phone: normalizedPhone,
+          privacyAccepted: hasAcceptedPrivacy ? "true" : "false",
+        },
       });
     } catch (err) {
       console.log("Login error", err);
@@ -227,6 +244,48 @@ export default function EnhancedLoginScreen() {
                     )}
                   </View>
                 </Animated.View>
+
+                {/* Privacy policy checkbox */}
+                <View style={styles.privacyCard}>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    style={styles.privacyRow}
+                    onPress={async () => {
+                      const next = !hasAcceptedPrivacy;
+                      setHasAcceptedPrivacy(next);
+                      setPrivacyTouched(true);
+                      try {
+                        await AsyncStorage.setItem(
+                          "PRIVACY_ACCEPTED",
+                          next ? "true" : "false"
+                        );
+                      } catch (e) {
+                        console.log("Privacy flag save failed", e);
+                      }
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.checkbox,
+                        hasAcceptedPrivacy && styles.checkboxChecked,
+                      ]}
+                    >
+                      {hasAcceptedPrivacy && (
+                        <Ionicons name="checkmark" size={14} color="#fff" />
+                      )}
+                    </View>
+                    <Text style={styles.privacyText}>
+                      I agree to the{" "}
+                      <Text style={styles.privacyLink}>Privacy Policy</Text>.
+                    </Text>
+                  </TouchableOpacity>
+
+                  {!hasAcceptedPrivacy && privacyTouched && (
+                    <Text style={styles.privacyError}>
+                      Please accept the privacy policy to continue.
+                    </Text>
+                  )}
+                </View>
 
                 {/* Login Button */}
                 <Animated.View
@@ -667,5 +726,47 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 75,
     backgroundColor: "rgba(139, 195, 74, 0.04)",
+  },
+
+  // Privacy policy
+  privacyCard: {
+    marginTop: -6,
+    marginBottom: 2,
+  },
+  privacyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: "#A5D6A7",
+    backgroundColor: "#F9FFF9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    borderColor: "#2E7D32",
+    backgroundColor: "#4CAF50",
+  },
+  privacyText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#4E7C50",
+    lineHeight: 18,
+  },
+  privacyLink: {
+    color: "#2E7D32",
+    fontWeight: "700",
+  },
+  privacyError: {
+    marginTop: 6,
+    fontSize: 11,
+    color: "#C62828",
+    fontWeight: "500",
   },
 });

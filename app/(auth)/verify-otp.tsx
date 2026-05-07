@@ -22,6 +22,8 @@ export default function VerifyOtpScreen() {
   const handleVerifyOtp = async () => {
     if (otp.length !== 6 || loading) return;
 
+    const privacyAccepted = params.privacyAccepted === "true";
+
     try {
       setLoading(true);
 
@@ -32,10 +34,11 @@ export default function VerifyOtpScreen() {
           otp,
           params.name,
           params.role || "user",
+          privacyAccepted
         );
       } else {
         // Existing user login flow
-        await verifyOtpAndLogin(params.phone, otp);
+        await verifyOtpAndLogin(params.phone, otp, privacyAccepted);
       }
 
       // Navigate to home

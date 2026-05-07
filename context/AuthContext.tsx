@@ -31,12 +31,13 @@ type AuthContextType = {
 
   // OTP Authentication
   sendOtp: (phone: string, mode: "login" | "signup") => Promise<void>;
-  verifyOtpAndLogin: (phone: string, otp: string) => Promise<void>;
+  verifyOtpAndLogin: (phone: string, otp: string, privacyPolicyAccepted?: boolean) => Promise<void>;
   verifyOtpAndSignup: (
     phone: string,
     otp: string,
     name: string,
     role?: string,
+    privacyPolicyAccepted?: boolean,
   ) => Promise<void>;
 
   // User Updates
@@ -111,9 +112,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ✅ VERIFY OTP AND LOGIN (existing user)
-  const verifyOtpAndLogin = async (phone: string, otp: string) => {
+  const verifyOtpAndLogin = async (phone: string, otp: string, privacyPolicyAccepted?: boolean) => {
     try {
-      const verifyRes = await API.post("/api/auth/verify-otp", { phone, otp });
+      const verifyRes = await API.post("/api/auth/verify-otp", {
+        phone,
+        otp,
+        ...(privacyPolicyAccepted === true ? { privacyPolicyAccepted: true } : {}),
+      });
       const { user: userData } = verifyRes.data;
 
       // Save to storage and update state
@@ -132,10 +137,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     otp: string,
     name: string,
     role: string = "user",
+    privacyPolicyAccepted?: boolean,
   ) => {
     try {
       // Step 1: Verify OTP
-      const verifyRes = await API.post("/api/auth/verify-otp", { phone, otp });
+      const verifyRes = await API.post("/api/auth/verify-otp", {
+        phone,
+        otp,
+        ...(privacyPolicyAccepted === true ? { privacyPolicyAccepted: true } : {}),
+      });
       const { isNewUser } = verifyRes.data;
 
       if (!isNewUser) {
@@ -147,6 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name,
         phone,
         role,
+        ...(privacyPolicyAccepted === true ? { privacyPolicyAccepted: true } : {}),
       });
 
       const userData = signupRes.data;
