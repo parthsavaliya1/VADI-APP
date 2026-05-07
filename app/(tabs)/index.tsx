@@ -27,6 +27,7 @@ import { API } from "../../utils/api";
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 16 * 2 - 10) / 2;
 const HORIZONTAL_CARD_W = (width - 16 * 2 - 12) / 2;
+const DEAL_CARD_W = (width - 16 * 2 - 12 * 2 - 12 * 2) / 3;
 
 // ─── Fallbacks ────────────────────────────────────────────────────────────────
 const FALLBACK_BANNERS = [
@@ -219,7 +220,7 @@ function DealCard({ item, onAdd }: { item: Product; onAdd: () => void }) {
   const disc = v.mrp > 0 ? Math.round(((v.mrp - v.price) / v.mrp) * 100) : item.discount || 0;
   return (
     <TouchableOpacity
-      style={[s.dealCard, { width: HORIZONTAL_CARD_W }]}
+      style={[s.dealCard, { width: DEAL_CARD_W }]}
       activeOpacity={0.85}
       onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
     >
@@ -240,7 +241,7 @@ function DealCard({ item, onAdd }: { item: Product; onAdd: () => void }) {
             {disc > 0 && <Text style={s.strikePrice}>₹{v.mrp.toFixed(2)}</Text>}
           </View>
           <TouchableOpacity style={s.roundAddBtn} onPress={(e) => { e.stopPropagation(); onAdd(); }} activeOpacity={0.8} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-            <Ionicons name="add" size={18} color="#fff" />
+            <Ionicons name="add" size={14} color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
@@ -680,9 +681,10 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <FlatList
-              data={dealProducts}
+              data={dealProducts.slice(0, 3)}
               horizontal
               showsHorizontalScrollIndicator={false}
+              scrollEnabled={false}
               keyExtractor={(item) => item._id}
               contentContainerStyle={{ paddingRight: 0, gap: 12 }}
               renderItem={({ item }) => <DealCard item={item} onAdd={() => handleAddToCart(item)} />}
@@ -918,17 +920,17 @@ const s = StyleSheet.create({
     shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6,
     borderWidth: 1, borderColor: "#F0F0F0", overflow: "hidden",
   },
-  dealImgZone: { height: 130, backgroundColor: "#FAFAF8", alignItems: "center", justifyContent: "center", position: "relative" },
-  dealBadge: { position: "absolute", top: 10, left: 10, backgroundColor: "#EF4444", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-  badgeTxt: { color: "#fff", fontSize: 11, fontWeight: "800", letterSpacing: 0.4 },
-  dealImg: { width: 100, height: 100, resizeMode: "contain" },
-  dealInfo: { padding: 14 },
-  dealName: { fontSize: 13, fontWeight: "700", color: "#1F2937", marginBottom: 4 },
-  dealUnit: { fontSize: 11, color: "#9CA3AF", fontWeight: "600", marginBottom: 10 },
+  dealImgZone: { height: 100, backgroundColor: "#FAFAF8", alignItems: "center", justifyContent: "center", position: "relative" },
+  dealBadge: { position: "absolute", top: 6, left: 6, backgroundColor: "#EF4444", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, zIndex: 10, elevation: 5 },
+  badgeTxt: { color: "#fff", fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
+  dealImg: { width: 70, height: 70, resizeMode: "contain", zIndex: 1 },
+  dealInfo: { padding: 8 },
+  dealName: { fontSize: 11, fontWeight: "700", color: "#1F2937", marginBottom: 2 },
+  dealUnit: { fontSize: 10, color: "#9CA3AF", fontWeight: "600", marginBottom: 6 },
   dealFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  dealPrice: { fontSize: 15, fontWeight: "800", color: "#2E7D32" },
-  strikePrice: { fontSize: 11, color: "#D1D5DB", textDecorationLine: "line-through", marginTop: 2 },
-  roundAddBtn: { backgroundColor: "#2E7D32", width: 38, height: 38, borderRadius: 10, justifyContent: "center", alignItems: "center", flexShrink: 0, elevation: 3 },
+  dealPrice: { fontSize: 12, fontWeight: "800", color: "#2E7D32" },
+  strikePrice: { fontSize: 9, color: "#D1D5DB", textDecorationLine: "line-through", marginTop: 1 },
+  roundAddBtn: { backgroundColor: "#2E7D32", width: 24, height: 24, borderRadius: 7, justifyContent: "center", alignItems: "center", flexShrink: 0, elevation: 3 },
 
   // CATEGORY
   catCard: {
