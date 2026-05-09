@@ -1,21 +1,46 @@
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+let notificationHandlerInitialized = false;
+
+async function getNotificationsModule() {
+  try {
+    return await import("expo-notifications");
+  } catch {
+    return null;
+  }
+}
+
+async function ensureNotificationHandler(Notifications: any) {
+  if (notificationHandlerInitialized) return;
+  notificationHandlerInitialized = true;
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 export async function getPushToken() {
   if (!Device.isDevice) {
     return null;
   }
+
+  // Expo Go (SDK 53+) does not support remote push notifications on Android.
+  // Use a development build for real tokens; in Expo Go we no-op to avoid a hard crash.
+  if (Platform.OS === "android" && Constants.appOwnership === "expo") {
+    return null;
+  }
+
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return null;
+  await ensureNotificationHandler(Notifications);
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;

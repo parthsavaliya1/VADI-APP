@@ -29,8 +29,13 @@ type AuthContextType = {
   isLoggedIn: boolean;
   loading: boolean;
 
-  // OTP Authentication
-  sendOtp: (phone: string, mode: "login" | "signup") => Promise<void>;
+  // OTP Authentication (`forceResend` asks backend to send a new SMS even if a code is still valid)
+  sendOtp: (
+    phone: string,
+    mode: "login" | "signup",
+    options?: { forceResend?: boolean },
+  ) => Promise<{ demoLoggedIn?: boolean }>;
+  demoLogin: (phone: string) => Promise<void>;
   verifyOtpAndLogin: (phone: string, otp: string, privacyPolicyAccepted?: boolean) => Promise<void>;
   verifyOtpAndSignup: (
     phone: string,
@@ -52,6 +57,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 const STORAGE_KEY = "AUTH_USER";
+const DEMO_PHONE = process.env.EXPO_PUBLIC_DEMO_PHONE ?? "+919999999999";
 
 /* ================= PROVIDER ================= */
 
@@ -99,13 +105,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /* ================= OTP AUTHENTICATION ================= */
 
-  // 📤 SEND OTP
-  const sendOtp = async (phone: string, mode: "login" | "signup") => {
+  // ⭐ DEMO LOGIN (no OTP)
+  const demoLogin = async (phone: string) => {
     try {
+      const res = await API.post("/api/auth/demo-login", { phone });
+      const userData = res.data?.user;
+      if (!userData?._id) throw new Error("Demo login failed");
+
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+      setUser(userData);
+      await syncPushToken(userData._id);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || "Demo login failed");
+    }
+  };
+
+  // 📤 SEND OTP
+  const sendOtp = async (
+    phone: string,
+    mode: "login" | "signup",
+    options?: { forceResend?: boolean },
+  ) => {
+    try {
+      // If demo number, frontend can directly login without OTP
+      if (String(phone) === String(DEMO_PHONE)) {
+        await demoLogin(phone);
+        return { demoLoggedIn: true };
+      }
+
       await API.post("/api/auth/send-otp", {
         phone,
         mode,
+        ...(options?.forceResend ? { forceResend: true } : {}),
       });
+      return {};
     } catch (error: any) {
       throw new Error(error.response?.data?.error || "Failed to send OTP");
     }
@@ -209,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoggedIn: !!user,
         loading,
         sendOtp,
+        demoLogin,
         verifyOtpAndLogin,
         verifyOtpAndSignup,
         updateProfile,
