@@ -108,6 +108,18 @@ const getFilterValue = (status: string) => {
   return "processing";
 };
 
+/** Primary CTA still opens tracking/timeline; copy matches whether the shipment is ongoing or finished */
+const getOrderPrimaryAction = (status: string) => {
+  const bucket = getFilterValue(status);
+  if (bucket === "delivered") {
+    return { label: "View Timeline", icon: "reader-outline" as const };
+  }
+  if (bucket === "cancelled") {
+    return { label: "Order Details", icon: "information-circle-outline" as const };
+  }
+  return { label: "Track Order", icon: "navigate-outline" as const };
+};
+
 const getPaymentIcon = (method: string) => {
   switch (method.toLowerCase()) {
     case "cod": return "cash-outline";
@@ -197,6 +209,7 @@ function OrderCard({
   const trackBtnScale = useRef(new Animated.Value(1)).current;
   const isExpanded = expandedId === item._id;
   const statusConfig = getStatusConfig(item.status);
+  const primaryAction = getOrderPrimaryAction(item.status);
 
   useEffect(() => {
     Animated.parallel([
@@ -298,8 +311,8 @@ function OrderCard({
             onPress={handleTrack}
             android_ripple={{ color: "rgba(255,255,255,0.2)", borderless: false }}
           >
-            <Ionicons name="navigate-outline" size={15} color="#fff" />
-            <Text style={styles.trackBtnText}>Track Order</Text>
+            <Ionicons name={primaryAction.icon as any} size={15} color="#fff" />
+            <Text style={styles.trackBtnText}>{primaryAction.label}</Text>
           </Pressable>
         </Animated.View>
 
