@@ -6,11 +6,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
-  Dimensions,
   Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -18,17 +18,24 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { AuthScreenBackground } from "../../components/auth/AuthScreenBackground";
+import {
+  AUTH_FARM_SECTION_HEIGHT,
+  BG_GRADIENT_MID,
+  BG_SURFACE,
+} from "../../constants/authScreenTheme";
 import { useAuth } from "../../context/AuthContext";
-
-const { width } = Dimensions.get("window");
-
-/** Bottom farm banner from design asset; width tracks screen */
-const AUTH_FARM_SECTION_HEIGHT = Math.round((width * 170) / 473);
-const AUTH_LEAF_DISPLAY_WIDTH = Math.min(Math.round(width * 0.4), 200);
 
 export default function EnhancedLoginScreen() {
   const { sendOtp } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  /** Farm strip reaches the physical bottom (includes home indicator area) */
+  const farmBandHeight = AUTH_FARM_SECTION_HEIGHT + insets.bottom;
 
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
@@ -110,35 +117,13 @@ export default function EnhancedLoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       {/* Background gradient + farm illustration area */}
       <LinearGradient
-        colors={["#F4F8F0", "#EAF3E6", "#F4F8F0"]}
+        colors={[BG_SURFACE, BG_GRADIENT_MID, BG_SURFACE]}
         style={styles.gradient}
       >
-        {/* Bottom landscape (matches design); behind form */}
-        <Image
-          source={require("../../assets/images/auth-bg-farm.png")}
-          style={[
-            styles.bgFarmImage,
-            { height: AUTH_FARM_SECTION_HEIGHT },
-          ]}
-          resizeMode="stretch"
-          pointerEvents="none"
-        />
-        {/* Watercolor leaves top-right */}
-        <Image
-          source={require("../../assets/images/auth-bg-leaves.png")}
-          style={[
-            styles.bgLeavesImage,
-            {
-              width: AUTH_LEAF_DISPLAY_WIDTH,
-              height: Math.round((AUTH_LEAF_DISPLAY_WIDTH * 236) / 150),
-            },
-          ]}
-          resizeMode="contain"
-          pointerEvents="none"
-        />
+        <AuthScreenBackground farmBandHeight={farmBandHeight} />
 
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <KeyboardAvoidingView
@@ -148,7 +133,11 @@ export default function EnhancedLoginScreen() {
             <Animated.View
               style={[
                 styles.container,
-                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                  paddingBottom: farmBandHeight + 16,
+                },
               ]}
             >
               {/* ── LOGO SECTION ── */}
@@ -162,10 +151,7 @@ export default function EnhancedLoginScreen() {
                   source={require("../../assets/images/vadi-brand-logo.png")}
                   style={styles.logoImage}
                 />
-                <Text style={styles.brandName}>VADI</Text>
-                <Text style={styles.brandTagline}>
-                  Fresh Grocery &amp; Farm Products
-                </Text>
+                
               </Animated.View>
 
               {/* ── WELCOME TEXT ── */}
@@ -281,22 +267,24 @@ export default function EnhancedLoginScreen() {
                   <View style={styles.dividerLine} />
                 </View>
 
-                {/* Create New Account */}
-                <TouchableOpacity
-                  style={styles.createAccountCard}
-                  onPress={() => router.push("/(auth)/signup")}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.createAccountLeft}>
-                    <View style={styles.userIconCircle}>
-                      <Ionicons name="person" size={18} color="#4CAF50" />
-                    </View>
-                    <Text style={styles.createAccountText}>
-                      Create New Account
+                <View style={styles.authFooterLinkWrap}>
+                  <View style={styles.authFooterLinkRow}>
+                    <Text style={styles.authFooterMuted}>
+                      Don&apos;t have an account?{" "}
                     </Text>
+                    <Pressable
+                      onPress={() => router.push("/(auth)/signup")}
+                      accessibilityRole="link"
+                      accessibilityLabel="Create New Account"
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={({ pressed }) => [
+                        pressed && styles.authFooterLinkPressed,
+                      ]}
+                    >
+                      <Text style={styles.authFooterLink}>Create New Account</Text>
+                    </Pressable>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#888" />
-                </TouchableOpacity>
+                </View>
               </View>
             </Animated.View>
           </KeyboardAvoidingView>
@@ -309,27 +297,11 @@ export default function EnhancedLoginScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F4F8F0",
+    backgroundColor: BG_SURFACE,
   },
 
   gradient: {
     flex: 1,
-  },
-
-  bgFarmImage: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    width,
-    zIndex: 0,
-  },
-
-  bgLeavesImage: {
-    position: "absolute",
-    top: 4,
-    right: -6,
-    zIndex: 0,
-    opacity: 0.95,
   },
 
   // ── MAIN CONTAINER ──
@@ -337,8 +309,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: AUTH_FARM_SECTION_HEIGHT + 16,
-    zIndex: 1,
+    zIndex: 2,
   },
 
   // ── LOGO SECTION ──
@@ -348,8 +319,8 @@ const styles = StyleSheet.create({
   },
 
   logoImage: {
-    width: 90,
-    height: 90,
+    width: 120,
+    height: 120,
     resizeMode: "contain",
     marginBottom: 8,
   },
@@ -550,155 +521,33 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Create account card
-  createAccountCard: {
-    flexDirection: "row",
+  authFooterLinkWrap: {
     alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "#D8EDD8",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-      },
-      android: { elevation: 2 },
-    }),
-  },
-
-  createAccountLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  userIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#EAF5EA",
     justifyContent: "center",
-    alignItems: "center",
+    paddingVertical: 10,
+    marginTop: 4,
   },
 
-  createAccountText: {
+  authFooterLinkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
+  },
+
+  authFooterMuted: {
     fontSize: 15,
-    fontWeight: "700",
-    color: "#1E3A1E",
+    color: "#6B8C6B",
   },
 
-  // ── FARM ILLUSTRATION ──
-  farmIllustration: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: FARM_HEIGHT,
-    overflow: "hidden",
+  authFooterLinkPressed: {
+    opacity: 0.65,
   },
 
-  hill1: {
-    position: "absolute",
-    bottom: -20,
-    left: -40,
-    width: width * 0.7,
-    height: 90,
-    borderRadius: 999,
-    backgroundColor: "rgba(139,195,74,0.22)",
-  },
-
-  hill2: {
-    position: "absolute",
-    bottom: -30,
-    right: -20,
-    width: width * 0.65,
-    height: 80,
-    borderRadius: 999,
-    backgroundColor: "rgba(100,160,80,0.18)",
-  },
-
-  hill3: {
-    position: "absolute",
-    bottom: -10,
-    left: width * 0.2,
-    width: width * 0.6,
-    height: 55,
-    borderRadius: 999,
-    backgroundColor: "rgba(76,175,80,0.14)",
-  },
-
-  barn: {
-    position: "absolute",
-    bottom: 28,
-    right: width * 0.28,
-  },
-
-  barnRoof: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 20,
-    borderRightWidth: 20,
-    borderBottomWidth: 18,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-    borderBottomColor: "rgba(90,140,70,0.35)",
-  },
-
-  barnBody: {
-    width: 40,
-    height: 28,
-    backgroundColor: "rgba(90,140,70,0.28)",
-    borderRadius: 2,
-  },
-
-  windmill: {
-    position: "absolute",
-    bottom: 30,
-    right: width * 0.15,
-    alignItems: "center",
-  },
-
-  windmillPole: {
-    width: 4,
-    height: 40,
-    backgroundColor: "rgba(90,140,70,0.3)",
-    borderRadius: 2,
-  },
-
-  windmillHead: {
-    position: "absolute",
-    top: 0,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 3,
-    borderColor: "rgba(90,140,70,0.3)",
-  },
-
-  tree: {
-    position: "absolute",
-    alignItems: "center",
-  },
-
-  treeTrunk: {
-    width: 5,
-    height: 14,
-    backgroundColor: "rgba(90,130,70,0.3)",
-    borderRadius: 2,
-  },
-
-  treeTop: {
-    position: "absolute",
-    bottom: 10,
-    width: 26,
-    height: 36,
-    borderRadius: 13,
-    backgroundColor: "rgba(100,170,70,0.28)",
+  authFooterLink: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#3A8A3A",
+    textDecorationLine: "underline",
   },
 });

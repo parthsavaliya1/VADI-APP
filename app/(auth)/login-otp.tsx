@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#F6F7F2" },
   container: { padding: 20, paddingTop: 40 },
   logoWrap: { alignItems: "center", marginBottom: 20 },
-  logo: { width: 90, height: 90, resizeMode: "contain" },
+  logo: { width: 120, height: 120, resizeMode: "contain" },
   title: {
     fontSize: 24,
     fontWeight: "800",

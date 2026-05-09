@@ -6,11 +6,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
-  Dimensions,
   Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,13 +19,22 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { AuthScreenBackground } from "../../components/auth/AuthScreenBackground";
+import {
+  AUTH_FARM_SECTION_HEIGHT,
+  BG_GRADIENT_MID,
+  BG_SURFACE,
+} from "../../constants/authScreenTheme";
 import { useAuth } from "../../context/AuthContext";
-
-const { width } = Dimensions.get("window");
 
 export default function EnhancedSignupScreen() {
   const { sendOtp } = useAuth();
+  const insets = useSafeAreaInsets();
+  const farmBandHeight = AUTH_FARM_SECTION_HEIGHT + insets.bottom;
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
@@ -106,17 +115,12 @@ export default function EnhancedSignupScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <LinearGradient
-        colors={["#F4F8F0", "#EAF3E6", "#F4F8F0"]}
+        colors={[BG_SURFACE, BG_GRADIENT_MID, BG_SURFACE]}
         style={styles.gradient}
       >
-        {/* Leaf decoration top-right */}
-        <View style={styles.leafDecorTopRight} pointerEvents="none">
-          <View style={styles.leafShape1} />
-          <View style={styles.leafShape2} />
-          <View style={styles.leafShape3} />
-        </View>
+        <AuthScreenBackground farmBandHeight={farmBandHeight} />
 
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <KeyboardAvoidingView
@@ -126,12 +130,19 @@ export default function EnhancedSignupScreen() {
             <Animated.View
               style={[
                 styles.wrapper,
-                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                  zIndex: 2,
+                },
               ]}
             >
               <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[
+                  styles.scrollContent,
+                  { paddingBottom: farmBandHeight + 16 },
+                ]}
                 keyboardShouldPersistTaps="handled"
               >
                 {/* ── LOGO SECTION ── */}
@@ -145,10 +156,7 @@ export default function EnhancedSignupScreen() {
                     source={require("../../assets/images/vadi-brand-logo.png")}
                     style={styles.logoImage}
                   />
-                  <Text style={styles.brandName}>VADI</Text>
-                  <Text style={styles.brandTagline}>
-                    Fresh Grocery &amp; Farm Products
-                  </Text>
+
                 </Animated.View>
 
                 {/* ── WELCOME TEXT ── */}
@@ -296,109 +304,42 @@ export default function EnhancedSignupScreen() {
                     <View style={styles.dividerLine} />
                   </View>
 
-                  {/* Already have an account */}
-                  <TouchableOpacity
-                    style={styles.loginCard}
-                    onPress={() => router.push("/(auth)/login")}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.loginCardLeft}>
-                      <View style={styles.userIconCircle}>
-                        <Ionicons name="log-in" size={18} color="#4CAF50" />
-                      </View>
-                      <Text style={styles.loginCardText}>
+                  <View style={styles.authFooterLinkWrap}>
+                    <View style={styles.authFooterLinkRow}>
+                      <Text style={styles.authFooterMuted}>
                         Already have an account?{" "}
-                        <Text style={styles.loginCardBold}>Login</Text>
                       </Text>
+                      <Pressable
+                        onPress={() => router.push("/(auth)/login")}
+                        accessibilityRole="link"
+                        accessibilityLabel="Log in to existing account"
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={({ pressed }) => [
+                          pressed && styles.authFooterLinkPressed,
+                        ]}
+                      >
+                        <Text style={styles.authFooterLink}>Login</Text>
+                      </Pressable>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="#888" />
-                  </TouchableOpacity>
+                  </View>
                 </View>
               </ScrollView>
             </Animated.View>
           </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
-
-        {/* Farm landscape illustration at bottom */}
-        <View style={styles.farmIllustration} pointerEvents="none">
-          <View style={styles.hill1} />
-          <View style={styles.hill2} />
-          <View style={styles.hill3} />
-          {/* Barn */}
-          <View style={styles.barn}>
-            <View style={styles.barnRoof} />
-            <View style={styles.barnBody} />
-          </View>
-          {/* Windmill */}
-          <View style={styles.windmill}>
-            <View style={styles.windmillPole} />
-            <View style={styles.windmillHead} />
-          </View>
-          {/* Trees */}
-          <View style={[styles.tree, { left: width * 0.15, bottom: 30 }]}>
-            <View style={styles.treeTrunk} />
-            <View style={styles.treeTop} />
-          </View>
-          <View style={[styles.tree, { left: width * 0.25, bottom: 22 }]}>
-            <View style={[styles.treeTrunk, { height: 18 }]} />
-            <View style={[styles.treeTop, { width: 22, height: 30 }]} />
-          </View>
-        </View>
       </LinearGradient>
     </SafeAreaView>
   );
 }
 
-const FARM_HEIGHT = 110;
-
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F4F8F0",
+    backgroundColor: BG_SURFACE,
   },
 
   gradient: {
     flex: 1,
-  },
-
-  // ── LEAF DECORATION ──
-  leafDecorTopRight: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: 100,
-    height: 100,
-    zIndex: 0,
-  },
-  leafShape1: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    width: 50,
-    height: 70,
-    borderRadius: 50,
-    backgroundColor: "rgba(139,195,74,0.18)",
-    transform: [{ rotate: "30deg" }],
-  },
-  leafShape2: {
-    position: "absolute",
-    top: 0,
-    right: 30,
-    width: 35,
-    height: 55,
-    borderRadius: 40,
-    backgroundColor: "rgba(139,195,74,0.12)",
-    transform: [{ rotate: "60deg" }],
-  },
-  leafShape3: {
-    position: "absolute",
-    top: 20,
-    right: 55,
-    width: 25,
-    height: 42,
-    borderRadius: 30,
-    backgroundColor: "rgba(139,195,74,0.09)",
-    transform: [{ rotate: "80deg" }],
   },
 
   // ── MAIN WRAPPER ──
@@ -409,7 +350,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: FARM_HEIGHT + 24,
   },
 
   // ── LOGO SECTION ──
@@ -419,8 +359,8 @@ const styles = StyleSheet.create({
   },
 
   logoImage: {
-    width: 90,
-    height: 90,
+    width: 120,
+    height: 120,
     resizeMode: "contain",
     marginBottom: 8,
   },
@@ -633,161 +573,33 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Login card
-  loginCard: {
-    flexDirection: "row",
+  authFooterLinkWrap: {
     alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "#D8EDD8",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-      },
-      android: { elevation: 2 },
-    }),
-  },
-
-  loginCardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-
-  userIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#EAF5EA",
     justifyContent: "center",
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+
+  authFooterLinkRow: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
   },
 
-  loginCardText: {
-    fontSize: 14,
-    color: "#4A6A4A",
-    flex: 1,
+  authFooterMuted: {
+    fontSize: 15,
+    color: "#6B8C6B",
   },
 
-  loginCardBold: {
-    fontWeight: "800",
+  authFooterLinkPressed: {
+    opacity: 0.65,
+  },
+
+  authFooterLink: {
+    fontSize: 15,
+    fontWeight: "600",
     color: "#3A8A3A",
-  },
-
-  // ── FARM ILLUSTRATION ──
-  farmIllustration: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: FARM_HEIGHT,
-    overflow: "hidden",
-  },
-
-  hill1: {
-    position: "absolute",
-    bottom: -20,
-    left: -40,
-    width: width * 0.7,
-    height: 90,
-    borderRadius: 999,
-    backgroundColor: "rgba(139,195,74,0.22)",
-  },
-
-  hill2: {
-    position: "absolute",
-    bottom: -30,
-    right: -20,
-    width: width * 0.65,
-    height: 80,
-    borderRadius: 999,
-    backgroundColor: "rgba(100,160,80,0.18)",
-  },
-
-  hill3: {
-    position: "absolute",
-    bottom: -10,
-    left: width * 0.2,
-    width: width * 0.6,
-    height: 55,
-    borderRadius: 999,
-    backgroundColor: "rgba(76,175,80,0.14)",
-  },
-
-  barn: {
-    position: "absolute",
-    bottom: 28,
-    right: width * 0.28,
-  },
-
-  barnRoof: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 20,
-    borderRightWidth: 20,
-    borderBottomWidth: 18,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-    borderBottomColor: "rgba(90,140,70,0.35)",
-  },
-
-  barnBody: {
-    width: 40,
-    height: 28,
-    backgroundColor: "rgba(90,140,70,0.28)",
-    borderRadius: 2,
-  },
-
-  windmill: {
-    position: "absolute",
-    bottom: 30,
-    right: width * 0.15,
-    alignItems: "center",
-  },
-
-  windmillPole: {
-    width: 4,
-    height: 40,
-    backgroundColor: "rgba(90,140,70,0.3)",
-    borderRadius: 2,
-  },
-
-  windmillHead: {
-    position: "absolute",
-    top: 0,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 3,
-    borderColor: "rgba(90,140,70,0.3)",
-  },
-
-  tree: {
-    position: "absolute",
-    alignItems: "center",
-  },
-
-  treeTrunk: {
-    width: 5,
-    height: 14,
-    backgroundColor: "rgba(90,130,70,0.3)",
-    borderRadius: 2,
-  },
-
-  treeTop: {
-    position: "absolute",
-    bottom: 10,
-    width: 26,
-    height: 36,
-    borderRadius: 13,
-    backgroundColor: "rgba(100,170,70,0.28)",
+    textDecorationLine: "underline",
   },
 });

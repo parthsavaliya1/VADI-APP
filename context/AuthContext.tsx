@@ -29,8 +29,12 @@ type AuthContextType = {
   isLoggedIn: boolean;
   loading: boolean;
 
-  // OTP Authentication
-  sendOtp: (phone: string, mode: "login" | "signup") => Promise<{ demoLoggedIn?: boolean }>;
+  // OTP Authentication (`forceResend` asks backend to send a new SMS even if a code is still valid)
+  sendOtp: (
+    phone: string,
+    mode: "login" | "signup",
+    options?: { forceResend?: boolean },
+  ) => Promise<{ demoLoggedIn?: boolean }>;
   demoLogin: (phone: string) => Promise<void>;
   verifyOtpAndLogin: (phone: string, otp: string, privacyPolicyAccepted?: boolean) => Promise<void>;
   verifyOtpAndSignup: (
@@ -117,7 +121,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // 📤 SEND OTP
-  const sendOtp = async (phone: string, mode: "login" | "signup") => {
+  const sendOtp = async (
+    phone: string,
+    mode: "login" | "signup",
+    options?: { forceResend?: boolean },
+  ) => {
     try {
       // If demo number, frontend can directly login without OTP
       if (String(phone) === String(DEMO_PHONE)) {
@@ -128,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await API.post("/api/auth/send-otp", {
         phone,
         mode,
+        ...(options?.forceResend ? { forceResend: true } : {}),
       });
       return {};
     } catch (error: any) {
