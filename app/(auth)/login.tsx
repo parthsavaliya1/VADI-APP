@@ -1,5 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -23,6 +23,10 @@ import { useAuth } from "../../context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
+/** Bottom farm banner from design asset; width tracks screen */
+const AUTH_FARM_SECTION_HEIGHT = Math.round((width * 170) / 473);
+const AUTH_LEAF_DISPLAY_WIDTH = Math.min(Math.round(width * 0.4), 200);
+
 export default function EnhancedLoginScreen() {
   const { sendOtp } = useAuth();
 
@@ -33,20 +37,16 @@ export default function EnhancedLoginScreen() {
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const logoScaleAnim = useRef(new Animated.Value(0)).current;
-  const logoRotateAnim = useRef(new Animated.Value(0)).current;
-  const inputScaleAnims = useRef([
-    new Animated.Value(0),
-    new Animated.Value(0),
-  ]).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const logoScaleAnim = useRef(new Animated.Value(0.8)).current;
 
   const normalizedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
 
-  const isFormValid = useMemo(() => phone.length >= 10 && hasAcceptedPrivacy, [phone, hasAcceptedPrivacy]);
+  const isFormValid = useMemo(
+    () => phone.length >= 10 && hasAcceptedPrivacy,
+    [phone, hasAcceptedPrivacy]
+  );
 
-  // Entrance animations
   useEffect(() => {
     const loadPrivacy = async () => {
       try {
@@ -62,66 +62,23 @@ export default function EnhancedLoginScreen() {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 600,
+        duration: 700,
         useNativeDriver: true,
       }),
       Animated.spring(slideAnim, {
         toValue: 0,
-        tension: 50,
-        friction: 7,
+        tension: 60,
+        friction: 8,
         useNativeDriver: true,
       }),
       Animated.spring(logoScaleAnim, {
         toValue: 1,
-        tension: 50,
-        friction: 7,
-        delay: 200,
+        tension: 60,
+        friction: 8,
+        delay: 100,
         useNativeDriver: true,
       }),
     ]).start();
-
-    // Stagger input animations
-    inputScaleAnims.forEach((anim, index) => {
-      Animated.spring(anim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        delay: 400 + index * 150,
-        useNativeDriver: true,
-      }).start();
-    });
-
-    // Logo rotation animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(logoRotateAnim, {
-          toValue: 1,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoRotateAnim, {
-          toValue: 0,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
-
-    // Pulse animation for CTA when form is valid
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.03,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
   }, []);
 
   const handleLogin = async () => {
@@ -131,7 +88,12 @@ export default function EnhancedLoginScreen() {
 
     try {
       setLoading(true);
-      await sendOtp(normalizedPhone, "login");
+      const { demoLoggedIn } = await sendOtp(normalizedPhone, "login");
+
+      if (demoLoggedIn) {
+        router.replace("/(tabs)");
+        return;
+      }
 
       router.push({
         pathname: "/(auth)/verify-otp",
@@ -147,108 +109,105 @@ export default function EnhancedLoginScreen() {
     }
   };
 
-  const logoRotate = logoRotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["-5deg", "5deg"],
-  });
-
   return (
     <SafeAreaView style={styles.safe}>
+      {/* Background gradient + farm illustration area */}
       <LinearGradient
-        colors={["#F5F7F2", "#E8F5E9", "#F5F7F2"]}
+        colors={["#F4F8F0", "#EAF3E6", "#F4F8F0"]}
         style={styles.gradient}
       >
+        {/* Bottom landscape (matches design); behind form */}
+        <Image
+          source={require("../../assets/images/auth-bg-farm.png")}
+          style={[
+            styles.bgFarmImage,
+            { height: AUTH_FARM_SECTION_HEIGHT },
+          ]}
+          resizeMode="stretch"
+          pointerEvents="none"
+        />
+        {/* Watercolor leaves top-right */}
+        <Image
+          source={require("../../assets/images/auth-bg-leaves.png")}
+          style={[
+            styles.bgLeavesImage,
+            {
+              width: AUTH_LEAF_DISPLAY_WIDTH,
+              height: Math.round((AUTH_LEAF_DISPLAY_WIDTH * 236) / 150),
+            },
+          ]}
+          resizeMode="contain"
+          pointerEvents="none"
+        />
+
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={{ flex: 1 }}
           >
-            <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-              {/* Logo Section */}
+            <Animated.View
+              style={[
+                styles.container,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}
+            >
+              {/* ── LOGO SECTION ── */}
               <Animated.View
                 style={[
-                  styles.logoContainer,
-                  {
-                    transform: [
-                      { scale: logoScaleAnim },
-                      { rotate: logoRotate },
-                    ],
-                  },
+                  styles.logoSection,
+                  { transform: [{ scale: logoScaleAnim }] },
                 ]}
               >
-                <LinearGradient
-                  colors={["#4CAF50", "#2E7D32"]}
-                  style={styles.logoCircle}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Image
-                    source={require("../../assets/images/vadi-brand-logo.png")}
-                    style={styles.logo}
-                  />
-                </LinearGradient>
-
-                {/* Decorative rings */}
-                <View style={styles.logoRing1} />
-                <View style={styles.logoRing2} />
+                <Image
+                  source={require("../../assets/images/vadi-brand-logo.png")}
+                  style={styles.logoImage}
+                />
+                <Text style={styles.brandName}>VADI</Text>
+                <Text style={styles.brandTagline}>
+                  Fresh Grocery &amp; Farm Products
+                </Text>
               </Animated.View>
 
-              {/* Title Section */}
-              <Animated.View
-                style={[
-                  styles.titleContainer,
-                  { transform: [{ translateY: slideAnim }] },
-                ]}
-              >
-                <Text style={styles.title}>Welcome Back!</Text>
-                <View style={styles.subtitleRow}>
-                  <Ionicons name="cart" size={16} color="#4CAF50" />
-                  <Text style={styles.subtitle}>
-                    Login to continue shopping
-                  </Text>
-                  <Text style={styles.emoji}>🛒</Text>
-                </View>
-              </Animated.View>
+              {/* ── WELCOME TEXT ── */}
+              <View style={styles.welcomeSection}>
+                <Text style={styles.welcomeTitle}>Welcome to VADI</Text>
+                <Text style={styles.welcomeSubtitle}>
+                  Fresh products delivered to your doorstep
+                </Text>
+              </View>
 
-              {/* Form Section */}
-              <View style={styles.formContainer}>
+              {/* ── FORM SECTION ── */}
+              <View style={styles.formSection}>
                 {/* Phone Input */}
-                <Animated.View
-                  style={[
-                    styles.inputWrapper,
-                    { transform: [{ scale: inputScaleAnims[0] }] },
-                  ]}
-                >
-                  <View
-                    style={[styles.inputContainer, phone && styles.inputActive]}
-                  >
-                    <View style={styles.iconCircle}>
-                      <Ionicons name="call" size={18} color="#4CAF50" />
+                <View style={styles.phoneInputCard}>
+                  {/* Country code pill */}
+                  <View style={styles.countryPill}>
+                    <View style={styles.phoneIconCircle}>
+                      <Ionicons name="call" size={16} color="#4CAF50" />
                     </View>
-                    <View style={styles.inputContent}>
-                      <Text style={styles.inputLabel}>Mobile Number</Text>
-                      <TextInput
-                        placeholder="Enter your phone number"
-                        value={phone}
-                        onChangeText={setPhone}
-                        keyboardType="phone-pad"
-                        style={styles.input}
-                        placeholderTextColor="#999"
-                        maxLength={10}
-                      />
-                    </View>
-                    {phone.length >= 10 && (
-                      <View style={styles.checkCircle}>
-                        <Ionicons name="checkmark" size={16} color="#fff" />
-                      </View>
-                    )}
+                    <Text style={styles.countryCode}>+91</Text>
+                    <Ionicons name="chevron-down" size={14} color="#888" />
                   </View>
-                </Animated.View>
 
-                {/* Privacy policy checkbox */}
-                <View style={styles.privacyCard}>
+                  {/* Vertical divider */}
+                  <View style={styles.inputDivider} />
+
+                  {/* Number input */}
+                  <TextInput
+                    placeholder="Enter mobile number"
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                    style={styles.phoneInput}
+                    placeholderTextColor="#AABBA8"
+                    maxLength={10}
+                  />
+                </View>
+
+                {/* Privacy Policy Checkbox */}
+                <View style={styles.privacyContainer}>
                   <TouchableOpacity
-                    activeOpacity={0.85}
+                    activeOpacity={0.8}
                     style={styles.privacyRow}
                     onPress={async () => {
                       const next = !hasAcceptedPrivacy;
@@ -271,12 +230,12 @@ export default function EnhancedLoginScreen() {
                       ]}
                     >
                       {hasAcceptedPrivacy && (
-                        <Ionicons name="checkmark" size={14} color="#fff" />
+                        <Ionicons name="checkmark" size={13} color="#fff" />
                       )}
                     </View>
                     <Text style={styles.privacyText}>
-                      I agree to the{" "}
-                      <Text style={styles.privacyLink}>Privacy Policy</Text>.
+                      By continuing you agree to our{" "}
+                      <Text style={styles.privacyLink}>Privacy Policy</Text>
                     </Text>
                   </TouchableOpacity>
 
@@ -287,114 +246,57 @@ export default function EnhancedLoginScreen() {
                   )}
                 </View>
 
-                {/* Login Button */}
-                <Animated.View
-                  style={[
-                    styles.ctaWrapper,
-                    {
-                      transform: [{ scale: isFormValid ? pulseAnim : 1 }],
-                    },
-                  ]}
+                {/* Continue Button */}
+                <TouchableOpacity
+                  onPress={handleLogin}
+                  activeOpacity={0.85}
+                  disabled={loading}
+                  style={styles.continueButtonWrapper}
                 >
-                  <TouchableOpacity
-                    onPress={handleLogin}
-                    activeOpacity={0.8}
-                    disabled={!isFormValid || loading}
+                  <LinearGradient
+                    colors={
+                      isFormValid
+                        ? ["#5CB85C", "#3A8A3A"]
+                        : ["#C8DFC8", "#B8D0B8"]
+                    }
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.continueButton}
                   >
-                    <LinearGradient
-                      colors={
-                        isFormValid
-                          ? ["#4CAF50", "#2E7D32"]
-                          : ["#E0E0E0", "#E0E0E0"]
-                      }
-                      style={[
-                        styles.ctaGradient,
-                        !isFormValid && {
-                          elevation: 0,
-                          shadowOpacity: 0,
-                        },
-                      ]}
-                    >
-                      {loading ? (
-                        <ActivityIndicator color="#fff" size="small" />
-                      ) : (
-                        <>
-                          <Ionicons name="log-in" size={22} color="#fff" />
-                          <Text style={styles.ctaText}>Login</Text>
-                        </>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </Animated.View>
+                    {loading ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <>
+                        <Text style={styles.continueText}>Continue</Text>
+                        <Ionicons name="arrow-forward" size={20} color="#fff" />
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
 
-                {/* Divider */}
+                {/* OR Divider */}
                 <View style={styles.divider}>
                   <View style={styles.dividerLine} />
                   <Text style={styles.dividerText}>OR</Text>
                   <View style={styles.dividerLine} />
                 </View>
 
-                {/* Social Login Buttons */}
-                {/* <View style={styles.socialContainer}>
-                  <TouchableOpacity
-                    style={styles.socialButton}
-                    activeOpacity={0.8}
-                  >
-                    <LinearGradient
-                      colors={["#fff", "#f8f9fa"]}
-                      style={styles.socialGradient}
-                    >
-                      <Ionicons name="logo-google" size={22} color="#DB4437" />
-                    </LinearGradient>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.socialButton}
-                    activeOpacity={0.8}
-                  >
-                    <LinearGradient
-                      colors={["#fff", "#f8f9fa"]}
-                      style={styles.socialGradient}
-                    >
-                      <Ionicons name="logo-apple" size={22} color="#000" />
-                    </LinearGradient>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.socialButton}
-                    activeOpacity={0.8}
-                  >
-                    <LinearGradient
-                      colors={["#fff", "#f8f9fa"]}
-                      style={styles.socialGradient}
-                    >
-                      <Ionicons
-                        name="logo-facebook"
-                        size={22}
-                        color="#4267B2"
-                      />
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View> */}
-
-                {/* Signup Link */}
+                {/* Create New Account */}
                 <TouchableOpacity
-                  style={styles.signupLink}
+                  style={styles.createAccountCard}
                   onPress={() => router.push("/(auth)/signup")}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.signupText}>
-                    New here?{" "}
-                    <Text style={styles.signupBold}>Create account</Text>
-                  </Text>
+                  <View style={styles.createAccountLeft}>
+                    <View style={styles.userIconCircle}>
+                      <Ionicons name="person" size={18} color="#4CAF50" />
+                    </View>
+                    <Text style={styles.createAccountText}>
+                      Create New Account
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#888" />
                 </TouchableOpacity>
-              </View>
-
-              {/* Decorative Elements */}
-              <View style={styles.decorativeContainer}>
-                <View style={styles.decorativeCircle1} />
-                <View style={styles.decorativeCircle2} />
-                <View style={styles.decorativeCircle3} />
               </View>
             </Animated.View>
           </KeyboardAvoidingView>
@@ -407,259 +309,258 @@ export default function EnhancedLoginScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F4F8F0",
   },
 
   gradient: {
     flex: 1,
   },
 
+  bgFarmImage: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    width,
+    zIndex: 0,
+  },
+
+  bgLeavesImage: {
+    position: "absolute",
+    top: 4,
+    right: -6,
+    zIndex: 0,
+    opacity: 0.95,
+  },
+
+  // ── MAIN CONTAINER ──
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 24,
+    paddingTop: 24,
+    paddingBottom: AUTH_FARM_SECTION_HEIGHT + 16,
+    zIndex: 1,
   },
 
-  // LOGO
-  logoContainer: {
+  // ── LOGO SECTION ──
+  logoSection: {
     alignItems: "center",
-    marginBottom: 40,
-    position: "relative",
+    marginBottom: 28,
   },
 
-  logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    justifyContent: "center",
-    alignItems: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#2E7D32",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
-  },
-
-  logo: {
-    width: 75,
-    height: 75,
+  logoImage: {
+    width: 90,
+    height: 90,
     resizeMode: "contain",
-  },
-
-  logoRing1: {
-    position: "absolute",
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    borderWidth: 2,
-    borderColor: "rgba(76, 175, 80, 0.2)",
-    borderStyle: "dashed",
-  },
-
-  logoRing2: {
-    position: "absolute",
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    borderWidth: 1,
-    borderColor: "rgba(76, 175, 80, 0.1)",
-  },
-
-  // TITLE
-  titleContainer: {
-    alignItems: "center",
-    marginBottom: 36,
-  },
-
-  title: {
-    fontSize: 34,
-    fontWeight: "800",
-    color: "#1B5E20",
     marginBottom: 8,
   },
 
-  subtitleRow: {
-    flexDirection: "row",
+  brandName: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#3A8A3A",
+    letterSpacing: 6,
+    marginBottom: 4,
+  },
+
+  brandTagline: {
+    fontSize: 13,
+    color: "#7A9E7A",
+    letterSpacing: 0.3,
+  },
+
+  // ── WELCOME TEXT ──
+  welcomeSection: {
     alignItems: "center",
-    gap: 6,
+    marginBottom: 28,
   },
 
-  subtitle: {
-    fontSize: 15,
-    color: "#4E7C50",
+  welcomeTitle: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#1E3A1E",
+    marginBottom: 6,
   },
 
-  emoji: {
-    fontSize: 16,
+  welcomeSubtitle: {
+    fontSize: 14,
+    color: "#6B8C6B",
   },
 
-  // FORM
-  formContainer: {
-    gap: 20,
+  // ── FORM ──
+  formSection: {
+    gap: 14,
   },
 
-  inputWrapper: {
-    width: "100%",
-  },
-
-  inputContainer: {
+  // Phone input card
+  phoneInputCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
-    borderWidth: 2,
-    borderColor: "transparent",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-
-  inputActive: {
-    borderColor: "#4CAF50",
-    backgroundColor: "#F1F8F4",
-  },
-
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#E8F5E9",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  inputContent: {
-    flex: 1,
-    gap: 2,
-  },
-
-  inputLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#666",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-
-  input: {
-    fontSize: 15,
-    color: "#333",
-    paddingVertical: 0,
-    letterSpacing: 0,
-  },
-
-  checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#4CAF50",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  eyeButton: {
-    padding: 4,
-  },
-
-  forgotText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#2E7D32",
-  },
-
-  // CTA BUTTON
-  ctaWrapper: {
-    marginTop: 8,
-  },
-
-  ctaButton: {
-    borderRadius: 18,
-  },
-
-  ctaGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 18,
-    borderRadius: 18,
-    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#D8EDD8",
+    paddingVertical: 4,
+    paddingHorizontal: 12,
     ...Platform.select({
       ios: {
         shadowColor: "#2E7D32",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
       },
-      android: {
-        elevation: 8,
-      },
+      android: { elevation: 3 },
     }),
   },
 
-  ctaText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "800",
+  countryPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 12,
+    paddingRight: 8,
   },
 
-  // DIVIDER
+  phoneIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "#EAF5EA",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  countryCode: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#333",
+  },
+
+  inputDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: "#D8EDD8",
+    marginHorizontal: 8,
+  },
+
+  phoneInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#222",
+    paddingVertical: 12,
+    letterSpacing: 0.5,
+  },
+
+  // Privacy
+  privacyContainer: {
+    paddingHorizontal: 2,
+  },
+
+  privacyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#A5D6A7",
+    backgroundColor: "#F0FAF0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  checkboxChecked: {
+    borderColor: "#3A8A3A",
+    backgroundColor: "#4CAF50",
+  },
+
+  privacyText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#5A7A5A",
+    lineHeight: 18,
+  },
+
+  privacyLink: {
+    color: "#3A8A3A",
+    fontWeight: "700",
+  },
+
+  privacyError: {
+    marginTop: 4,
+    marginLeft: 30,
+    fontSize: 11,
+    color: "#C62828",
+    fontWeight: "500",
+  },
+
+  // Continue button
+  continueButtonWrapper: {
+    borderRadius: 14,
+    overflow: "hidden",
+    marginTop: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#2E7D32",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.28,
+        shadowRadius: 10,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+
+  continueButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 17,
+    gap: 10,
+    borderRadius: 14,
+  },
+
+  continueText: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 0.3,
+  },
+
+  // Divider
   divider: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    marginVertical: 8,
+    gap: 12,
+    marginVertical: 2,
   },
 
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: "#C8DEC8",
   },
 
   dividerText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#999",
+    color: "#AAC4AA",
+    letterSpacing: 1,
   },
 
-  // SOCIAL BUTTONS
-  socialContainer: {
+  // Create account card
+  createAccountCard: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-  },
-
-  socialButton: {
-    width: 60,
-    height: 60,
-  },
-
-  socialGradient: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 30,
-    justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#D8EDD8",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -667,106 +568,137 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 6,
       },
-      android: {
-        elevation: 2,
-      },
+      android: { elevation: 2 },
     }),
   },
 
-  // SIGNUP LINK
-  signupLink: {
-    alignItems: "center",
-    marginTop: 0,
-    paddingVertical: 0,
-  },
-
-  signupText: {
-    fontSize: 14,
-    color: "#666",
-  },
-
-  signupBold: {
-    fontWeight: "800",
-    color: "#2E7D32",
-  },
-
-  // DECORATIVE
-  decorativeContainer: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    zIndex: -1,
-  },
-
-  decorativeCircle1: {
-    position: "absolute",
-    top: -60,
-    right: -60,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: "rgba(76, 175, 80, 0.05)",
-  },
-
-  decorativeCircle2: {
-    position: "absolute",
-    bottom: -100,
-    left: -100,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: "rgba(46, 125, 50, 0.03)",
-  },
-
-  decorativeCircle3: {
-    position: "absolute",
-    top: "40%",
-    right: -50,
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: "rgba(139, 195, 74, 0.04)",
-  },
-
-  // Privacy policy
-  privacyCard: {
-    marginTop: -6,
-    marginBottom: 2,
-  },
-  privacyRow: {
+  createAccountLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 10,
+    gap: 12,
   },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: "#A5D6A7",
-    backgroundColor: "#F9FFF9",
-    alignItems: "center",
+
+  userIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#EAF5EA",
     justifyContent: "center",
+    alignItems: "center",
   },
-  checkboxChecked: {
-    borderColor: "#2E7D32",
-    backgroundColor: "#4CAF50",
-  },
-  privacyText: {
-    flex: 1,
-    fontSize: 13,
-    color: "#4E7C50",
-    lineHeight: 18,
-  },
-  privacyLink: {
-    color: "#2E7D32",
+
+  createAccountText: {
+    fontSize: 15,
     fontWeight: "700",
+    color: "#1E3A1E",
   },
-  privacyError: {
-    marginTop: 6,
-    fontSize: 11,
-    color: "#C62828",
-    fontWeight: "500",
+
+  // ── FARM ILLUSTRATION ──
+  farmIllustration: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: FARM_HEIGHT,
+    overflow: "hidden",
+  },
+
+  hill1: {
+    position: "absolute",
+    bottom: -20,
+    left: -40,
+    width: width * 0.7,
+    height: 90,
+    borderRadius: 999,
+    backgroundColor: "rgba(139,195,74,0.22)",
+  },
+
+  hill2: {
+    position: "absolute",
+    bottom: -30,
+    right: -20,
+    width: width * 0.65,
+    height: 80,
+    borderRadius: 999,
+    backgroundColor: "rgba(100,160,80,0.18)",
+  },
+
+  hill3: {
+    position: "absolute",
+    bottom: -10,
+    left: width * 0.2,
+    width: width * 0.6,
+    height: 55,
+    borderRadius: 999,
+    backgroundColor: "rgba(76,175,80,0.14)",
+  },
+
+  barn: {
+    position: "absolute",
+    bottom: 28,
+    right: width * 0.28,
+  },
+
+  barnRoof: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 20,
+    borderRightWidth: 20,
+    borderBottomWidth: 18,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderBottomColor: "rgba(90,140,70,0.35)",
+  },
+
+  barnBody: {
+    width: 40,
+    height: 28,
+    backgroundColor: "rgba(90,140,70,0.28)",
+    borderRadius: 2,
+  },
+
+  windmill: {
+    position: "absolute",
+    bottom: 30,
+    right: width * 0.15,
+    alignItems: "center",
+  },
+
+  windmillPole: {
+    width: 4,
+    height: 40,
+    backgroundColor: "rgba(90,140,70,0.3)",
+    borderRadius: 2,
+  },
+
+  windmillHead: {
+    position: "absolute",
+    top: 0,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 3,
+    borderColor: "rgba(90,140,70,0.3)",
+  },
+
+  tree: {
+    position: "absolute",
+    alignItems: "center",
+  },
+
+  treeTrunk: {
+    width: 5,
+    height: 14,
+    backgroundColor: "rgba(90,130,70,0.3)",
+    borderRadius: 2,
+  },
+
+  treeTop: {
+    position: "absolute",
+    bottom: 10,
+    width: 26,
+    height: 36,
+    borderRadius: 13,
+    backgroundColor: "rgba(100,170,70,0.28)",
   },
 });

@@ -447,7 +447,7 @@ export default function CheckoutScreen() {
                   >
                     <View style={styles.itemLeft}>
                       <View style={styles.qtyBadge}>
-                        <Text style={styles.qtyText}>{item.qty}×</Text>
+                        <Text style={styles.qtyText}>{`${item.qty}x`}</Text>
                       </View>
                       <View style={styles.itemInfo}>
                         <Text style={styles.itemName}>{item.name}</Text>

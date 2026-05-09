@@ -30,7 +30,8 @@ type AuthContextType = {
   loading: boolean;
 
   // OTP Authentication
-  sendOtp: (phone: string, mode: "login" | "signup") => Promise<void>;
+  sendOtp: (phone: string, mode: "login" | "signup") => Promise<{ demoLoggedIn?: boolean }>;
+  demoLogin: (phone: string) => Promise<void>;
   verifyOtpAndLogin: (phone: string, otp: string, privacyPolicyAccepted?: boolean) => Promise<void>;
   verifyOtpAndSignup: (
     phone: string,
@@ -52,6 +53,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 const STORAGE_KEY = "AUTH_USER";
+const DEMO_PHONE = process.env.EXPO_PUBLIC_DEMO_PHONE ?? "+919999999999";
 
 /* ================= PROVIDER ================= */
 
@@ -99,13 +101,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /* ================= OTP AUTHENTICATION ================= */
 
+  // ⭐ DEMO LOGIN (no OTP)
+  const demoLogin = async (phone: string) => {
+    try {
+      const res = await API.post("/api/auth/demo-login", { phone });
+      const userData = res.data?.user;
+      if (!userData?._id) throw new Error("Demo login failed");
+
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+      setUser(userData);
+      await syncPushToken(userData._id);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || "Demo login failed");
+    }
+  };
+
   // 📤 SEND OTP
   const sendOtp = async (phone: string, mode: "login" | "signup") => {
     try {
+      // If demo number, frontend can directly login without OTP
+      if (String(phone) === String(DEMO_PHONE)) {
+        await demoLogin(phone);
+        return { demoLoggedIn: true };
+      }
+
       await API.post("/api/auth/send-otp", {
         phone,
         mode,
       });
+      return {};
     } catch (error: any) {
       throw new Error(error.response?.data?.error || "Failed to send OTP");
     }
@@ -209,6 +233,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoggedIn: !!user,
         loading,
         sendOtp,
+        demoLogin,
         verifyOtpAndLogin,
         verifyOtpAndSignup,
         updateProfile,

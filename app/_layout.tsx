@@ -12,13 +12,14 @@ export default function RootLayout() {
       <AddressProvider>
         <CartProvider>
           <OrderProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-            </Stack>
-            <Toast />
-
-            <StatusBar style="auto" />
+            {[
+              <Stack key="stack" screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
+              </Stack>,
+              <Toast key="toast" />,
+              <StatusBar key="statusbar" style="auto" />,
+            ]}
           </OrderProvider>
         </CartProvider>
       </AddressProvider>
