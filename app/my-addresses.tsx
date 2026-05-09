@@ -1,12 +1,12 @@
 import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
+import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -47,7 +47,7 @@ export default function MyAddressesScreen() {
       setAddresses(res.data);
     } catch (error) {
       console.error("Failed to load addresses:", error);
-      Alert.alert("Error", "Failed to load addresses");
+      showAlert("Error", "Failed to load addresses");
     } finally {
       setLoading(false);
     }
@@ -65,12 +65,12 @@ export default function MyAddressesScreen() {
       await API.put(`/addresses/${addressId}/default`);
       loadAddresses();
     } catch (error) {
-      Alert.alert("Error", "Failed to set default address");
+      showAlert("Error", "Failed to set default address");
     }
   };
 
   const handleDelete = async (addressId: string) => {
-    Alert.alert(
+    showAlert(
       "Delete Address",
       "Are you sure you want to delete this address?",
       [
@@ -84,7 +84,7 @@ export default function MyAddressesScreen() {
               await API.delete(`/addresses/${addressId}`);
               loadAddresses();
             } catch (error) {
-              Alert.alert("Error", "Failed to delete address");
+              showAlert("Error", "Failed to delete address");
             } finally {
               setDeleting(null);
             }
@@ -96,7 +96,7 @@ export default function MyAddressesScreen() {
 
   const handleAddAddress = () => {
     if (addresses.length >= 3) {
-      Alert.alert(
+      showAlert(
         "Limit Reached",
         "You can only add up to 3 addresses. Please delete an existing address to add a new one.",
       );

@@ -1,12 +1,12 @@
 import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
+import { showAlert } from "@/context/CustomAlertContext";
 import { useOrders } from "@/context/OrderContext";
 import { openRazorpay } from "@/utils/razorpay";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   LayoutAnimation,
   Platform,
@@ -146,45 +146,45 @@ export default function CheckoutScreen() {
 
   const handlePlaceOrder = async () => {
     if (items.length === 0) {
-      Alert.alert("Empty Cart", "Your cart is empty");
+      showAlert("Empty Cart", "Your cart is empty");
       return;
     }
 
     if (!activeAddress) {
-      Alert.alert("No Address", "Please add a delivery address");
+      showAlert("No Address", "Please add a delivery address");
       return;
     }
     if (!user?._id) {
-      Alert.alert("Login Required", "Please login to place this order");
+      showAlert("Login Required", "Please login to place this order");
       return;
     }
 
     if (paymentMethod !== "cod") {
       if (onlinePaymentType === "upi" && !upiId.trim()) {
-        Alert.alert("UPI Required", "Please enter your UPI ID to continue.");
+        showAlert("UPI Required", "Please enter your UPI ID to continue.");
         return;
       }
       if (onlinePaymentType === "upi" && !upiRegex.test(upiId.trim())) {
-        Alert.alert("Invalid UPI", "Please enter a valid UPI ID (example@upi).");
+        showAlert("Invalid UPI", "Please enter a valid UPI ID (example@upi).");
         return;
       }
 
       if (onlinePaymentType === "card") {
         const { cardNumber, cardHolder, expiry, cvv } = cardDetails;
         if (!cardNumber.trim() || !cardHolder.trim() || !expiry.trim() || !cvv.trim()) {
-          Alert.alert("Card Details Required", "Please complete all card details.");
+          showAlert("Card Details Required", "Please complete all card details.");
           return;
         }
         if (!cardNumberRegex.test(cardNumber.replace(/\s/g, ""))) {
-          Alert.alert("Invalid Card Number", "Card number must be 16 digits.");
+          showAlert("Invalid Card Number", "Card number must be 16 digits.");
           return;
         }
         if (!expiryRegex.test(expiry)) {
-          Alert.alert("Invalid Expiry", "Use expiry format MM/YY.");
+          showAlert("Invalid Expiry", "Use expiry format MM/YY.");
           return;
         }
         if (!cvvRegex.test(cvv)) {
-          Alert.alert("Invalid CVV", "CVV must be 3 digits.");
+          showAlert("Invalid CVV", "CVV must be 3 digits.");
           return;
         }
       }
@@ -211,7 +211,7 @@ export default function CheckoutScreen() {
         clearCart();
         setIsProcessing(false);
 
-        Alert.alert(
+        showAlert(
           "Order Placed! 🎉",
           "Your order has been placed successfully",
           [
@@ -250,7 +250,7 @@ export default function CheckoutScreen() {
             clearCart();
             setIsProcessing(false);
 
-            Alert.alert(
+            showAlert(
               "Payment Successful! 🎉",
               `Payment ID: ${paymentId}\nYour order has been placed.`,
               [
@@ -263,7 +263,7 @@ export default function CheckoutScreen() {
           } catch (orderErr: any) {
             // Payment succeeded but order placement failed
             setIsProcessing(false);
-            Alert.alert(
+            showAlert(
               "Order Error",
               `Payment was successful (ID: ${paymentId}) but we couldn't place your order. Please contact support.`,
               [{ text: "OK" }],
@@ -273,7 +273,7 @@ export default function CheckoutScreen() {
         onFailure: (message?: string) => {
           // Payment was cancelled or failed — do NOT place order
           setIsProcessing(false);
-          Alert.alert(
+          showAlert(
             "Payment Failed",
             message || "Your payment was cancelled or failed. No order was placed.",
             [{ text: "Try Again" }],
@@ -282,7 +282,7 @@ export default function CheckoutScreen() {
       });
     } catch (err: any) {
       setIsProcessing(false);
-      Alert.alert("Error", err?.message || "Failed to place order");
+      showAlert("Error", err?.message || "Failed to place order");
     }
   };
 

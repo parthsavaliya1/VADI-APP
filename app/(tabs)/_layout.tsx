@@ -50,6 +50,14 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
+        name="order-tracking"
+        options={{
+          href: null,
+          title: "Track Order",
+        }}
+      />
+
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",

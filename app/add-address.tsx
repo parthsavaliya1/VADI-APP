@@ -1,10 +1,10 @@
 import { useAuth } from "@/context/AuthContext";
+import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -67,7 +67,7 @@ export default function AddAddressScreen() {
         setPincode(addr.pincode || "");
         setIsDefault(!!addr.isDefault);
       } catch (err) {
-        Alert.alert("Error", "Failed to load address");
+        showAlert("Error", "Failed to load address");
         router.back();
       }
     };
@@ -79,27 +79,27 @@ export default function AddAddressScreen() {
 
   const validateForm = () => {
     if (!phone.trim()) {
-      Alert.alert("Error", "Please enter phone number");
+      showAlert("Error", "Please enter phone number");
       return false;
     }
     if (phone.length !== 10) {
-      Alert.alert("Error", "Please enter valid 10-digit phone number");
+      showAlert("Error", "Please enter valid 10-digit phone number");
       return false;
     }
     if (!addressLine1.trim()) {
-      Alert.alert("Error", "Please enter address line 1");
+      showAlert("Error", "Please enter address line 1");
       return false;
     }
     if (!city.trim()) {
-      Alert.alert("Error", "Please enter city");
+      showAlert("Error", "Please enter city");
       return false;
     }
     if (!state.trim()) {
-      Alert.alert("Error", "Please enter state");
+      showAlert("Error", "Please enter state");
       return false;
     }
     if (!pincode.trim() || pincode.length !== 6) {
-      Alert.alert("Error", "Please enter valid 6-digit pincode");
+      showAlert("Error", "Please enter valid 6-digit pincode");
       return false;
     }
     return true;
@@ -148,16 +148,16 @@ export default function AddAddressScreen() {
 
       if (isEditing) {
         await API.put(`/addresses/${params.id}`, addressData);
-        Alert.alert("Success", "Address updated successfully");
+        showAlert("Success", "Address updated successfully");
       } else {
         await API.post("/addresses", addressData);
-        Alert.alert("Success", "Address added successfully");
+        showAlert("Success", "Address added successfully");
       }
 
       router.back();
     } catch (error: any) {
       console.error("Address save error:", error);
-      Alert.alert(
+      showAlert(
         "Error",
         error.response?.data?.error || "Failed to save address",
       );

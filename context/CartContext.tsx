@@ -1,4 +1,5 @@
 import { cartApi } from "@/lib/cartAPI";
+import { showAlert } from "@/context/CustomAlertContext";
 import { router } from "expo-router";
 import {
   createContext,
@@ -7,7 +8,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { Alert } from "react-native";
 import { useAuth } from "./AuthContext";
 
 /* ================= TYPES ================= */
@@ -75,7 +75,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const requireLogin = (): boolean => {
     if (!userId) {
-      Alert.alert(
+      showAlert(
         "Login Required",
         "Please log in or sign up to add items to your cart.",
         [
@@ -148,10 +148,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (res.data?.success) {
         await refreshCart();
       } else {
-        Alert.alert("Error", res.data?.message || "Failed to add to cart");
+        showAlert("Error", res.data?.message || "Failed to add to cart");
       }
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         "Error",
         error.response?.data?.message || "Failed to add item to cart",
       );
@@ -182,10 +182,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (res.data?.success) {
         await refreshCart();
       } else {
-        Alert.alert("Error", res.data?.message || "Failed to update quantity");
+        showAlert("Error", res.data?.message || "Failed to update quantity");
       }
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         "Error",
         error.response?.data?.message || "Failed to update quantity",
       );
@@ -213,10 +213,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (res.data?.success) {
         await refreshCart();
       } else {
-        Alert.alert("Error", res.data?.message || "Failed to remove item");
+        showAlert("Error", res.data?.message || "Failed to remove item");
       }
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         "Error",
         error.response?.data?.message || "Failed to remove item",
       );

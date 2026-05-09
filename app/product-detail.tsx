@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import { showAlert } from "@/context/CustomAlertContext";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Dimensions,
   Image,
@@ -97,6 +97,8 @@ export default function ProductDetailScreen() {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [similarLoading, setSimilarLoading] = useState(false);
+  const [dealEndTs, setDealEndTs] = useState<number | null>(null);
+  const [dealTimeLeft, setDealTimeLeft] = useState({ h: 0, m: 0, s: 0 });
   const [existingReview, setExistingReview] = useState<Review | null>(null);
   const [isEditingReview, setIsEditingReview] = useState(false);
 
@@ -162,13 +164,57 @@ export default function ProductDetailScreen() {
   const loadProduct = async () => {
     try {
       const res = await API.get(`/products/${id}`);
-      setProduct(res.data.data || res.data);
+      const productData = res.data.data || res.data;
+      setProduct(productData);
+
+      // Show timer only for active best-deal products.
+      if (productData?.bestDeal) {
+        try {
+          const dealRes = await API.get("/deal-settings");
+          const dealSettings = dealRes.data?.data;
+          if (dealSettings?.isActive && dealSettings?.dealEndsAt) {
+            const ts = new Date(dealSettings.dealEndsAt).getTime();
+            setDealEndTs(Number.isFinite(ts) && ts > Date.now() ? ts : null);
+          } else {
+            setDealEndTs(null);
+          }
+        } catch {
+          setDealEndTs(null);
+        }
+      } else {
+        setDealEndTs(null);
+      }
     } catch (error) {
       console.error("Failed to load product:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!dealEndTs) {
+      setDealTimeLeft({ h: 0, m: 0, s: 0 });
+      return;
+    }
+
+    const update = () => {
+      const remainingMs = dealEndTs - Date.now();
+      if (remainingMs <= 0) {
+        setDealTimeLeft({ h: 0, m: 0, s: 0 });
+        return;
+      }
+
+      const totalSec = Math.floor(remainingMs / 1000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      setDealTimeLeft({ h, m, s });
+    };
+
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [dealEndTs]);
 
   const loadReviews = async () => {
     try {
@@ -241,7 +287,7 @@ export default function ProductDetailScreen() {
   const handleIncrement = () => {
     if (!cartItem || !product || !selectedVariant) return;
     if (cartItem.qty >= selectedVariant.stock) {
-      Alert.alert(
+      showAlert(
         "Stock Limit",
         `Only ${selectedVariant.stock} items available`,
       );
@@ -257,7 +303,7 @@ export default function ProductDetailScreen() {
 
   const handleWriteReview = () => {
     if (!user) {
-      Alert.alert("Login Required", "Please log in to write a review", [
+      showAlert("Login Required", "Please log in to write a review", [
         { text: "Cancel", style: "cancel" },
         { text: "Log In", onPress: () => router.push("/(auth)/login") },
       ]);
@@ -306,18 +352,18 @@ export default function ProductDetailScreen() {
       }
       await Linking.openURL(webFallbackUrl);
     } catch (error) {
-      Alert.alert("Share failed", "Unable to open WhatsApp right now.");
+      showAlert("Share failed", "Unable to open WhatsApp right now.");
     }
   };
 
   const handleSubmitReview = async () => {
     if (!user) return;
     if (userRating === 0) {
-      Alert.alert("Rating Required", "Please select a rating");
+      showAlert("Rating Required", "Please select a rating");
       return;
     }
     if (!reviewComment.trim()) {
-      Alert.alert("Comment Required", "Please write a comment");
+      showAlert("Comment Required", "Please write a comment");
       return;
     }
     try {
@@ -328,7 +374,7 @@ export default function ProductDetailScreen() {
           rating: userRating,
           comment: reviewComment.trim(),
         });
-        Alert.alert("Success", "Review updated successfully!");
+        showAlert("Success", "Review updated successfully!");
       } else {
         await API.post("/reviews", {
           userId: user._id,
@@ -336,7 +382,7 @@ export default function ProductDetailScreen() {
           rating: userRating,
           comment: reviewComment.trim(),
         });
-        Alert.alert("Success", "Review submitted successfully!");
+        showAlert("Success", "Review submitted successfully!");
       }
       setShowReviewModal(false);
       setUserRating(0);
@@ -346,7 +392,7 @@ export default function ProductDetailScreen() {
       loadReviews();
       loadProduct();
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         "Error",
         error?.response?.data?.message || "Failed to submit review",
       );
@@ -440,6 +486,8 @@ export default function ProductDetailScreen() {
         )
       : 0;
   const savings = selectedVariant.mrp - selectedVariant.price;
+  const hasBestDealTimer = product.bestDeal && !!dealEndTs;
+  const pad2 = (n: number) => String(n).padStart(2, "0");
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -576,15 +624,6 @@ export default function ProductDetailScreen() {
 
           {/* ── Product Name (EXACT styles as specified) ── */}
           <Text style={styles.productName}>{product.name}</Text>
-
-          <TouchableOpacity
-            style={styles.whatsAppShareBtn}
-            onPress={handleWhatsAppShare}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="logo-whatsapp" size={16} color="#fff" />
-            <Text style={styles.whatsAppShareText}>Share on WhatsApp</Text>
-          </TouchableOpacity>
 
           {/* ── Rating Row ── */}
           <TouchableOpacity style={styles.ratingRow} activeOpacity={0.7}>
@@ -736,6 +775,31 @@ export default function ProductDetailScreen() {
               <View style={styles.outOfStockIndicator}>
                 <Ionicons name="close-circle" size={15} color="#F44336" />
                 <Text style={styles.outOfStockText}>Out of Stock</Text>
+              </View>
+            )}
+
+            {hasBestDealTimer && (
+              <View style={styles.dealTimerWrap}>
+                <View style={styles.dealTimerHeader}>
+                  <Text style={styles.dealTimerTitle}>Best Deal ends in</Text>
+                  <Text style={styles.dealTimerIcon}>🔥</Text>
+                </View>
+                <View style={styles.dealTimerRow}>
+                  <View style={styles.dealTimeBox}>
+                    <Text style={styles.dealTimeValue}>{pad2(dealTimeLeft.h)}</Text>
+                    <Text style={styles.dealTimeLabel}>HH</Text>
+                  </View>
+                  <Text style={styles.dealTimerSep}>:</Text>
+                  <View style={styles.dealTimeBox}>
+                    <Text style={styles.dealTimeValue}>{pad2(dealTimeLeft.m)}</Text>
+                    <Text style={styles.dealTimeLabel}>MM</Text>
+                  </View>
+                  <Text style={styles.dealTimerSep}>:</Text>
+                  <View style={styles.dealTimeBox}>
+                    <Text style={styles.dealTimeValue}>{pad2(dealTimeLeft.s)}</Text>
+                    <Text style={styles.dealTimeLabel}>SS</Text>
+                  </View>
+                </View>
               </View>
             )}
           </Animated.View>
@@ -1587,23 +1651,6 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     marginBottom: 8,
   },
-  whatsAppShareBtn: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#25D366",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    marginBottom: 12,
-  },
-  whatsAppShareText: {
-    fontSize: 13,
-    color: "#fff",
-    fontWeight: "700",
-  },
-
   // ── Rating ──
   ratingRow: {
     flexDirection: "row",
@@ -1755,6 +1802,62 @@ const styles = StyleSheet.create({
   stockText: { fontSize: 13, color: "#4CAF50", fontWeight: "600" },
   outOfStockIndicator: { flexDirection: "row", alignItems: "center", gap: 6 },
   outOfStockText: { fontSize: 13, color: "#F44336", fontWeight: "600" },
+  dealTimerWrap: {
+    marginTop: 14,
+    backgroundColor: "#FFF4E8",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#FFD9B5",
+  },
+  dealTimerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  dealTimerTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#B45309",
+  },
+  dealTimerIcon: {
+    fontSize: 14,
+  },
+  dealTimerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  dealTimeBox: {
+    minWidth: 52,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#FDE1C5",
+  },
+  dealTimeValue: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#EA580C",
+    letterSpacing: -0.2,
+  },
+  dealTimeLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#9A3412",
+    marginTop: 2,
+  },
+  dealTimerSep: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#EA580C",
+  },
 
   // ── Description ──
   descriptionSection: {

@@ -1,11 +1,11 @@
 import { API } from "@/utils/api";
+import { showAlert } from "@/context/CustomAlertContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Image,
   KeyboardAvoidingView,
@@ -63,7 +63,7 @@ export default function AddProductScreen() {
       console.log(res.data);
     } catch (error: any) {
       console.error("❌ Categories error:", error);
-      Alert.alert(
+      showAlert(
         "Error",
         "Failed to load categories. Please check your internet connection.",
       );
@@ -81,7 +81,7 @@ export default function AddProductScreen() {
         await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (!permission.granted) {
-        Alert.alert(
+        showAlert(
           "Permission Required",
           "Please allow gallery access to upload product images",
           [{ text: "OK" }],
@@ -116,12 +116,12 @@ export default function AddProductScreen() {
       }
     } catch (error) {
       console.error("❌ Image picker error:", error);
-      Alert.alert("Error", "Failed to pick image. Please try again.");
+      showAlert("Error", "Failed to pick image. Please try again.");
     }
   };
 
   const removeImage = () => {
-    Alert.alert("Remove Image", "Are you sure you want to remove this image?", [
+    showAlert("Remove Image", "Are you sure you want to remove this image?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Remove",
@@ -139,12 +139,12 @@ export default function AddProductScreen() {
   ====================== */
   const validateForm = () => {
     if (!name.trim()) {
-      Alert.alert("Validation Error", "Please enter product name");
+      showAlert("Validation Error", "Please enter product name");
       return false;
     }
 
     if (!price || isNaN(Number(price)) || Number(price) <= 0) {
-      Alert.alert(
+      showAlert(
         "Validation Error",
         "Please enter a valid price greater than 0",
       );
@@ -152,7 +152,7 @@ export default function AddProductScreen() {
     }
 
     if (!unit.trim()) {
-      Alert.alert(
+      showAlert(
         "Validation Error",
         "Please enter unit (e.g., kg, pcs, liter)",
       );
@@ -160,7 +160,7 @@ export default function AddProductScreen() {
     }
 
     if (!stock || isNaN(Number(stock)) || Number(stock) < 0) {
-      Alert.alert(
+      showAlert(
         "Validation Error",
         "Please enter a valid stock quantity (0 or more)",
       );
@@ -168,7 +168,7 @@ export default function AddProductScreen() {
     }
 
     if (!category) {
-      Alert.alert("Validation Error", "Please select a category from dropdown");
+      showAlert("Validation Error", "Please select a category from dropdown");
       return false;
     }
 
@@ -179,7 +179,7 @@ export default function AddProductScreen() {
         Number(discount) < 0 ||
         Number(discount) > 100)
     ) {
-      Alert.alert("Validation Error", "Discount must be between 0 and 100");
+      showAlert("Validation Error", "Discount must be between 0 and 100");
       return false;
     }
 
@@ -282,7 +282,7 @@ export default function AddProductScreen() {
         }),
       ]).start();
 
-      Alert.alert("Success! 🎉", "Product added successfully", [
+      showAlert("Success! 🎉", "Product added successfully", [
         {
           text: "Add Another",
           onPress: resetForm,
@@ -318,7 +318,7 @@ export default function AddProductScreen() {
         errorMessage = err.message;
       }
 
-      Alert.alert("Upload Failed", errorMessage);
+      showAlert("Upload Failed", errorMessage);
     } finally {
       setLoading(false);
       setUploadProgress(0);
@@ -696,7 +696,7 @@ export default function AddProductScreen() {
                 <TouchableOpacity
                   style={styles.resetBtn}
                   onPress={() => {
-                    Alert.alert(
+                    showAlert(
                       "Clear Form",
                       "Are you sure you want to clear all fields?",
                       [

@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { showAlert } from "@/context/CustomAlertContext";
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import {
-  Alert,
   Animated,
   Pressable,
   ScrollView,
@@ -407,7 +407,7 @@ export default function ProfileScreen() {
   }, [user]);
 
   const confirmLogout = () => {
-    Alert.alert("Log Out", "Are you sure you want to log out?", [
+    showAlert("Log Out", "Are you sure you want to log out?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Log Out",
@@ -423,7 +423,7 @@ export default function ProfileScreen() {
 
   const requireAuth = (callback: () => void) => {
     if (!user) {
-      Alert.alert("Login Required", "Please login to continue", [
+      showAlert("Login Required", "Please login to continue", [
         { text: "Cancel", style: "cancel" },
         {
           text: "Login",

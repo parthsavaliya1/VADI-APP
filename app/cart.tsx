@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { showAlert } from "@/context/CustomAlertContext";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
   FlatList,
   Image,
   StyleSheet,
@@ -30,7 +30,7 @@ export default function CartScreen() {
     variantId: string,
     name: string,
   ) => {
-    Alert.alert("Remove Item", `Remove ${name} from cart?`, [
+    showAlert("Remove Item", `Remove ${name} from cart?`, [
       { text: "Cancel", style: "cancel" },
       {
         text: "Remove",
@@ -41,7 +41,7 @@ export default function CartScreen() {
   };
 
   const handleClearCart = () => {
-    Alert.alert("Clear Cart", "Are you sure you want to remove all items?", [
+    showAlert("Clear Cart", "Are you sure you want to remove all items?", [
       { text: "Cancel", style: "cancel" },
       { text: "Clear All", style: "destructive", onPress: () => clearCart() },
     ]);

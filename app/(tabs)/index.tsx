@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import { showAlert } from "@/context/CustomAlertContext";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   BackHandler,
   Dimensions,
@@ -18,15 +18,27 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  ExpoSpeechRecognitionModule,
-  useSpeechRecognitionEvent,
-} from "expo-speech-recognition";
 
 import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { API } from "../../utils/api";
+
+type SpeechEventName = "start" | "end" | "result" | "error";
+
+let ExpoSpeechRecognitionModule: any = null;
+let useSpeechRecognitionEvent: (
+  _eventName: SpeechEventName,
+  _handler: (event: any) => void,
+) => void = () => {};
+
+try {
+  const speechModule = require("expo-speech-recognition");
+  ExpoSpeechRecognitionModule = speechModule.ExpoSpeechRecognitionModule;
+  useSpeechRecognitionEvent = speechModule.useSpeechRecognitionEvent;
+} catch {
+  // Native speech module isn't available in this runtime.
+}
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 16 * 2 - 10) / 2;
@@ -235,12 +247,12 @@ function DealCard({ item, onAdd }: { item: Product; onAdd: () => void }) {
       activeOpacity={0.85}
       onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
     >
+      {disc > 0 && (
+        <View style={s.dealBadge}>
+          <Text style={s.badgeTxt}>{disc}% OFF</Text>
+        </View>
+      )}
       <View style={s.dealImgZone}>
-        {disc > 0 && (
-          <View style={s.dealBadge}>
-            <Text style={s.badgeTxt}>{disc}% OFF</Text>
-          </View>
-        )}
         <Image source={{ uri: item.image || "https://via.placeholder.com/150" }} style={s.dealImg} />
       </View>
       <View style={s.dealInfo}>
@@ -417,7 +429,7 @@ export default function HomeScreen() {
   useSpeechRecognitionEvent("error", (event) => {
     setIsListening(false);
     if (event.error === "aborted" || event.error === "no-speech") return;
-    Alert.alert("Voice search", event.message || "Voice recognition failed.");
+    showAlert("Voice search", event.message || "Voice recognition failed.");
   });
 
   // Back handler
@@ -568,13 +580,21 @@ export default function HomeScreen() {
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
   const handleVoiceSearch = async () => {
+    if (!ExpoSpeechRecognitionModule) {
+      showAlert(
+        "Voice search unavailable",
+        "Voice search is not available in this build. Please use search text.",
+      );
+      return;
+    }
+
     if (isListening) {
       ExpoSpeechRecognitionModule.stop();
       return;
     }
 
     if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
-      Alert.alert(
+      showAlert(
         "Voice search",
         "Speech recognition is not available on this device.",
       );
@@ -583,7 +603,7 @@ export default function HomeScreen() {
 
     const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(
+      showAlert(
         "Permission needed",
         "Please allow microphone permission for voice search.",
       );
@@ -741,9 +761,20 @@ export default function HomeScreen() {
           <View style={s.dealSection}>
             <View style={s.secHeader}>
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={s.dealHeaderTopRow}>
                   <Text style={s.secTitle}>{"Today's Deal"}</Text>
                   <Text style={{ fontSize: 18 }}>🔥</Text>
+                  <TouchableOpacity
+                    style={s.dealViewAllBtn}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/all-products",
+                        params: { type: "deals", title: "Best Deals Today" },
+                      })
+                    }
+                  >
+                    <Text style={s.seeAll}>View all →</Text>
+                  </TouchableOpacity>
                 </View>
                 <View style={s.countdownRow}>
                   <Text style={s.countdownLabel}>Offer ends in</Text>
@@ -756,9 +787,6 @@ export default function HomeScreen() {
                   </View>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => router.push({ pathname: "/all-products", params: { type: "deals", title: "Best Deals Today" } })}>
-                <Text style={s.seeAll}>View all →</Text>
-              </TouchableOpacity>
             </View>
             <FlatList
               data={dealProducts}
@@ -1009,6 +1037,8 @@ const s = StyleSheet.create({
   secHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12 },
   secTitle: { fontSize: 17, fontWeight: "900", color: "#1B5E20" },
   seeAll: { fontSize: 13, color: "#2E7D32", fontWeight: "700" },
+  dealHeaderTopRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  dealViewAllBtn: { marginLeft: "auto" },
 
   // COUNTDOWN
   countdownRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
@@ -1025,7 +1055,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: "#F0F0F0", overflow: "hidden", minHeight: 112,
   },
   dealImgZone: { width: 96, minHeight: 112, backgroundColor: "#FAFAF8", alignItems: "center", justifyContent: "center", position: "relative" },
-  dealBadge: { position: "absolute", top: 6, left: 6, backgroundColor: "#EF4444", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, zIndex: 10, elevation: 5 },
+  dealBadge: { position: "absolute", top: 6, right: 6, backgroundColor: "#EF4444", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, zIndex: 10, elevation: 5 },
   badgeTxt: { color: "#fff", fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
   dealImg: { width: 78, height: 78, resizeMode: "contain", zIndex: 1 },
   dealInfo: { flex: 1, paddingHorizontal: 12, paddingVertical: 14, justifyContent: "center" },

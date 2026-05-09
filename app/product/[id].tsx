@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
+import { showAlert } from "@/context/CustomAlertContext";
 import { useEffect, useState } from "react";
 import {
-  Alert,
   Image,
   Linking,
   StyleSheet,
@@ -77,7 +77,7 @@ export default function ProductDetailScreen() {
       }
       await Linking.openURL(webFallbackUrl);
     } catch (error) {
-      Alert.alert("Share failed", "Unable to open WhatsApp right now.");
+      showAlert("Share failed", "Unable to open WhatsApp right now.");
     }
   };
 
