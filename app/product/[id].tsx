@@ -1,6 +1,14 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Image,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCart } from "../../context/CartContext";
 import { API } from "../../utils/api";
@@ -46,6 +54,33 @@ export default function ProductDetailScreen() {
     );
   }
 
+  const handleWhatsAppShare = async () => {
+    const productDeepLink = `vadiapp://product-detail?id=${product._id}`;
+    const shareMessage = [
+      "Check out this product on VADI!",
+      "",
+      product.name,
+      `Price: Rs ${product.price} / ${product.unit}`,
+      "",
+      `Open in app: ${productDeepLink}`,
+      `Product ID: ${product._id}`,
+    ].join("\n");
+
+    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(shareMessage)}`;
+    const webFallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
+
+    try {
+      const canOpenWhatsApp = await Linking.canOpenURL(whatsappUrl);
+      if (canOpenWhatsApp) {
+        await Linking.openURL(whatsappUrl);
+        return;
+      }
+      await Linking.openURL(webFallbackUrl);
+    } catch (error) {
+      Alert.alert("Share failed", "Unable to open WhatsApp right now.");
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
@@ -62,6 +97,11 @@ export default function ProductDetailScreen() {
         <Text style={styles.price}>
           ₹{product.price} / {product.unit}
         </Text>
+
+        {/* SHARE ON WHATSAPP */}
+        <TouchableOpacity style={styles.shareBtn} onPress={handleWhatsAppShare}>
+          <Text style={styles.shareText}>SHARE ON WHATSAPP</Text>
+        </TouchableOpacity>
 
         {/* ADD TO CART */}
         <TouchableOpacity
@@ -114,7 +154,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 20,
   },
+  shareBtn: {
+    backgroundColor: "#25D366",
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginTop: 8,
+  },
   addText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  shareText: {
     color: "#fff",
     textAlign: "center",
     fontWeight: "700",

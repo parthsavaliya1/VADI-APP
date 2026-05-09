@@ -3,6 +3,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   BackHandler,
   Dimensions,
@@ -10,14 +11,17 @@ import {
   Image,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from "expo-speech-recognition";
 
 import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
@@ -27,7 +31,7 @@ import { API } from "../../utils/api";
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 16 * 2 - 10) / 2;
 const HORIZONTAL_CARD_W = (width - 16 * 2 - 12) / 2;
-const DEAL_CARD_W = (width - 16 * 2 - 12 * 2 - 12 * 2) / 3;
+const DEAL_CARD_W = width - 56;
 
 // ─── Fallbacks ────────────────────────────────────────────────────────────────
 const FALLBACK_BANNERS = [
@@ -76,6 +80,13 @@ const QUICK_ACTIONS = [
   { color: "#3B82F6", bg: "#DBEAFE", icon: "ice-cream" },
   { color: "#A78BFA", bg: "#EDE9FE", icon: "basket-outline" },
   { color: "#F59E0B", bg: "#FEF9C3", icon: "cafe-outline" },
+];
+
+const SEARCH_PLACEHOLDERS = [
+  "Search vegetables, fruits, dairy...",
+  "Try: tomato, onion, milk",
+  "Try voice search using mic",
+  "Search brands or categories",
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -233,7 +244,7 @@ function DealCard({ item, onAdd }: { item: Product; onAdd: () => void }) {
         <Image source={{ uri: item.image || "https://via.placeholder.com/150" }} style={s.dealImg} />
       </View>
       <View style={s.dealInfo}>
-        <Text numberOfLines={1} style={s.dealName}>{item.name}</Text>
+        <Text numberOfLines={2} style={s.dealName}>{item.name}</Text>
         <Text style={s.dealUnit}>{v.packSize}{v.packUnit}</Text>
         <View style={s.dealFooter}>
           <View style={{ flex: 1, marginRight: 6 }}>
@@ -343,7 +354,7 @@ function EmptyCategoryState({ categoryName, onClear }: { categoryName: string; o
     <View style={s.emptyCategory}>
       <View style={s.emptyCategoryIcon}><Text style={{ fontSize: 48 }}>🛒</Text></View>
       <Text style={s.emptyCategoryTitle}>No products in {categoryName}</Text>
-      <Text style={s.emptyCategoryText}>We're restocking this category soon. Check back later!</Text>
+      <Text style={s.emptyCategoryText}>{"We're restocking this category soon. Check back later!"}</Text>
       <TouchableOpacity style={s.emptyCategoryBtn} onPress={onClear}>
         <Ionicons name="arrow-back" size={16} color="#fff" />
         <Text style={s.emptyCategoryBtnText}>Browse all products</Text>
@@ -369,7 +380,8 @@ function SectionHeader({ title, onSeeAll, right }: { title: React.ReactNode; onS
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
-  const { user, loading: authLoading } = useAuth();
+  const insets = useSafeAreaInsets();
+  const { loading: authLoading } = useAuth();
   const { items, addToCart, getCartItemCount } = useCart();
   const { defaultAddress } = useAddress();
 
@@ -378,6 +390,8 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [isListening, setIsListening] = useState(false);
   const [bannerIdx, setBannerIdx] = useState(0);
   const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -391,6 +405,20 @@ export default function HomeScreen() {
   const bannerRef = useRef<FlatList>(null);
 
   const total = items.reduce((acc, i) => acc + i.price * i.qty, 0);
+
+  useSpeechRecognitionEvent("start", () => setIsListening(true));
+  useSpeechRecognitionEvent("end", () => setIsListening(false));
+  useSpeechRecognitionEvent("result", (event) => {
+    const transcript = event.results?.[0]?.transcript?.trim();
+    if (!transcript) return;
+    setSearchQuery(transcript);
+    setSelectedCatId(null);
+  });
+  useSpeechRecognitionEvent("error", (event) => {
+    setIsListening(false);
+    if (event.error === "aborted" || event.error === "no-speech") return;
+    Alert.alert("Voice search", event.message || "Voice recognition failed.");
+  });
 
   // Back handler
   useFocusEffect(
@@ -510,6 +538,13 @@ export default function HomeScreen() {
     return () => clearInterval(t);
   }, [dealEndTs]);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % SEARCH_PLACEHOLDERS.length);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
   if (authLoading) {
     return <View style={s.loadingScreen}><ActivityIndicator size="large" color="#2E7D32" /></View>;
   }
@@ -532,31 +567,56 @@ export default function HomeScreen() {
 
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
+  const handleVoiceSearch = async () => {
+    if (isListening) {
+      ExpoSpeechRecognitionModule.stop();
+      return;
+    }
+
+    if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
+      Alert.alert(
+        "Voice search",
+        "Speech recognition is not available on this device.",
+      );
+      return;
+    }
+
+    const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Permission needed",
+        "Please allow microphone permission for voice search.",
+      );
+      return;
+    }
+
+    ExpoSpeechRecognitionModule.start({
+      lang: "en-IN",
+      interimResults: true,
+      continuous: false,
+      maxAlternatives: 1,
+      iosTaskHint: "search",
+    });
+  };
+
   return (
-    <SafeAreaView style={s.safe}>
-      <Animated.ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#2E7D32"]} tintColor="#2E7D32" />}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
-        scrollEventThrottle={16}
-      >
-        {/* ── HEADER ─────────────────────────────────────────────────────── */}
-        <Animated.View style={[s.header, { opacity: headerOpacity }]}>
+    <SafeAreaView style={s.safe} edges={["left", "right"]}>
+      <Animated.View style={[s.headerFixed, { opacity: headerOpacity }]}>
+        <View style={[s.headerWrap, { paddingTop: insets.top }]}>
+          <View style={s.header}>
           <View style={{ flex: 1 }}>
             <View style={s.brandRow}>
               <Image source={require("../../assets/images/vadi-brand-logo.png")} style={s.headerLogo} />
-              <View>
-                <Text style={s.brandTagline}>Farm fresh groceries</Text>
-                <Text style={s.brandSubTagline}>Handpicked from local sellers</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.deliverLabel}>📍 Delivering to</Text>
+                <TouchableOpacity style={s.addressRow}>
+                  <Text style={s.addressText} numberOfLines={1}>
+                    {defaultAddress ? `${defaultAddress.name} · ${defaultAddress.city}` : "Add delivery address"}
+                  </Text>
+                  <Ionicons name="chevron-down" size={15} color="#1B5E20" />
+                </TouchableOpacity>
               </View>
             </View>
-            <Text style={s.deliverLabel}>📍 Delivering to</Text>
-            <TouchableOpacity style={s.addressRow}>
-              <Text style={s.addressText} numberOfLines={1}>
-                {defaultAddress ? `${defaultAddress.name} · ${defaultAddress.city}` : "Add delivery address"}
-              </Text>
-              <Ionicons name="chevron-down" size={15} color="#1B5E20" />
-            </TouchableOpacity>
           </View>
           <View style={s.headerIcons}>
             <TouchableOpacity style={s.iconBtn}>
@@ -570,15 +630,24 @@ export default function HomeScreen() {
               )}
             </TouchableOpacity>
           </View>
-        </Animated.View>
+          </View>
+        </View>
+      </Animated.View>
 
+      <Animated.ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#2E7D32"]} tintColor="#2E7D32" />}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
+        contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 70 }]}
+      >
         <GuestBanner />
 
         {/* ── SEARCH ─────────────────────────────────────────────────────── */}
         <Animated.View style={[s.searchBox, { transform: [{ scale: searchScale }] }]}>
           <Ionicons name="search" size={18} color="#9CA3AF" />
           <TextInput
-            placeholder="Search vegetables, fruits, dairy…"
+            placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
             placeholderTextColor="#9CA3AF"
             style={s.searchInput}
             value={searchQuery}
@@ -586,6 +655,17 @@ export default function HomeScreen() {
             onFocus={() => Animated.spring(searchAnim, { toValue: 1, useNativeDriver: true }).start()}
             onBlur={() => Animated.spring(searchAnim, { toValue: 0, useNativeDriver: true }).start()}
           />
+          <TouchableOpacity
+            style={[s.voicePill, isListening && s.voicePillActive]}
+            onPress={handleVoiceSearch}
+            activeOpacity={0.85}
+          >
+            <Ionicons
+              name={isListening ? "mic" : "mic-outline"}
+              size={16}
+              color={isListening ? "#fff" : "#2E7D32"}
+            />
+          </TouchableOpacity>
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
               <Ionicons name="close-circle" size={18} color="#9CA3AF" />
@@ -662,7 +742,7 @@ export default function HomeScreen() {
             <View style={s.secHeader}>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Text style={s.secTitle}>Today's Deal</Text>
+                  <Text style={s.secTitle}>{"Today's Deal"}</Text>
                   <Text style={{ fontSize: 18 }}>🔥</Text>
                 </View>
                 <View style={s.countdownRow}>
@@ -681,12 +761,14 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
             <FlatList
-              data={dealProducts.slice(0, 3)}
+              data={dealProducts}
               horizontal
               showsHorizontalScrollIndicator={false}
-              scrollEnabled={false}
+              pagingEnabled
+              snapToInterval={DEAL_CARD_W}
+              decelerationRate="fast"
               keyExtractor={(item) => item._id}
-              contentContainerStyle={{ paddingRight: 0, gap: 12 }}
+              contentContainerStyle={s.dealListContent}
               renderItem={({ item }) => <DealCard item={item} onAdd={() => handleAddToCart(item)} />}
             />
           </View>
@@ -849,11 +931,23 @@ export default function HomeScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#F8FAF5" },
+  scrollContent: {},
   loadingScreen: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8FAF5" },
 
   // HEADER
+  headerFixed: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    backgroundColor: "#F8FAF5",
+  },
+  headerWrap: {
+    backgroundColor: "#F8FAF5",
+  },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 4, paddingBottom: 10 },
-  brandRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 0 },
   headerLogo: { width: 40, height: 40, resizeMode: "contain" },
   brandTagline: { fontSize: 13, fontWeight: "800", color: "#14532D" },
   brandSubTagline: { fontSize: 11, color: "#6B7280", marginTop: 2 },
@@ -878,6 +972,15 @@ const s = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, color: "#1F2937" },
   filterPill: { backgroundColor: "#E8F5E9", borderRadius: 8, padding: 6 },
+  voicePill: {
+    backgroundColor: "#E8F5E9",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  voicePillActive: {
+    backgroundColor: "#2E7D32",
+  },
 
   // FILTER CHIP
   filterChipRow: { paddingHorizontal: 16, marginBottom: 12 },
@@ -915,22 +1018,23 @@ const s = StyleSheet.create({
   countSep: { fontSize: 14, fontWeight: "900", color: "#DC2626", marginHorizontal: 2, textAlign: "center" },
 
   // DEAL CARD
+  dealListContent: { paddingRight: 0 },
   dealCard: {
-    backgroundColor: "#fff", borderRadius: 18, elevation: 3,
+    backgroundColor: "#fff", borderRadius: 14, elevation: 3, flexDirection: "row",
     shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6,
-    borderWidth: 1, borderColor: "#F0F0F0", overflow: "hidden",
+    borderWidth: 1, borderColor: "#F0F0F0", overflow: "hidden", minHeight: 112,
   },
-  dealImgZone: { height: 100, backgroundColor: "#FAFAF8", alignItems: "center", justifyContent: "center", position: "relative" },
+  dealImgZone: { width: 96, minHeight: 112, backgroundColor: "#FAFAF8", alignItems: "center", justifyContent: "center", position: "relative" },
   dealBadge: { position: "absolute", top: 6, left: 6, backgroundColor: "#EF4444", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, zIndex: 10, elevation: 5 },
   badgeTxt: { color: "#fff", fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
-  dealImg: { width: 70, height: 70, resizeMode: "contain", zIndex: 1 },
-  dealInfo: { padding: 8 },
-  dealName: { fontSize: 11, fontWeight: "700", color: "#1F2937", marginBottom: 2 },
-  dealUnit: { fontSize: 10, color: "#9CA3AF", fontWeight: "600", marginBottom: 6 },
-  dealFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  dealPrice: { fontSize: 12, fontWeight: "800", color: "#2E7D32" },
-  strikePrice: { fontSize: 9, color: "#D1D5DB", textDecorationLine: "line-through", marginTop: 1 },
-  roundAddBtn: { backgroundColor: "#2E7D32", width: 24, height: 24, borderRadius: 7, justifyContent: "center", alignItems: "center", flexShrink: 0, elevation: 3 },
+  dealImg: { width: 78, height: 78, resizeMode: "contain", zIndex: 1 },
+  dealInfo: { flex: 1, paddingHorizontal: 12, paddingVertical: 14, justifyContent: "center" },
+  dealName: { fontSize: 12, fontWeight: "800", color: "#1F2937", marginBottom: 7, lineHeight: 16 },
+  dealUnit: { fontSize: 11, color: "#6B7280", fontWeight: "600", marginBottom: 9 },
+  dealFooter: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },
+  dealPrice: { fontSize: 14, fontWeight: "900", color: "#1B5E20" },
+  strikePrice: { fontSize: 10, color: "#D1D5DB", textDecorationLine: "line-through", marginTop: 2 },
+  roundAddBtn: { backgroundColor: "#2E7D32", width: 28, height: 28, borderRadius: 8, justifyContent: "center", alignItems: "center", flexShrink: 0, elevation: 3 },
 
   // CATEGORY
   catCard: {

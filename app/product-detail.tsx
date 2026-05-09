@@ -7,6 +7,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -276,6 +277,39 @@ export default function ProductDetailScreen() {
     setShowReviewModal(true);
   };
 
+  const handleWhatsAppShare = async () => {
+    if (!product || !selectedVariant) return;
+    const productDeepLink = `vadiapp://product-detail?id=${product._id}`;
+
+    const shareMessage = [
+      `Check out this product on VADI!`,
+      ``,
+      `${product.name}`,
+      `Price: Rs ${selectedVariant.price.toFixed(2)}`,
+      product.brand ? `Brand: ${product.brand}` : "",
+      product.category?.name ? `Category: ${product.category.name}` : "",
+      "",
+      `Open in app: ${productDeepLink}`,
+      `Product ID: ${product._id}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(shareMessage)}`;
+    const webFallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
+
+    try {
+      const canOpenWhatsApp = await Linking.canOpenURL(whatsappUrl);
+      if (canOpenWhatsApp) {
+        await Linking.openURL(whatsappUrl);
+        return;
+      }
+      await Linking.openURL(webFallbackUrl);
+    } catch (error) {
+      Alert.alert("Share failed", "Unable to open WhatsApp right now.");
+    }
+  };
+
   const handleSubmitReview = async () => {
     if (!user) return;
     if (userRating === 0) {
@@ -443,17 +477,27 @@ export default function ProductDetailScreen() {
           </Animated.Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.push("/cart")}
-        >
-          <Ionicons name="cart-outline" size={22} color="#1B5E20" />
-          {getCartItemCount() > 0 && (
-            <View style={styles.headerCartBadge}>
-              <Text style={styles.headerCartBadgeText}>{getCartItemCount()}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={handleWhatsAppShare}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="logo-whatsapp" size={20} color="#1B5E20" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => router.push("/cart")}
+          >
+            <Ionicons name="cart-outline" size={22} color="#1B5E20" />
+            {getCartItemCount() > 0 && (
+              <View style={styles.headerCartBadge}>
+                <Text style={styles.headerCartBadgeText}>{getCartItemCount()}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </Animated.View>
 
       <Animated.ScrollView
@@ -532,6 +576,15 @@ export default function ProductDetailScreen() {
 
           {/* ── Product Name (EXACT styles as specified) ── */}
           <Text style={styles.productName}>{product.name}</Text>
+
+          <TouchableOpacity
+            style={styles.whatsAppShareBtn}
+            onPress={handleWhatsAppShare}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="logo-whatsapp" size={16} color="#fff" />
+            <Text style={styles.whatsAppShareText}>Share on WhatsApp</Text>
+          </TouchableOpacity>
 
           {/* ── Rating Row ── */}
           <TouchableOpacity style={styles.ratingRow} activeOpacity={0.7}>
@@ -1417,6 +1470,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 8,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   headerLogo: {
     width: 24,
     height: 24,
@@ -1528,6 +1586,22 @@ const styles = StyleSheet.create({
     color: "#111",
     lineHeight: 28,
     marginBottom: 8,
+  },
+  whatsAppShareBtn: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#25D366",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  whatsAppShareText: {
+    fontSize: 13,
+    color: "#fff",
+    fontWeight: "700",
   },
 
   // ── Rating ──

@@ -1,6 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useCart } from "../../context/CartContext";
 import { useOrders } from "../../context/OrderContext";
 
 interface OrderItem {
@@ -76,9 +73,10 @@ interface Order {
 
 export default function OrdersScreen() {
   const { orders, fetchOrders, loading } = useOrders();
-  const { items } = useCart();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const listRef = useRef<FlatList<Order> | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -90,28 +88,23 @@ export default function OrdersScreen() {
     setRefreshing(false);
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
-
-  const getStatusColor = (status: string) => {
+  const getStatusColors = (status: string) => {
     switch (status.toLowerCase()) {
       case "placed":
-        return "#FF9800";
       case "confirmed":
-        return "#2196F3";
       case "packed":
-        return "#9C27B0";
       case "out_for_delivery":
-        return "#FF6F00";
+      case "processing":
+        return { text: "#2F80ED", bg: "#E8F1FF" };
+      case "shipped":
+        return { text: "#2F80ED", bg: "#E8F1FF" };
       case "delivered":
-        return "#4CAF50";
+        return { text: "#2E7D32", bg: "#E9F7EC" };
       case "cancelled":
-        return "#F44336";
       case "returned":
-        return "#E91E63";
+        return { text: "#D32F2F", bg: "#FDECEC" };
       default:
-        return "#757575";
+        return { text: "#64748B", bg: "#EEF2F7" };
     }
   };
 
@@ -137,23 +130,238 @@ export default function OrdersScreen() {
     }
   };
 
+  const getFilterValue = (status: string) => {
+    const normalized = status
+      .toLowerCase()
+      .trim()
+      .replace(/[-\s]+/g, "_");
+
+    if (
+      normalized.includes("cancel") ||
+      normalized.includes("return") ||
+      normalized.includes("failed") ||
+      normalized.includes("reject")
+    ) {
+      return "cancelled";
+    }
+
+    if (
+      normalized.includes("deliver") ||
+      normalized.includes("complete") ||
+      normalized.includes("fulfilled")
+    ) {
+      return "delivered";
+    }
+
+    if (normalized.includes("ship") || normalized.includes("dispatch")) {
+      return "shipped";
+    }
+    return "processing";
+  };
+
+  const filters = [
+    { key: "all", label: "All" },
+    { key: "processing", label: "Processing" },
+    { key: "shipped", label: "Shipped" },
+    { key: "delivered", label: "Delivered" },
+    { key: "cancelled", label: "Cancelled" },
+  ];
+
+  const filteredOrders =
+    selectedFilter === "all"
+      ? orders
+      : orders.filter((order) => getFilterValue(order.status) === selectedFilter);
+
+  useEffect(() => {
+    setExpandedId(null);
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    });
+  }, [selectedFilter]);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const options: Intl.DateTimeFormatOptions = {
-      day: "2-digit",
+    return date.toLocaleDateString("en-IN", {
+      day: "numeric",
       month: "short",
       year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-    return date.toLocaleDateString("en-IN", options);
+    });
+  };
+
+  const getImagePreview = (orderItems: OrderItem[]) => {
+    return orderItems.slice(0, 3);
+  };
+
+  const renderStatusFilter = () => (
+    <FlatList
+      horizontal
+      data={filters}
+      keyExtractor={(item) => item.key}
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.filterRow}
+      renderItem={({ item: filter }) => {
+        const isActive = selectedFilter === filter.key;
+        return (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.filterChip, isActive && styles.filterChipActive]}
+            onPress={() => setSelectedFilter(filter.key)}
+          >
+            <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
+              {filter.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      }}
+    />
+  );
+
+  const renderOrderCard = ({ item }: { item: Order }) => {
+    const statusText = getStatusText(item.status);
+    const statusColors = getStatusColors(item.status);
+    const imagePreview = getImagePreview(item.items);
+    const isExpanded = expandedId === item._id;
+
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardTop}>
+          <View>
+            <Text style={styles.orderId}>Order #{item.orderNumber}</Text>
+            <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
+            <Text style={[styles.statusText, { color: statusColors.text }]}>
+              {statusText}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.imageRow}>
+          {imagePreview.map((orderItem, index) => (
+            <View key={`${orderItem.variantId}-${index}`} style={styles.imageWrap}>
+              <Image
+                source={{ uri: orderItem.image }}
+                style={styles.itemImage}
+                resizeMode="cover"
+              />
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.cardBottom}>
+          <Text style={styles.itemCount}>
+            {item.totalItems} {item.totalItems > 1 ? "items" : "item"}
+          </Text>
+          <Text style={styles.amount}>₹{item.grandTotal.toFixed(2)}</Text>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.viewDetailsBtn}
+          onPress={() =>
+            setExpandedId((prev) => (prev === item._id ? null : item._id))
+          }
+        >
+          <Text style={styles.viewDetailsText}>
+            {isExpanded ? "Hide Details" : "View Details"}
+          </Text>
+        </TouchableOpacity>
+
+        {isExpanded && (
+          <View style={styles.expandedContent}>
+            <Text style={styles.sectionTitle}>
+              Order Items ({item.items.length})
+            </Text>
+            {item.items.map((product, index) => (
+              <View key={`${product.variantId}-${index}-detail`} style={styles.detailItemRow}>
+                <Image
+                  source={{ uri: product.image }}
+                  style={styles.detailItemImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.detailItemInfo}>
+                  <Text style={styles.detailItemName} numberOfLines={2}>
+                    {product.productName}
+                  </Text>
+                  <Text style={styles.detailItemMeta}>
+                    {product.packSize} {product.packUnit} x ₹{product.unitPrice} | Qty:{" "}
+                    {product.quantity}
+                  </Text>
+                </View>
+                <Text style={styles.detailItemPrice}>₹{product.subtotal}</Text>
+              </View>
+            ))}
+
+            <View style={styles.detailsBlock}>
+              <Text style={styles.sectionTitle}>Price Details</Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Subtotal</Text>
+                <Text style={styles.priceValue}>₹{item.subtotal}</Text>
+              </View>
+              {item.totalDiscount > 0 && (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Discount</Text>
+                  <Text style={styles.discountValue}>-₹{item.totalDiscount}</Text>
+                </View>
+              )}
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Tax</Text>
+                <Text style={styles.priceValue}>₹{item.taxAmount.toFixed(2)}</Text>
+              </View>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Delivery</Text>
+                <Text style={styles.priceValue}>
+                  {item.deliveryFee === 0 ? "FREE" : `₹${item.deliveryFee}`}
+                </Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Grand Total</Text>
+                <Text style={styles.totalValue}>₹{item.grandTotal}</Text>
+              </View>
+            </View>
+
+            <View style={styles.detailsBlock}>
+              <Text style={styles.sectionTitle}>Delivery Address</Text>
+              <Text style={styles.addressName}>{item.address.snapshot.name}</Text>
+              <Text style={styles.addressMeta}>{item.address.snapshot.phone}</Text>
+              <Text style={styles.addressMeta}>
+                {item.address.snapshot.city}, {item.address.snapshot.state} -{" "}
+                {item.address.snapshot.pincode}
+              </Text>
+              {!!item.address.snapshot.landmark && (
+                <Text style={styles.addressMeta}>
+                  Landmark: {item.address.snapshot.landmark}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.detailsBlock}>
+              <Text style={styles.sectionTitle}>Payment Info</Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Method</Text>
+                <Text style={styles.priceValue}>
+                  {getPaymentMethodIcon(item.payment.method)}{" "}
+                  {item.payment.method.toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Status</Text>
+                <Text style={styles.priceValue}>
+                  {item.payment.status.toUpperCase()}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
+    );
   };
 
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
+          <ActivityIndicator size="large" color="#1E7A35" />
           <Text style={styles.loadingText}>Loading your orders...</Text>
         </View>
       </SafeAreaView>
@@ -164,7 +372,6 @@ export default function OrdersScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>📦</Text>
           <Text style={styles.emptyTitle}>No Orders Yet</Text>
           <Text style={styles.emptySubtitle}>
             Your order history will appear here
@@ -177,262 +384,38 @@ export default function OrdersScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image
-              source={require("../../assets/images/vadi-brand-logo.png")}
-              style={styles.headerLogo}
-            />
-            <Text style={styles.title}>My Orders</Text>
-            <View style={styles.ordersBadge}>
-              <Text style={styles.badgeText}>{orders.length}</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={() => router.push("/cart")}>
-            <View style={styles.iconBtn}>
-              <Ionicons name="cart-outline" size={24} color="#1B5E20" />
-              {items.length > 0 && (
-                <View style={styles.cartBadge}>
-                  <Text style={styles.badgeText}>{items.length}</Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
-
         <FlatList
-          data={orders}
+          ref={listRef}
+          key={selectedFilter}
+          data={filteredOrders}
           keyExtractor={(item) => item._id}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            filteredOrders.length === 0 && styles.emptyListContent,
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#4CAF50"]}
-              tintColor="#4CAF50"
+              colors={["#1E7A35"]}
+              tintColor="#1E7A35"
             />
           }
-          renderItem={({ item }: { item: Order }) => {
-            const isExpanded = expandedId === item._id;
-            const statusColor = getStatusColor(item.status);
-            const statusText = getStatusText(item.status);
-
-            return (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => toggleExpand(item._id)}
-                style={styles.card}
-              >
-                {/* Card Header */}
-                <View style={styles.cardHeader}>
-                  <View style={styles.orderInfo}>
-                    <Text style={styles.orderId}>#{item.orderNumber}</Text>
-                    <Text style={styles.date}>
-                      📅 {formatDate(item.createdAt)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.cardRight}>
-                    <Text style={styles.amount}>₹{item.grandTotal}</Text>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        { backgroundColor: statusColor + "20" },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.statusDot,
-                          { backgroundColor: statusColor },
-                        ]}
-                      />
-                      <Text style={[styles.statusTag, { color: statusColor }]}>
-                        {statusText}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Quick Summary */}
-                <View style={styles.quickSummary}>
-                  <View style={styles.summaryItem}>
-                    <Text style={styles.summaryLabel}>Items</Text>
-                    <Text style={styles.summaryValue}>
-                      {item.totalItems} ({item.totalQuantity} qty)
-                    </Text>
-                  </View>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryItem}>
-                    <Text style={styles.summaryLabel}>Payment</Text>
-                    <Text style={styles.summaryValue}>
-                      {getPaymentMethodIcon(item.payment.method)}{" "}
-                      {item.payment.method.toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Expanded Content */}
-                {isExpanded && (
-                  <View style={styles.expandedContent}>
-                    <View style={styles.divider} />
-
-                    {/* Order Items */}
-                    <Text style={styles.sectionTitle}>
-                      📦 Order Items ({item.items.length})
-                    </Text>
-
-                    {item.items.map((product, index) => (
-                      <View key={index} style={styles.itemRow}>
-                        <Image
-                          source={{ uri: product.image }}
-                          style={styles.itemImage}
-                          resizeMode="cover"
-                        />
-                        <View style={styles.itemDetails}>
-                          <Text style={styles.itemName} numberOfLines={2}>
-                            {product.productName}
-                          </Text>
-                          <Text style={styles.itemMeta}>
-                            {product.packSize} {product.packUnit} × ₹
-                            {product.unitPrice}
-                          </Text>
-                          <Text style={styles.itemQuantity}>
-                            Qty: {product.quantity}
-                          </Text>
-                          {product.discount > 0 && (
-                            <View style={styles.discountBadge}>
-                              <Text style={styles.discountText}>
-                                {product.discount}% OFF
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        <View style={styles.itemPriceContainer}>
-                          <Text style={styles.itemPrice}>
-                            ₹{product.subtotal}
-                          </Text>
-                          {product.mrp > product.unitPrice && (
-                            <Text style={styles.itemMrp}>₹{product.mrp}</Text>
-                          )}
-                        </View>
-                      </View>
-                    ))}
-
-                    {/* Price Breakdown */}
-                    <View style={styles.priceBreakdown}>
-                      <Text style={styles.sectionTitle}>💰 Price Details</Text>
-
-                      <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>Subtotal</Text>
-                        <Text style={styles.priceValue}>₹{item.subtotal}</Text>
-                      </View>
-
-                      {item.totalDiscount > 0 && (
-                        <View style={styles.priceRow}>
-                          <Text style={styles.priceLabel}>Discount</Text>
-                          <Text style={styles.discountPrice}>
-                            -₹{item.totalDiscount}
-                          </Text>
-                        </View>
-                      )}
-
-                      <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>Tax (GST)</Text>
-                        <Text style={styles.priceValue}>
-                          ₹{item.taxAmount.toFixed(2)}
-                        </Text>
-                      </View>
-
-                      <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>Delivery Fee</Text>
-                        <Text style={styles.priceValue}>
-                          {item.deliveryFee === 0
-                            ? "FREE"
-                            : `₹${item.deliveryFee}`}
-                        </Text>
-                      </View>
-
-                      <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Grand Total</Text>
-                        <Text style={styles.totalAmount}>
-                          ₹{item.grandTotal}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Delivery Address */}
-                    <View style={styles.addressSection}>
-                      <Text style={styles.sectionTitle}>
-                        📍 Delivery Address
-                      </Text>
-                      <View style={styles.addressCard}>
-                        <Text style={styles.addressName}>
-                          {item.address.snapshot.name}
-                        </Text>
-                        <Text style={styles.addressPhone}>
-                          📞 {item.address.snapshot.phone}
-                        </Text>
-                        <Text style={styles.addressText}>
-                          {item.address.snapshot.city},{" "}
-                          {item.address.snapshot.state} -{" "}
-                          {item.address.snapshot.pincode}
-                        </Text>
-                        {item.address.snapshot.landmark && (
-                          <Text style={styles.addressLandmark}>
-                            Landmark: {item.address.snapshot.landmark}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-
-                    {/* Payment Status */}
-                    <View style={styles.paymentSection}>
-                      <Text style={styles.sectionTitle}>💳 Payment Info</Text>
-                      <View style={styles.paymentCard}>
-                        <View style={styles.paymentRow}>
-                          <Text style={styles.paymentLabel}>Method:</Text>
-                          <Text style={styles.paymentValue}>
-                            {item.payment.method.toUpperCase()}
-                          </Text>
-                        </View>
-                        <View style={styles.paymentRow}>
-                          <Text style={styles.paymentLabel}>Status:</Text>
-                          <Text
-                            style={[
-                              styles.paymentValue,
-                              {
-                                color:
-                                  item.payment.status === "paid"
-                                    ? "#4CAF50"
-                                    : "#FF9800",
-                              },
-                            ]}
-                          >
-                            {item.payment.status.toUpperCase()}
-                          </Text>
-                        </View>
-                        {item.payment.isCod && (
-                          <View style={styles.codBadge}>
-                            <Text style={styles.codText}>
-                              💵 Cash on Delivery
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                )}
-
-                {/* Expand Indicator */}
-                <View style={styles.expandIndicator}>
-                  <Text style={styles.expandText}>
-                    {isExpanded ? "Tap to collapse ▲" : "Tap for details ▼"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              <Text style={styles.pageTitle}>My Orders</Text>
+              {renderStatusFilter()}
+            </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyFilterContainer}>
+              <Text style={styles.emptyFilterText}>
+                No orders in {filters.find((f) => f.key === selectedFilter)?.label}.
+              </Text>
+            </View>
+          }
+          renderItem={renderOrderCard}
         />
       </View>
     </SafeAreaView>
@@ -442,11 +425,11 @@ export default function OrdersScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F6F7F2",
+    backgroundColor: "#F8F9F8",
   },
   container: {
     flex: 1,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -454,365 +437,257 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#666",
+    marginTop: 10,
+    fontSize: 14,
+    color: "#6B7280",
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 2,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  headerLogo: {
-    width: 30,
-    height: 30,
-    resizeMode: "contain",
-  },
-  iconBtn: {
-    position: "relative",
-    padding: 6,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#1B5E20",
-  },
-  ordersBadge: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    minWidth: 24,
-    alignItems: "center",
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 11,
+  pageTitle: {
+    fontSize: 28,
     fontWeight: "700",
-  },
-  cartBadge: {
-    position: "absolute",
-    top: -1,
-    right: -1,
-    backgroundColor: "#2E7D32",
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 4,
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    marginBottom: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    color: "#111827",
+    marginTop: 4,
     marginBottom: 12,
   },
-  orderInfo: {
-    flex: 1,
+  listHeader: {
+    paddingBottom: 8,
   },
-  orderId: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1a1a1a",
-    marginBottom: 4,
+  filterRow: {
+    alignItems: "center",
+    paddingRight: 8,
+    paddingBottom: 8,
   },
-  date: {
+  filterChip: {
+    borderRadius: 8,
+    backgroundColor: "#ECEFEC",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginRight: 8,
+  },
+  filterChipActive: {
+    backgroundColor: "#1E7A35",
+  },
+  filterText: {
+    color: "#4B5563",
     fontSize: 12,
-    color: "#666",
-  },
-  cardRight: {
-    alignItems: "flex-end",
-    gap: 6,
-  },
-  amount: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#1a1a1a",
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusTag: {
-    fontSize: 11,
     fontWeight: "600",
   },
-  quickSummary: {
+  filterTextActive: {
+    color: "#FFFFFF",
+  },
+  listContent: {
+    paddingBottom: 16,
+  },
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: "flex-start",
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#EBEEEB",
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  cardTop: {
     flexDirection: "row",
-    backgroundColor: "#F9F9F9",
-    borderRadius: 10,
-    padding: 12,
-    alignItems: "center",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
   },
-  summaryItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  summaryDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: "#E0E0E0",
-  },
-  summaryLabel: {
-    fontSize: 11,
-    color: "#666",
-    marginBottom: 4,
-  },
-  summaryValue: {
-    fontSize: 13,
+  orderId: {
+    fontSize: 14,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: "#111827",
   },
-  expandIndicator: {
-    marginTop: 12,
-    alignItems: "center",
-  },
-  expandText: {
+  orderDate: {
+    marginTop: 2,
     fontSize: 12,
-    color: "#999",
-    fontWeight: "500",
+    color: "#6B7280",
+  },
+  statusBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  imageRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12,
+  },
+  imageWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    overflow: "hidden",
+    backgroundColor: "#F9FAFB",
+  },
+  itemImage: {
+    width: "100%",
+    height: "100%",
+  },
+  cardBottom: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  itemCount: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  amount: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  viewDetailsBtn: {
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    paddingTop: 10,
+  },
+  viewDetailsText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1E7A35",
   },
   expandedContent: {
-    marginTop: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#f0f0f0",
-    marginBottom: 16,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    paddingTop: 12,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#1a1a1a",
-    marginBottom: 12,
+    color: "#111827",
+    marginBottom: 10,
   },
-  itemRow: {
+  detailItemRow: {
     flexDirection: "row",
-    backgroundColor: "#f9f9f9",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
     alignItems: "center",
+    marginBottom: 10,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 10,
+    padding: 8,
   },
-  itemImage: {
-    width: 60,
-    height: 60,
+  detailItemImage: {
+    width: 44,
+    height: 44,
     borderRadius: 8,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#EEF2F7",
   },
-  itemDetails: {
+  detailItemInfo: {
     flex: 1,
-    marginLeft: 12,
-  },
-  itemName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  itemMeta: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 2,
-  },
-  itemQuantity: {
-    fontSize: 12,
-    color: "#666",
-  },
-  discountBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "#4CAF50",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginTop: 4,
-  },
-  discountText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  itemPriceContainer: {
-    alignItems: "flex-end",
     marginLeft: 8,
+    marginRight: 8,
   },
-  itemPrice: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1a1a1a",
+  detailItemName: {
+    fontSize: 13,
+    color: "#111827",
+    fontWeight: "600",
   },
-  itemMrp: {
+  detailItemMeta: {
     fontSize: 12,
-    color: "#999",
-    textDecorationLine: "line-through",
+    color: "#6B7280",
+    marginTop: 2,
   },
-  priceBreakdown: {
-    marginTop: 16,
-    backgroundColor: "#F9F9F9",
-    borderRadius: 12,
-    padding: 12,
+  detailItemPrice: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  detailsBlock: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
   },
   priceRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 6,
+    alignItems: "center",
+    paddingVertical: 4,
   },
   priceLabel: {
     fontSize: 13,
-    color: "#666",
+    color: "#6B7280",
   },
   priceValue: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#333",
+    color: "#111827",
   },
-  discountPrice: {
+  discountValue: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#4CAF50",
+    fontWeight: "700",
+    color: "#1E7A35",
   },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 8,
-    paddingTop: 12,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
+    borderTopColor: "#E5E7EB",
   },
   totalLabel: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#333",
-  },
-  totalAmount: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#4CAF50",
-  },
-  addressSection: {
-    marginTop: 16,
-  },
-  addressCard: {
-    backgroundColor: "#F9F9F9",
-    borderRadius: 12,
-    padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: "#4CAF50",
-  },
-  addressName: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: "#111827",
+  },
+  totalValue: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  addressName: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111827",
     marginBottom: 4,
   },
-  addressPhone: {
-    fontSize: 13,
-    color: "#666",
-    marginBottom: 6,
-  },
-  addressText: {
-    fontSize: 13,
-    color: "#333",
-    lineHeight: 18,
-  },
-  addressLandmark: {
+  addressMeta: {
     fontSize: 12,
-    color: "#666",
-    marginTop: 4,
-    fontStyle: "italic",
-  },
-  paymentSection: {
-    marginTop: 16,
-  },
-  paymentCard: {
-    backgroundColor: "#F9F9F9",
-    borderRadius: 12,
-    padding: 12,
-  },
-  paymentRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
-  },
-  paymentLabel: {
-    fontSize: 13,
-    color: "#666",
-  },
-  paymentValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#333",
-  },
-  codBadge: {
-    marginTop: 8,
-    backgroundColor: "#FF9800",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  codText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#fff",
+    color: "#6B7280",
+    marginBottom: 2,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    fontSize: 80,
-    marginBottom: 20,
+    paddingHorizontal: 32,
   },
   emptyTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: "#111827",
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 16,
-    color: "#666",
+    fontSize: 14,
+    color: "#6B7280",
     textAlign: "center",
+  },
+  emptyFilterContainer: {
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingTop: 20,
+  },
+  emptyFilterText: {
+    fontSize: 14,
+    color: "#6B7280",
   },
 });
