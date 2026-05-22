@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/context/CustomAlertContext";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { router, useFocusEffect, useGlobalSearchParams, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -24,6 +24,11 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { API } from "@/utils/api";
+import {
+  getProductOfferEndRaw,
+  parseOfferEndToMs,
+  remainingMsToCountdownDHMS,
+} from "@/utils/offerEnd";
 
 const { width } = Dimensions.get("window");
 
@@ -63,11 +68,46 @@ type Product = {
   featured?: boolean;
   trending?: boolean;
   bestDeal?: boolean;
+  offerEndsAt?: string | null;
   rating: number;
   reviewsCount: number;
   isActive: boolean;
   tags?: string[];
 };
+
+type DealGlobalSettings = { isActive?: boolean; dealEndsAt?: string | null };
+
+function resolveOfferEndForDetail(
+  product: Product | null,
+  globalDeal: DealGlobalSettings | null,
+): {
+  endMs: number | null;
+  source: "product" | "campaign" | null;
+} {
+  if (!product) {
+    return { endMs: null, source: null };
+  }
+
+  const rawOwn = getProductOfferEndRaw(product);
+  const ownMs = parseOfferEndToMs(rawOwn);
+  const now = Date.now();
+  const skewGraceMs = 2000;
+  const ownFuture =
+    ownMs != null && ownMs > now - skewGraceMs ? ownMs : null;
+
+  let gFuture: number | null = null;
+  if (globalDeal?.isActive && globalDeal?.dealEndsAt) {
+    const g = parseOfferEndToMs(globalDeal.dealEndsAt);
+    if (g != null && g > now - skewGraceMs) gFuture = g;
+  }
+
+  const endMs = ownFuture ?? gFuture;
+  let source: "product" | "campaign" | null = null;
+  if (ownFuture != null) source = "product";
+  else if (gFuture != null) source = "campaign";
+
+  return { endMs, source };
+}
 
 type Review = {
   _id: string;
@@ -81,8 +121,21 @@ type Review = {
   createdAt: string;
 };
 
+function pickRouteId(
+  params: { id?: string | string[] } | undefined,
+): string | undefined {
+  const v = params?.id;
+  if (typeof v === "string" && v.length > 0) return v;
+  if (Array.isArray(v) && typeof v[0] === "string" && v[0].length > 0) {
+    return v[0];
+  }
+  return undefined;
+}
+
 export default function ProductDetailScreen() {
-  const { id } = useLocalSearchParams();
+  const localParams = useLocalSearchParams<{ id?: string | string[] }>();
+  const globalParams = useGlobalSearchParams<{ id?: string | string[] }>();
+  const id = pickRouteId(localParams) ?? pickRouteId(globalParams);
   const { items, addToCart, updateQty, getCartItemCount } = useCart();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -98,7 +151,16 @@ export default function ProductDetailScreen() {
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [dealEndTs, setDealEndTs] = useState<number | null>(null);
-  const [dealTimeLeft, setDealTimeLeft] = useState({ h: 0, m: 0, s: 0 });
+  const dealEndTsRef = useRef<number | null>(null);
+  const [offerTimerSource, setOfferTimerSource] = useState<
+    "product" | "campaign" | null
+  >(null);
+  const [dealTimeLeft, setDealTimeLeft] = useState({
+    d: 0,
+    h: 0,
+    m: 0,
+    s: 0,
+  });
   const [existingReview, setExistingReview] = useState<Review | null>(null);
   const [isEditingReview, setIsEditingReview] = useState(false);
 
@@ -124,11 +186,6 @@ export default function ProductDetailScreen() {
   const headerOpacity = useRef(new Animated.Value(0)).current;
   const addButtonScale = useRef(new Animated.Value(1)).current;
   const variantAnimation = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    loadProduct();
-    loadReviews();
-  }, [id]);
 
   useEffect(() => {
     if (product && product.variants.length > 0 && !selectedVariant) {
@@ -162,53 +219,75 @@ export default function ProductDetailScreen() {
   }, [id]);
 
   const loadProduct = async () => {
+    if (!id) return;
     try {
       const res = await API.get(`/products/${id}`);
-      const productData = res.data.data || res.data;
-      setProduct(productData);
-
-      // Show timer only for active best-deal products.
-      if (productData?.bestDeal) {
-        try {
-          const dealRes = await API.get("/deal-settings");
-          const dealSettings = dealRes.data?.data;
-          if (dealSettings?.isActive && dealSettings?.dealEndsAt) {
-            const ts = new Date(dealSettings.dealEndsAt).getTime();
-            setDealEndTs(Number.isFinite(ts) && ts > Date.now() ? ts : null);
-          } else {
-            setDealEndTs(null);
-          }
-        } catch {
-          setDealEndTs(null);
-        }
-      } else {
+      const raw = res?.data?.data ?? res?.data;
+      const productData =
+        raw && typeof raw === "object" && "_id" in (raw as object)
+          ? raw
+          : null;
+      if (!productData) {
+        console.warn("Product detail: unexpected API shape", res?.data);
+        setProduct(null);
         setDealEndTs(null);
+        dealEndTsRef.current = null;
+        setOfferTimerSource(null);
+        return;
       }
+      setProduct(productData as Product);
+
+      let globalDeal: DealGlobalSettings | null = null;
+      try {
+        const dealRes = await API.get("/deal-settings");
+        globalDeal = dealRes.data?.data ?? null;
+      } catch {
+        globalDeal = null;
+      }
+      const { endMs, source } = resolveOfferEndForDetail(
+        productData as Product,
+        globalDeal,
+      );
+      setDealEndTs(endMs);
+      dealEndTsRef.current = endMs;
+      setOfferTimerSource(source);
     } catch (error) {
       console.error("Failed to load product:", error);
+      setProduct(null);
+      setDealEndTs(null);
+      dealEndTsRef.current = null;
+      setOfferTimerSource(null);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!dealEndTs) {
-      setDealTimeLeft({ h: 0, m: 0, s: 0 });
+    if (dealEndTs == null || !Number.isFinite(dealEndTs)) {
+      setDealTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
       return;
     }
 
+    dealEndTsRef.current = dealEndTs;
+
     const update = () => {
-      const remainingMs = dealEndTs - Date.now();
+      const end = dealEndTsRef.current;
+      if (end == null || !Number.isFinite(end)) return;
+
+      const remainingMs = end - Date.now();
       if (remainingMs <= 0) {
-        setDealTimeLeft({ h: 0, m: 0, s: 0 });
+        setDealTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+        dealEndTsRef.current = null;
+        setDealEndTs(null);
+        setOfferTimerSource(null);
         return;
       }
 
-      const totalSec = Math.floor(remainingMs / 1000);
-      const h = Math.floor(totalSec / 3600);
-      const m = Math.floor((totalSec % 3600) / 60);
-      const s = totalSec % 60;
-      setDealTimeLeft({ h, m, s });
+      setDealTimeLeft(
+        remainingMsToCountdownDHMS(remainingMs, {
+          roundUpToFullSecond: true,
+        }),
+      );
     };
 
     update();
@@ -217,6 +296,7 @@ export default function ProductDetailScreen() {
   }, [dealEndTs]);
 
   const loadReviews = async () => {
+    if (!id) return;
     try {
       setReviewsLoading(true);
       const res = await API.get(`/reviews/product/${id}`);
@@ -237,6 +317,14 @@ export default function ProductDetailScreen() {
       setReviewsLoading(false);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!id) return;
+      loadProduct();
+      loadReviews();
+    }, [id]),
+  );
 
   const handleVariantSelect = (variant: ProductVariant) => {
     setSelectedVariant(variant);
@@ -486,7 +574,11 @@ export default function ProductDetailScreen() {
         )
       : 0;
   const savings = selectedVariant.mrp - selectedVariant.price;
-  const hasBestDealTimer = product.bestDeal && !!dealEndTs;
+  const hasOfferTimer = !!dealEndTs;
+  const offerTimerTitle =
+    offerTimerSource === "product"
+      ? "This offer ends in"
+      : "Sale ends in";
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
   return (
@@ -624,6 +716,40 @@ export default function ProductDetailScreen() {
 
           {/* ── Product Name (EXACT styles as specified) ── */}
           <Text style={styles.productName}>{product.name}</Text>
+
+          {hasOfferTimer && (
+            <View style={[styles.dealTimerWrap, styles.dealTimerWrapBelowTitle]}>
+              <View style={styles.dealTimerHeader}>
+                <Text style={styles.dealTimerTitle}>{offerTimerTitle}</Text>
+                <Text style={styles.dealTimerIcon}>🔥</Text>
+              </View>
+              <View style={styles.dealTimerRow}>
+                {dealTimeLeft.d > 0 && (
+                  <>
+                    <View style={styles.dealTimeBox}>
+                      <Text style={styles.dealTimeValue}>{dealTimeLeft.d}d</Text>
+                      <Text style={styles.dealTimeLabel}>D</Text>
+                    </View>
+                    <Text style={styles.dealTimerSep}> </Text>
+                  </>
+                )}
+                <View style={styles.dealTimeBox}>
+                  <Text style={styles.dealTimeValue}>{pad2(dealTimeLeft.h)}</Text>
+                  <Text style={styles.dealTimeLabel}>HH</Text>
+                </View>
+                <Text style={styles.dealTimerSep}>:</Text>
+                <View style={styles.dealTimeBox}>
+                  <Text style={styles.dealTimeValue}>{pad2(dealTimeLeft.m)}</Text>
+                  <Text style={styles.dealTimeLabel}>MM</Text>
+                </View>
+                <Text style={styles.dealTimerSep}>:</Text>
+                <View style={styles.dealTimeBox}>
+                  <Text style={styles.dealTimeValue}>{pad2(dealTimeLeft.s)}</Text>
+                  <Text style={styles.dealTimeLabel}>SS</Text>
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* ── Rating Row ── */}
           <TouchableOpacity style={styles.ratingRow} activeOpacity={0.7}>
@@ -778,30 +904,6 @@ export default function ProductDetailScreen() {
               </View>
             )}
 
-            {hasBestDealTimer && (
-              <View style={styles.dealTimerWrap}>
-                <View style={styles.dealTimerHeader}>
-                  <Text style={styles.dealTimerTitle}>Best Deal ends in</Text>
-                  <Text style={styles.dealTimerIcon}>🔥</Text>
-                </View>
-                <View style={styles.dealTimerRow}>
-                  <View style={styles.dealTimeBox}>
-                    <Text style={styles.dealTimeValue}>{pad2(dealTimeLeft.h)}</Text>
-                    <Text style={styles.dealTimeLabel}>HH</Text>
-                  </View>
-                  <Text style={styles.dealTimerSep}>:</Text>
-                  <View style={styles.dealTimeBox}>
-                    <Text style={styles.dealTimeValue}>{pad2(dealTimeLeft.m)}</Text>
-                    <Text style={styles.dealTimeLabel}>MM</Text>
-                  </View>
-                  <Text style={styles.dealTimerSep}>:</Text>
-                  <View style={styles.dealTimeBox}>
-                    <Text style={styles.dealTimeValue}>{pad2(dealTimeLeft.s)}</Text>
-                    <Text style={styles.dealTimeLabel}>SS</Text>
-                  </View>
-                </View>
-              </View>
-            )}
           </Animated.View>
 
           {/* ── Description ── */}
@@ -1811,6 +1913,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#FFD9B5",
   },
+  dealTimerWrapBelowTitle: {
+    marginTop: 10,
+    marginBottom: 12,
+    marginHorizontal: 0,
+  },
+  dealTimerWrapEnded: {
+    backgroundColor: "#F3F4F6",
+    borderColor: "#E5E7EB",
+  },
   dealTimerHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1821,6 +1932,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: "#B45309",
+  },
+  dealTimerTitleEnded: {
+    color: "#6B7280",
   },
   dealTimerIcon: {
     fontSize: 14,
@@ -1847,6 +1961,9 @@ const styles = StyleSheet.create({
     color: "#EA580C",
     letterSpacing: -0.2,
   },
+  dealTimeValueEnded: {
+    color: "#9CA3AF",
+  },
   dealTimeLabel: {
     fontSize: 10,
     fontWeight: "700",
@@ -1857,6 +1974,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "900",
     color: "#EA580C",
+  },
+  offerEndedSub: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#92400E",
+    marginTop: 4,
   },
 
   // ── Description ──

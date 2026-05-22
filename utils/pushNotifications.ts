@@ -64,5 +64,18 @@ export async function getPushToken() {
   }
 
   const tokenData = await Notifications.getDevicePushTokenAsync();
-  return tokenData?.data ? String(tokenData.data) : null;
+  const raw = tokenData?.data != null ? String(tokenData.data).trim() : "";
+  if (!raw) return null;
+
+  // Firebase Admin multicast expects FCM registration tokens, not Expo's push service tokens.
+  if (raw.startsWith("ExponentPushToken[")) {
+    if (__DEV__) {
+      console.warn(
+        "[push] Expo push token received; use a dev build with google-services.json (Android) / GoogleService-Info.plist (iOS) so Firebase FCM device tokens are registered.",
+      );
+    }
+    return null;
+  }
+
+  return raw;
 }

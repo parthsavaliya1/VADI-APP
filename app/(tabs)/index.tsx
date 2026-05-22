@@ -23,6 +23,11 @@ import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { API } from "../../utils/api";
+import {
+  formatOfferCountdownShort,
+  offerDeadlineToFutureMs,
+  remainingMsToCountdownDHMS,
+} from "../../utils/offerEnd";
 
 type SpeechEventName = "start" | "end" | "result" | "error";
 
@@ -131,12 +136,27 @@ type Product = {
   featured?: boolean;
   trending?: boolean;
   bestDeal?: boolean;
+  /** ISO date string from API — per-product offer deadline */
+  offerEndsAt?: string | null;
   rating: number;
   reviewsCount: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 };
+
+type HomeSectionLayout = {
+  showHeroBanner: boolean;
+  showFeatureBadgesRow: boolean;
+  showBestDealsSection: boolean;
+  showShopByCategorySection: boolean;
+  showTrendingSection: boolean;
+  showFeaturedSection: boolean;
+};
+
+function resolveProductOwnOfferEndMs(product: Product): number | null {
+  return offerDeadlineToFutureMs(product.offerEndsAt);
+}
 
 type Category = {
   _id: string;
@@ -237,8 +257,51 @@ function BannerSlide({ item }: { item: typeof FALLBACK_BANNERS[0] }) {
   );
 }
 
+function OfferEndsCountdown({ endMs }: { endMs: number }) {
+  const [line, setLine] = useState("");
+  const [visible, setVisible] = useState(
+    () => Number.isFinite(endMs) && endMs > Date.now(),
+  );
+
+  useEffect(() => {
+    setVisible(Number.isFinite(endMs) && endMs > Date.now());
+  }, [endMs]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const tick = () => {
+      const remainingMs = endMs - Date.now();
+      if (remainingMs <= 0) {
+        setVisible(false);
+        setLine("");
+        return;
+      }
+      setLine(formatOfferCountdownShort(remainingMs));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [endMs, visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Text style={s.dealCardTimer}>
+      Ends in {line}
+    </Text>
+  );
+}
+
 // ─── Deal Card ────────────────────────────────────────────────────────────────
-function DealCard({ item, onAdd }: { item: Product; onAdd: () => void }) {
+function DealCard({
+  item,
+  onAdd,
+  offerEndMs,
+}: {
+  item: Product;
+  onAdd: () => void;
+  offerEndMs: number | null;
+}) {
   const v = getDefaultVariant(item);
   const disc = v.mrp > 0 ? Math.round(((v.mrp - v.price) / v.mrp) * 100) : item.discount || 0;
   return (
@@ -258,6 +321,7 @@ function DealCard({ item, onAdd }: { item: Product; onAdd: () => void }) {
       <View style={s.dealInfo}>
         <Text numberOfLines={2} style={s.dealName}>{item.name}</Text>
         <Text style={s.dealUnit}>{v.packSize}{v.packUnit}</Text>
+        {offerEndMs != null && <OfferEndsCountdown endMs={offerEndMs} />}
         <View style={s.dealFooter}>
           <View style={{ flex: 1, marginRight: 6 }}>
             <Text style={s.dealPrice}>₹{v.price.toFixed(2)}</Text>
@@ -393,7 +457,7 @@ function SectionHeader({ title, onSeeAll, right }: { title: React.ReactNode; onS
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { loading: authLoading } = useAuth();
+  const { loading: authLoading, user } = useAuth();
   const { items, addToCart, getCartItemCount } = useCart();
   const { defaultAddress } = useAddress();
 
@@ -408,8 +472,23 @@ export default function HomeScreen() {
   const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [homeBanners, setHomeBanners] = useState<Banner[]>([]);
-  const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
-  const [dealEndTs, setDealEndTs] = useState<number | null>(null);
+  const [campaignEndTs, setCampaignEndTs] = useState<number | null>(null);
+  const [campaignTimeLeft, setCampaignTimeLeft] = useState({
+    d: 0,
+    h: 0,
+    m: 0,
+    s: 0,
+  });
+  const [homeLayout, setHomeLayout] = useState<HomeSectionLayout>({
+    showHeroBanner: true,
+    showFeatureBadgesRow: true,
+    showBestDealsSection: true,
+    showShopByCategorySection: true,
+    showTrendingSection: true,
+    showFeaturedSection: true,
+  });
+
+  const [notifUnread, setNotifUnread] = useState(0);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const cartAnim = useRef(new Animated.Value(0)).current;
@@ -443,6 +522,29 @@ export default function HomeScreen() {
     }, [selectedCatId, searchQuery])
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?._id) {
+        setNotifUnread(0);
+        return;
+      }
+      let cancelled = false;
+      (async () => {
+        try {
+          const { data } = await API.get("/notifications", {
+            params: { userId: user._id, limit: 100 },
+          });
+          if (!cancelled) setNotifUnread(Number(data.unreadCount) || 0);
+        } catch {
+          if (!cancelled) setNotifUnread(0);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [user?._id]),
+  );
+
   // Banner slides — use dynamic banners if available, else FALLBACK_BANNERS
   const bannerSlides = homeBanners.length > 0
     ? homeBanners.map((b, i) => ({ ...FALLBACK_BANNERS[i % FALLBACK_BANNERS.length], id: b._id, image: b.image }))
@@ -469,27 +571,39 @@ export default function HomeScreen() {
   // Data loaders
   const loadAll = async () => {
     try {
-      const [prodRes, catRes, bannerRes, dealRes] = await Promise.all([
+      const [prodRes, catRes, bannerRes, dealRes, homeRes] = await Promise.all([
         API.get("/products"),
         API.get("/categories"),
         API.get("/banners"),
         API.get("/deal-settings"),
+        API.get("/home-section-settings").catch(() => ({ data: { data: null } })),
       ]);
       const fetched = prodRes.data.data || prodRes.data || [];
       setAllProducts(fetched);
       setProducts(fetched.slice(0, 20));
       setCategories(catRes.data.data || []);
       setHomeBanners(bannerRes.data.data || []);
-      const dealSettings = dealRes.data?.data;
-      if (dealSettings?.isActive && dealSettings?.dealEndsAt) {
-        const ts = new Date(dealSettings.dealEndsAt).getTime();
-        setDealEndTs(Number.isFinite(ts) && ts > Date.now() ? ts : null);
+      const ds = dealRes.data?.data;
+      if (ds?.isActive && ds?.dealEndsAt) {
+        const ts = new Date(ds.dealEndsAt).getTime();
+        setCampaignEndTs(Number.isFinite(ts) && ts > Date.now() ? ts : null);
       } else {
-        setDealEndTs(null);
+        setCampaignEndTs(null);
+      }
+      const hs = homeRes.data?.data;
+      if (hs) {
+        setHomeLayout({
+          showHeroBanner: hs.showHeroBanner !== false,
+          showFeatureBadgesRow: hs.showFeatureBadgesRow !== false,
+          showBestDealsSection: hs.showBestDealsSection !== false,
+          showShopByCategorySection: hs.showShopByCategorySection !== false,
+          showTrendingSection: hs.showTrendingSection !== false,
+          showFeaturedSection: hs.showFeaturedSection !== false,
+        });
       }
     } catch {
       setAllProducts([]); setProducts([]); setCategories([]); setHomeBanners([]);
-      setDealEndTs(null);
+      setCampaignEndTs(null);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -526,29 +640,23 @@ export default function HomeScreen() {
   })();
 
   useEffect(() => {
-    if (!dealEndTs) {
-      setTimeLeft({ h: 0, m: 0, s: 0 });
+    if (!campaignEndTs) {
+      setCampaignTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
       return;
     }
-
-    const update = () => {
-      const remainingMs = dealEndTs - Date.now();
+    const tick = () => {
+      const remainingMs = campaignEndTs - Date.now();
       if (remainingMs <= 0) {
-        setTimeLeft({ h: 0, m: 0, s: 0 });
+        setCampaignTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+        setCampaignEndTs(null);
         return;
       }
-
-      const totalSec = Math.floor(remainingMs / 1000);
-      const h = Math.floor(totalSec / 3600);
-      const m = Math.floor((totalSec % 3600) / 60);
-      const s = totalSec % 60;
-      setTimeLeft({ h, m, s });
+      setCampaignTimeLeft(remainingMsToCountdownDHMS(remainingMs));
     };
-
-    update();
-    const t = setInterval(update, 1000);
-    return () => clearInterval(t);
-  }, [dealEndTs]);
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [campaignEndTs]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -576,7 +684,6 @@ export default function HomeScreen() {
   const cartTranslateY = cartAnim.interpolate({ inputRange: [0, 1], outputRange: [100, 0] });
   const headerOpacity = scrollY.interpolate({ inputRange: [0, 80], outputRange: [1, 0.95], extrapolate: "clamp" });
   const searchScale = searchAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.015] });
-
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
   const handleVoiceSearch = async () => {
@@ -639,9 +746,13 @@ export default function HomeScreen() {
             </View>
           </View>
           <View style={s.headerIcons}>
-            <TouchableOpacity style={s.iconBtn}>
+            <TouchableOpacity
+              style={s.iconBtn}
+              onPress={() => router.push("/notifications")}
+              activeOpacity={0.85}
+            >
               <Ionicons name="notifications-outline" size={22} color="#1B5E20" />
-              <View style={s.notifDot} />
+              {notifUnread > 0 && <View style={s.notifDot} />}
             </TouchableOpacity>
             <TouchableOpacity style={s.iconBtn} onPress={() => router.push("/cart")}>
               <Ionicons name="cart-outline" size={24} color="#1B5E20" />
@@ -710,7 +821,7 @@ export default function HomeScreen() {
         )}
 
         {/* ── HERO BANNER ─────────────────────────────────────────────────── */}
-        {!isFiltering && (
+        {!isFiltering && homeLayout.showHeroBanner && (
           <View style={s.bannerSection}>
             <FlatList
               ref={bannerRef}
@@ -742,7 +853,7 @@ export default function HomeScreen() {
         )}
 
         {/* ── FEATURE BADGES ──────────────────────────────────────────────── */}
-        {!isFiltering && (
+        {!isFiltering && homeLayout.showFeatureBadgesRow && (
           <View style={s.featBadgesRow}>
             {FEATURES.map((f, i) => (
               <View key={i} style={s.featBadge}>
@@ -757,7 +868,7 @@ export default function HomeScreen() {
         )}
 
         {/* ── TODAY'S DEALS ────────────────────────────────────────────────── */}
-        {!isFiltering && dealProducts.length > 0 && (
+        {!isFiltering && homeLayout.showBestDealsSection && dealProducts.length > 0 && (
           <View style={s.dealSection}>
             <View style={s.secHeader}>
               <View style={{ flex: 1 }}>
@@ -776,16 +887,24 @@ export default function HomeScreen() {
                     <Text style={s.seeAll}>View all →</Text>
                   </TouchableOpacity>
                 </View>
-                <View style={s.countdownRow}>
-                  <Text style={s.countdownLabel}>Offer ends in</Text>
-                  <View style={s.countdown}>
-                    <Text style={s.countNum}>{pad2(timeLeft.h)}</Text>
-                    <Text style={s.countSep}>:</Text>
-                    <Text style={s.countNum}>{pad2(timeLeft.m)}</Text>
-                    <Text style={s.countSep}>:</Text>
-                    <Text style={s.countNum}>{pad2(timeLeft.s)}</Text>
+                {campaignEndTs != null && (
+                  <View style={s.countdownRow}>
+                    <Text style={s.countdownLabel}>Sale ends in</Text>
+                    <View style={s.countdown}>
+                      {campaignTimeLeft.d > 0 && (
+                        <>
+                          <Text style={s.countNum}>{campaignTimeLeft.d}d</Text>
+                          <Text style={s.countSep}> </Text>
+                        </>
+                      )}
+                      <Text style={s.countNum}>{pad2(campaignTimeLeft.h)}</Text>
+                      <Text style={s.countSep}>:</Text>
+                      <Text style={s.countNum}>{pad2(campaignTimeLeft.m)}</Text>
+                      <Text style={s.countSep}>:</Text>
+                      <Text style={s.countNum}>{pad2(campaignTimeLeft.s)}</Text>
+                    </View>
                   </View>
-                </View>
+                )}
               </View>
             </View>
             <FlatList
@@ -797,13 +916,19 @@ export default function HomeScreen() {
               decelerationRate="fast"
               keyExtractor={(item) => item._id}
               contentContainerStyle={s.dealListContent}
-              renderItem={({ item }) => <DealCard item={item} onAdd={() => handleAddToCart(item)} />}
+              renderItem={({ item }) => (
+                <DealCard
+                  item={item}
+                  onAdd={() => handleAddToCart(item)}
+                  offerEndMs={resolveProductOwnOfferEndMs(item)}
+                />
+              )}
             />
           </View>
         )}
 
         {/* ── SHOP BY CATEGORY ─────────────────────────────────────────────── */}
-        {!isFiltering && homeCategories.length > 0 && (
+        {!isFiltering && homeLayout.showShopByCategorySection && homeCategories.length > 0 && (
           <View style={s.section}>
             <SectionHeader
               title="Shop by Category"
@@ -841,7 +966,7 @@ export default function HomeScreen() {
         )}
 
         {/* ── TRENDING NOW ─────────────────────────────────────────────────── */}
-        {!isFiltering && trendingProducts.length > 0 && (
+        {!isFiltering && homeLayout.showTrendingSection && trendingProducts.length > 0 && (
           <View style={s.section}>
             <SectionHeader
               title={<View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}><Text style={s.secTitle}>Trending Now</Text><Text style={{ fontSize: 16 }}>📈</Text></View>}
@@ -908,7 +1033,7 @@ export default function HomeScreen() {
         </View>
 
         {/* ── FEATURED ────────────────────────────────────────────────────── */}
-        {!isFiltering && featuredProducts.length > 0 && (
+        {!isFiltering && homeLayout.showFeaturedSection && featuredProducts.length > 0 && (
           <View style={s.section}>
             <SectionHeader
               title={<View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}><Text style={s.secTitle}>Featured</Text><Ionicons name="star" size={16} color="#FBBF24" /></View>}
@@ -1060,7 +1185,8 @@ const s = StyleSheet.create({
   dealImg: { width: 78, height: 78, resizeMode: "contain", zIndex: 1 },
   dealInfo: { flex: 1, paddingHorizontal: 12, paddingVertical: 14, justifyContent: "center" },
   dealName: { fontSize: 12, fontWeight: "800", color: "#1F2937", marginBottom: 7, lineHeight: 16 },
-  dealUnit: { fontSize: 11, color: "#6B7280", fontWeight: "600", marginBottom: 9 },
+  dealUnit: { fontSize: 11, color: "#6B7280", fontWeight: "600", marginBottom: 4 },
+  dealCardTimer: { fontSize: 10, fontWeight: "800", color: "#DC2626", marginBottom: 6 },
   dealFooter: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },
   dealPrice: { fontSize: 14, fontWeight: "900", color: "#1B5E20" },
   strikePrice: { fontSize: 10, color: "#D1D5DB", textDecorationLine: "line-through", marginTop: 2 },
