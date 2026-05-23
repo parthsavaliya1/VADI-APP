@@ -68,6 +68,8 @@ type Product = {
   featured?: boolean;
   trending?: boolean;
   bestDeal?: boolean;
+  /** When true, show organic label in Product Details */
+  isOrganic?: boolean;
   offerEndsAt?: string | null;
   rating: number;
   reviewsCount: number;
@@ -937,6 +939,20 @@ export default function ProductDetailScreen() {
           {/* ── Product Details ── */}
           <View style={styles.detailsSection}>
             <Text style={styles.sectionTitle}>Product Details</Text>
+            {product.isOrganic && (
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconWrap}>
+                  <Ionicons name="leaf" size={17} color="#2E7D32" />
+                </View>
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>Organic</Text>
+                  <View style={styles.organicPill}>
+                    <Ionicons name="leaf" size={14} color="#1B5E20" />
+                    <Text style={styles.organicPillText}>Organic product</Text>
+                  </View>
+                </View>
+              </View>
+            )}
             {product.shelfLife && (
               <View style={styles.detailRow}>
                 <View style={styles.detailIconWrap}>
@@ -2029,6 +2045,25 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   detailValue: { fontSize: 14, color: "#222", fontWeight: "500" },
+  organicPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#A5D6A7",
+    marginTop: 2,
+  },
+  organicPillText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#1B5E20",
+    letterSpacing: 0.2,
+  },
 
   // ── Tags ──
   tagsSection: {

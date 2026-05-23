@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   Easing,
@@ -17,6 +19,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useCart } from "@/context/CartContext";
+import { API } from "@/utils/api";
+import { downloadOrderInvoicePdf } from "@/utils/orderInvoice";
+import { useAuth } from "@/context/AuthContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -36,10 +41,16 @@ const TRACKING_STEPS = [
     icon: "checkmark-circle-outline" as const,
   },
   {
+    key: "packed",
+    label: "Packed",
+    subLabel: "Your items are packed",
+    icon: "cube-outline" as const,
+  },
+  {
     key: "shipped",
     label: "Shipped",
-    subLabel: "Package is on the way",
-    icon: "cube-outline" as const,
+    subLabel: "Package is on the way to your area",
+    icon: "airplane-outline" as const,
   },
   {
     key: "out_for_delivery",
@@ -58,12 +69,12 @@ const TRACKING_STEPS = [
 const STATUS_TO_STEP_INDEX: Record<string, number> = {
   placed: 0,
   confirmed: 1,
-  packed: 1,
+  packed: 2,
   processing: 1,
-  shipped: 2,
-  dispatched: 2,
-  out_for_delivery: 3,
-  delivered: 4,
+  shipped: 3,
+  dispatched: 3,
+  out_for_delivery: 4,
+  delivered: 5,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -312,6 +323,8 @@ function StatCard({
 
 export default function OrderTrackingScreen() {
   const { items } = useCart();
+  const { user } = useAuth();
+  const [invoiceBusy, setInvoiceBusy] = useState(false);
   const params = useLocalSearchParams<{
     orderId?: string;
     orderNumber?: string;
@@ -319,14 +332,65 @@ export default function OrderTrackingScreen() {
     createdAt?: string;
     totalItems?: string;
     grandTotal?: string;
+    userId?: string;
   }>();
 
-  // Demo defaults for standalone use
-  const status = params.status || "out_for_delivery";
-  const orderNumber = params.orderNumber || "ORD-20094";
-  const createdAt = params.createdAt || new Date(Date.now() - 2 * 86400000).toISOString();
-  const totalItems = params.totalItems || "3";
-  const grandTotal = params.grandTotal || "1249.00";
+  const [liveOrder, setLiveOrder] = useState<{
+    status?: string;
+    orderNumber?: string;
+    createdAt?: string;
+    totalItems?: number;
+    grandTotal?: number;
+    deliveryHandoverCode?: string;
+  } | null>(null);
+  const [orderLoading, setOrderLoading] = useState(false);
+
+  const paramUserId = params.userId || "";
+  const effectiveUserId = user?._id ? String(user._id) : paramUserId;
+
+  const fetchLiveOrder = useCallback(async () => {
+    const oid = params.orderId?.trim();
+    if (!oid || !effectiveUserId) return;
+    setOrderLoading(true);
+    try {
+      const { data } = await API.get(`/orders/${oid}`, {
+        params: { userId: effectiveUserId },
+      });
+      if (!data?.success) {
+        setLiveOrder(null);
+        return;
+      }
+      const o = data.data?.order ?? data.data;
+      if (o && typeof o === "object") setLiveOrder(o);
+    } catch {
+      setLiveOrder(null);
+    } finally {
+      setOrderLoading(false);
+    }
+  }, [params.orderId, effectiveUserId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void fetchLiveOrder();
+    }, [fetchLiveOrder]),
+  );
+
+  // Prefer fresh API data when available (shows delivery handover code when OFD)
+  const status =
+    liveOrder?.status || params.status || "placed";
+  const orderNumber =
+    liveOrder?.orderNumber || params.orderNumber || "ORD-20094";
+  const createdAt =
+    liveOrder?.createdAt ||
+    params.createdAt ||
+    new Date(Date.now() - 2 * 86400000).toISOString();
+  const totalItems = String(
+    liveOrder?.totalItems ?? params.totalItems ?? "3",
+  );
+  const grandTotal = String(
+    liveOrder?.grandTotal ?? params.grandTotal ?? "1249.00",
+  );
+  const deliveryHandoverCode = liveOrder?.deliveryHandoverCode;
 
   const normalizedStatus = normalizeStatus(status);
   const currentStepIndex = STATUS_TO_STEP_INDEX[normalizedStatus] ?? 0;
@@ -405,7 +469,7 @@ export default function OrderTrackingScreen() {
         <TouchableOpacity
           onPress={() => {
             Haptics.selectionAsync();
-            router.back();
+            router.replace("/(tabs)/orders");
           }}
           style={styles.backBtn}
         >
@@ -571,6 +635,40 @@ export default function OrderTrackingScreen() {
           </View>
         )}
 
+        {isDelivered && params.orderId && effectiveUserId ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.invoiceBtn,
+              pressed && { opacity: 0.88 },
+              invoiceBusy && { opacity: 0.6 },
+            ]}
+            disabled={invoiceBusy}
+            onPress={() => {
+              void (async () => {
+                setInvoiceBusy(true);
+                try {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  await downloadOrderInvoicePdf(
+                    String(params.orderId).trim(),
+                    effectiveUserId,
+                  );
+                } finally {
+                  setInvoiceBusy(false);
+                }
+              })();
+            }}
+          >
+            {invoiceBusy ? (
+              <ActivityIndicator color="#1B5E20" size="small" />
+            ) : (
+              <Ionicons name="document-text-outline" size={20} color="#1B5E20" />
+            )}
+            <Text style={styles.invoiceBtnText}>
+              {invoiceBusy ? "Preparing…" : "Download invoice (PDF)"}
+            </Text>
+          </Pressable>
+        ) : null}
+
         {isCancelled && (
           <View style={[styles.etaBanner, styles.cancelledBanner]}>
             <Ionicons name="close-circle" size={22} color="#B42318" />
@@ -584,6 +682,29 @@ export default function OrderTrackingScreen() {
             </View>
           </View>
         )}
+
+        {orderLoading && params.orderId && effectiveUserId ? (
+          <View style={styles.handoverLoading}>
+            <ActivityIndicator color="#1E7A35" />
+            <Text style={styles.handoverLoadingText}>Updating order…</Text>
+          </View>
+        ) : null}
+
+        {normalizedStatus === "out_for_delivery" &&
+        deliveryHandoverCode &&
+        deliveryHandoverCode.length === 6 ? (
+          <View style={styles.handoverCard}>
+            <View style={styles.handoverIconWrap}>
+              <Ionicons name="keypad" size={22} color="#5B21B6" />
+            </View>
+            <Text style={styles.handoverTitle}>Delivery confirmation code</Text>
+            <Text style={styles.handoverHint}>
+              Tell this code to the delivery person only when you receive your
+              package.
+            </Text>
+            <Text style={styles.handoverCode}>{deliveryHandoverCode}</Text>
+          </View>
+        ) : null}
 
         {/* ── Timeline ── */}
         <View style={styles.timelineCard}>
@@ -724,6 +845,56 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 4,
+  },
+
+  handoverLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 14,
+    marginBottom: 8,
+  },
+  handoverLoadingText: {
+    fontSize: 14,
+    color: "#4B5563",
+  },
+
+  handoverCard: {
+    backgroundColor: "#F5F3FF",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: "#DDD6FE",
+  },
+  handoverIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#EDE9FE",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  handoverTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#4C1D95",
+    marginBottom: 6,
+  },
+  handoverHint: {
+    fontSize: 13,
+    color: "#6B21A8",
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+  handoverCode: {
+    fontSize: 32,
+    fontWeight: "900",
+    letterSpacing: 8,
+    color: "#1B5E20",
+    textAlign: "center",
   },
 
   // Hero Card
@@ -888,6 +1059,24 @@ const styles = StyleSheet.create({
   cancelledBanner: {
     backgroundColor: "#FEE2E2",
     borderColor: "#FECACA",
+  },
+  invoiceBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+  },
+  invoiceBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#14532D",
   },
 
   // Timeline Card

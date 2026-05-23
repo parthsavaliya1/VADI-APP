@@ -524,6 +524,14 @@ export default function ProfileScreen() {
             onPress={() => requireAuth(() => router.push("/my-addresses"))}
             delay={310}
           />
+          <View style={styles.rowDivider} />
+          <MenuRow
+            icon="car-outline"
+            label="Delivery staff"
+            subtitle="Driver login — confirm customer codes"
+            onPress={() => router.push("/driver")}
+            delay={340}
+          />
         </Section>
 
         {/* ── SUPPORT SECTION ── */}

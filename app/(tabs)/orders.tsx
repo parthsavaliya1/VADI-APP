@@ -22,6 +22,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useOrders } from "../../context/OrderContext";
 import * as Haptics from "expo-haptics";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
+import { downloadOrderInvoicePdf } from "@/utils/orderInvoice";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -95,6 +97,8 @@ const getStatusConfig = (status: string) => {
       return { text: "#1E40AF", bg: "#DBEAFE", dot: "#3B82F6", icon: "cube", label: formatStatus(normalized) };
     case "out_for_delivery":
       return { text: "#92400E", bg: "#FEF3C7", dot: "#F59E0B", icon: "bicycle", label: formatStatus(normalized) };
+    case "packed":
+      return { text: "#9A3412", bg: "#FFEDD5", dot: "#EA580C", icon: "archive", label: formatStatus(normalized) };
     default:
       return { text: "#5B21B6", bg: "#EDE9FE", dot: "#8B5CF6", icon: "time", label: formatStatus(normalized) };
   }
@@ -104,7 +108,7 @@ const getFilterValue = (status: string) => {
   const n = status.toLowerCase().replace(/[-\s]+/g, "_");
   if (n.includes("cancel") || n.includes("return")) return "cancelled";
   if (n.includes("deliver") || n.includes("complete")) return "delivered";
-  if (n.includes("ship") || n.includes("dispatch")) return "shipped";
+  if (n === "shipped" || n === "out_for_delivery") return "shipped";
   return "processing";
 };
 
@@ -134,7 +138,7 @@ const getPaymentIcon = (method: string) => {
 const FILTERS = [
   { key: "all", label: "All Orders", icon: "apps-outline" },
   { key: "processing", label: "Processing", icon: "time-outline" },
-  { key: "shipped", label: "Shipped", icon: "cube-outline" },
+  { key: "shipped", label: "On the way", icon: "cube-outline" },
   { key: "delivered", label: "Delivered", icon: "checkmark-done-outline" },
   { key: "cancelled", label: "Cancelled", icon: "close-circle-outline" },
 ];
@@ -197,16 +201,19 @@ function OrderCard({
   expandedId,
   setExpandedId,
   onTrack,
+  userId,
 }: {
   item: Order;
   index: number;
   expandedId: string | null;
   setExpandedId: (id: string | null) => void;
   onTrack: (order: Order) => void;
+  userId: string;
 }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const trackBtnScale = useRef(new Animated.Value(1)).current;
+  const [invoiceBusy, setInvoiceBusy] = useState(false);
   const isExpanded = expandedId === item._id;
   const statusConfig = getStatusConfig(item.status);
   const primaryAction = getOrderPrimaryAction(item.status);
@@ -415,6 +422,37 @@ function OrderCard({
               </View>
             </View>
           </View>
+
+          {getFilterValue(item.status) === "delivered" && userId ? (
+            <View style={styles.detailBlock}>
+              <Text style={styles.sectionLabel}>Invoice</Text>
+              <TouchableOpacity
+                style={styles.invoiceDownloadBtn}
+                activeOpacity={0.85}
+                onPress={() => {
+                  void (async () => {
+                    setInvoiceBusy(true);
+                    try {
+                      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      await downloadOrderInvoicePdf(item._id, userId);
+                    } finally {
+                      setInvoiceBusy(false);
+                    }
+                  })();
+                }}
+                disabled={invoiceBusy}
+              >
+                {invoiceBusy ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="download-outline" size={18} color="#fff" />
+                    <Text style={styles.invoiceDownloadBtnText}>Download PDF invoice</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : null}
         </View>
       )}
     </Animated.View>
@@ -442,6 +480,7 @@ function PriceRow({
 
 export default function OrdersScreen() {
   const { orders, fetchOrders, loading } = useOrders();
+  const { user } = useAuth();
   const { items } = useCart();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -482,6 +521,7 @@ export default function OrdersScreen() {
         createdAt: order.createdAt,
         totalItems: String(order.totalItems),
         grandTotal: String(order.grandTotal),
+        userId: user?._id ? String(user._id) : "",
       },
     });
   };
@@ -589,6 +629,7 @@ export default function OrdersScreen() {
             expandedId={expandedId}
             setExpandedId={setExpandedId}
             onTrack={openTrackingPage}
+            userId={user?._id ? String(user._id) : ""}
           />
         )}
       />
@@ -858,6 +899,17 @@ const styles = StyleSheet.create({
   paymentStatusText: { fontSize: 12, fontWeight: "700" },
   paymentStatusTextPaid: { color: "#166534" },
   paymentStatusTextPending: { color: "#92400E" },
+  invoiceDownloadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#1E7A35",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  invoiceDownloadBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
 
   // Empty / Loading
   centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
