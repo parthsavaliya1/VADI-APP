@@ -41,7 +41,11 @@ type CartContextType = {
   removeFromCart: (productId: string, variantId: string) => Promise<void>;
 
   clearCart: () => Promise<void>;
-  refreshCart: () => Promise<void>;
+  refreshCart: () => Promise<{
+    ok: boolean;
+    itemCount?: number;
+    grandTotal?: number;
+  }>;
 
   getCartTotal: () => number;
   getCartItemCount: () => number;
@@ -97,10 +101,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   /* ─── fetch cart ─── */
 
-  const refreshCart = async () => {
+  const refreshCart = async (): Promise<{
+    ok: boolean;
+    itemCount?: number;
+    grandTotal?: number;
+  }> => {
     if (!userId) {
       setItems([]);
-      return;
+      return { ok: false };
     }
 
     try {
@@ -108,17 +116,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const res = await cartApi.getCart(userId);
 
       if (res.data?.success) {
-        const dbItems = res.data.data?.items || [];
+        const data = res.data.data;
+        const dbItems = data?.items || [];
         setItems(dbItems.map(mapDbItemToCartItem));
-      } else {
-        setItems([]);
+        return {
+          ok: true,
+          itemCount: dbItems.length,
+          grandTotal: Number(data?.grandTotal ?? 0),
+        };
       }
+      return { ok: false };
     } catch (error: any) {
       console.error(
         "Refresh cart error:",
         error.response?.data || error.message,
       );
-      setItems([]);
+      return { ok: false };
     } finally {
       setLoading(false);
     }

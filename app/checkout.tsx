@@ -28,7 +28,7 @@ if (Platform.OS === "android") {
 }
 
 export default function CheckoutScreen() {
-  const { items, clearCart } = useCart();
+  const { items, clearCart, refreshCart } = useCart();
   const { user } = useAuth();
   const { placeOrder } = useOrders();
   const { selectedAddress, defaultAddress, addresses, setSelectedAddress } =
@@ -42,12 +42,6 @@ export default function CheckoutScreen() {
     "googlepay" | "upi" | "card" | "netbanking"
   >("googlepay");
   const [upiId, setUpiId] = useState("");
-  const [cardDetails, setCardDetails] = useState({
-    cardNumber: "",
-    cardHolder: "",
-    expiry: "",
-    cvv: "",
-  });
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -124,25 +118,7 @@ export default function CheckoutScreen() {
     landmark: activeAddress!.landmark,
   });
 
-  const formatCardNumber = (value: string) =>
-    value
-      .replace(/\D/g, "")
-      .slice(0, 16)
-      .replace(/(.{4})/g, "$1 ")
-      .trim();
-
-  const formatExpiry = (value: string) => {
-    const cleaned = value.replace(/\D/g, "").slice(0, 4);
-    if (cleaned.length <= 2) return cleaned;
-    return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
-  };
-
-  const formatCvv = (value: string) => value.replace(/\D/g, "").slice(0, 3);
-
   const upiRegex = /^[a-zA-Z0-9._-]{2,}@[a-zA-Z]{2,}$/;
-  const cardNumberRegex = /^\d{16}$/;
-  const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
-  const cvvRegex = /^\d{3}$/;
 
   const handlePlaceOrder = async () => {
     if (items.length === 0) {
@@ -169,25 +145,6 @@ export default function CheckoutScreen() {
         return;
       }
 
-      if (onlinePaymentType === "card") {
-        const { cardNumber, cardHolder, expiry, cvv } = cardDetails;
-        if (!cardNumber.trim() || !cardHolder.trim() || !expiry.trim() || !cvv.trim()) {
-          showAlert("Card Details Required", "Please complete all card details.");
-          return;
-        }
-        if (!cardNumberRegex.test(cardNumber.replace(/\s/g, ""))) {
-          showAlert("Invalid Card Number", "Card number must be 16 digits.");
-          return;
-        }
-        if (!expiryRegex.test(expiry)) {
-          showAlert("Invalid Expiry", "Use expiry format MM/YY.");
-          return;
-        }
-        if (!cvvRegex.test(cvv)) {
-          showAlert("Invalid CVV", "CVV must be 3 digits.");
-          return;
-        }
-      }
     }
 
     setIsProcessing(true);
@@ -224,15 +181,45 @@ export default function CheckoutScreen() {
         return;
       }
 
+      // ✅ ONLINE PAYMENT — sync server cart (Razorpay amount comes from server cart + delivery)
+      const cartSync = await refreshCart();
+      if (!cartSync.ok || !cartSync.itemCount) {
+        showAlert(
+          "Cart",
+          "Your cart is empty or could not be synced. Please try again.",
+        );
+        setIsProcessing(false);
+        return;
+      }
+      const serverPayTotal =
+        Number(cartSync.grandTotal ?? 0) + Number(deliveryFee || 0);
+      if (Math.abs(serverPayTotal - grandTotal) > 0.02) {
+        setIsProcessing(false);
+        showAlert(
+          "Total updated",
+          "Your order total changed after syncing the cart. Please review the new total and try again.",
+        );
+        return;
+      }
+      const upiPrefill =
+        onlinePaymentType === "upi" && upiId.trim() ? upiId.trim().toLowerCase() : undefined;
+
       // ✅ ONLINE PAYMENT — open Razorpay first, place order ONLY on success
       await openRazorpay({
         userId: user!._id,
-        amount: grandTotal,
+        amount: serverPayTotal,
         deliveryFee,
         paymentMethod: resolvedOnlineMethod,
+        methodRestriction:
+          onlinePaymentType === "card"
+            ? "card"
+            : onlinePaymentType === "netbanking"
+              ? "netbanking"
+              : undefined,
         customerName: user?.name,
         customerPhone: user?.phone,
-        description: `Order payment - ₹${grandTotal}`,
+        prefillVpa: upiPrefill,
+        description: `Order payment - ₹${serverPayTotal}`,
         onSuccess: async ({ paymentId, orderId, signature }) => {
           try {
             await placeOrder({
@@ -637,10 +624,19 @@ export default function CheckoutScreen() {
                   </View>
 
                   {onlinePaymentType === "googlepay" && (
-                    <View style={styles.inlineNotice}>
-                      <Ionicons name="phone-portrait" size={14} color="#2E7D32" />
-                      <Text style={styles.inlineNoticeText}>
-                        Google Pay will open in Razorpay at checkout.
+                    <View style={styles.paymentNextStepBox}>
+                      <View style={styles.paymentNextStepRow}>
+                        <Ionicons name="logo-google" size={22} color="#2E7D32" />
+                        <View style={styles.paymentNextStepTextCol}>
+                          <Text style={styles.paymentNextStepTitle}>Google Pay</Text>
+                          <Text style={styles.paymentNextStepBody}>
+                            There is nothing to type here for safety and compliance. After you tap
+                            Pay below, Razorpay opens and you can pay with Google Pay there.
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.paymentNextStepHint}>
+                        Next step: tap “PAY ₹{grandTotal}” at the bottom of this screen.
                       </Text>
                     </View>
                   )}
@@ -657,68 +653,38 @@ export default function CheckoutScreen() {
                   )}
 
                   {onlinePaymentType === "card" && (
-                    <View style={styles.cardFormWrap}>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Card Number"
-                        placeholderTextColor="#9E9E9E"
-                        value={cardDetails.cardNumber}
-                        onChangeText={(value) =>
-                          setCardDetails((prev) => ({
-                            ...prev,
-                            cardNumber: formatCardNumber(value),
-                          }))
-                        }
-                        keyboardType="number-pad"
-                        maxLength={19}
-                      />
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Card Holder Name"
-                        placeholderTextColor="#9E9E9E"
-                        value={cardDetails.cardHolder}
-                        onChangeText={(value) =>
-                          setCardDetails((prev) => ({ ...prev, cardHolder: value }))
-                        }
-                      />
-                      <View style={styles.rowInputs}>
-                        <TextInput
-                          style={[styles.input, styles.halfInput]}
-                          placeholder="MM/YY"
-                          placeholderTextColor="#9E9E9E"
-                          value={cardDetails.expiry}
-                          onChangeText={(value) =>
-                          setCardDetails((prev) => ({
-                            ...prev,
-                            expiry: formatExpiry(value),
-                          }))
-                          }
-                          maxLength={5}
-                        />
-                        <TextInput
-                          style={[styles.input, styles.halfInput]}
-                          placeholder="CVV"
-                          placeholderTextColor="#9E9E9E"
-                          value={cardDetails.cvv}
-                          onChangeText={(value) =>
-                          setCardDetails((prev) => ({
-                            ...prev,
-                            cvv: formatCvv(value),
-                          }))
-                          }
-                          keyboardType="number-pad"
-                        maxLength={3}
-                          secureTextEntry
-                        />
+                    <View style={styles.paymentNextStepBox}>
+                      <View style={styles.paymentNextStepRow}>
+                        <Ionicons name="card" size={22} color="#2E7D32" />
+                        <View style={styles.paymentNextStepTextCol}>
+                          <Text style={styles.paymentNextStepTitle}>Card details</Text>
+                          <Text style={styles.paymentNextStepBody}>
+                            Card number, expiry, and CVV are never entered in this app (PCI-DSS).
+                            They are typed only on Razorpay’s secure payment screen after you tap Pay
+                            below.
+                          </Text>
+                        </View>
                       </View>
+                      <Text style={styles.paymentNextStepHint}>
+                        Next step: tap “PAY ₹{grandTotal}”, then fill your card in Razorpay.
+                      </Text>
                     </View>
                   )}
 
                   {onlinePaymentType === "netbanking" && (
-                    <View style={styles.inlineNotice}>
-                      <Ionicons name="business" size={14} color="#2E7D32" />
-                      <Text style={styles.inlineNoticeText}>
-                        Choose your bank securely on the Razorpay screen.
+                    <View style={styles.paymentNextStepBox}>
+                      <View style={styles.paymentNextStepRow}>
+                        <Ionicons name="business" size={22} color="#2E7D32" />
+                        <View style={styles.paymentNextStepTextCol}>
+                          <Text style={styles.paymentNextStepTitle}>Net banking</Text>
+                          <Text style={styles.paymentNextStepBody}>
+                            You’ll pick your bank and log in on Razorpay’s screen—same reason we
+                            don’t collect bank passwords here.
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.paymentNextStepHint}>
+                        Next step: tap “PAY ₹{grandTotal}”, then choose your bank in Razorpay.
                       </Text>
                     </View>
                   )}
@@ -1142,29 +1108,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#1A1A1A",
   },
-  cardFormWrap: {
-    gap: 8,
+  /** Same footprint as {@link input} — card / GPay / netbanking collect data in Razorpay only */
+  paymentNextStepBox: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
-  rowInputs: {
+  paymentNextStepRow: {
     flexDirection: "row",
-    gap: 8,
+    alignItems: "flex-start",
   },
-  halfInput: {
+  paymentNextStepTextCol: {
     flex: 1,
+    marginLeft: 10,
   },
-  inlineNotice: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: "#E8F5E9",
+  paymentNextStepTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A1A1A",
+    marginBottom: 4,
   },
-  inlineNoticeText: {
-    flex: 1,
-    color: "#2E7D32",
+  paymentNextStepBody: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#424242",
+  },
+  paymentNextStepHint: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#EEEEEE",
     fontSize: 12,
     fontWeight: "600",
+    color: "#2E7D32",
   },
   radioOuter: {
     width: 22,
