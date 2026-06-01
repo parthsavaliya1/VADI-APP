@@ -165,12 +165,6 @@ module.exports = ({ config }) => {
     extra: {
       ...config.extra,
       ...(firebaseExtra ? { firebase: firebaseExtra } : {}),
-      /** Baked at build time; Remote Config `api_base_url` overrides in the app when Firebase is configured. */
-      defaultApiBaseUrl:
-        process.env.EXPO_PUBLIC_API_URL?.trim() ||
-        (typeof config.extra?.defaultApiBaseUrl === "string"
-          ? config.extra.defaultApiBaseUrl.trim()
-          : ""),
     },
   };
 };
