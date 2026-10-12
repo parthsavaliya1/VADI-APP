@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AppHeader } from "@/components/AppHeader";
 import { useCart } from "../context/CartContext";
 import { API } from "../utils/api";
 
@@ -74,7 +75,7 @@ const getDefaultVariant = (product: Product): ProductVariant => {
 export default function CategoryScreen() {
   const params = useLocalSearchParams();
   const { categoryId, title } = params;
-  const { items, addToCart } = useCart();
+  const { addToCart } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,22 +130,7 @@ export default function CategoryScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#9A3412" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{title}</Text>
-        <TouchableOpacity onPress={() => router.push("/cart")}>
-          <View style={styles.cartIcon}>
-            <Ionicons name="cart-outline" size={24} color="#9A3412" />
-            {items.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{items.length}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </View>
+      <AppHeader title={String(title || "Category")} showBack showCart />
 
       {/* SEARCH */}
       <View style={styles.searchBox}>

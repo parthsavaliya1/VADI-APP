@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { AppHeader } from "@/components/AppHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type Txn = {
@@ -82,13 +83,7 @@ export default function WalletScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Wallet</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <AppHeader title="Wallet" showBack showCart={false} />
 
       {loading ? (
         <ActivityIndicator color="#C2410C" style={{ marginTop: 40 }} />

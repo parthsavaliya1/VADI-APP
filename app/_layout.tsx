@@ -5,11 +5,29 @@ import { CustomAlertProvider } from "@/context/CustomAlertContext";
 import { OrderProvider } from "@/context/OrderContext";
 import { getApiUrl, loadRemoteConfig } from "@/firebase";
 import { setBaseUrl } from "@/utils/api";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import Toast from "react-native-toast-message";
+
+function PushOpenListener() {
+  useEffect(() => {
+    let sub: { remove: () => void } | undefined;
+    (async () => {
+      try {
+        const Notifications = await import("expo-notifications");
+        sub = Notifications.addNotificationResponseReceivedListener(() => {
+          router.push("/notifications");
+        });
+      } catch {
+        // Expo Go on Android does not support remote push.
+      }
+    })();
+    return () => sub?.remove();
+  }, []);
+  return null;
+}
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
@@ -52,6 +70,7 @@ export default function RootLayout() {
         <AddressProvider>
           <CartProvider>
             <OrderProvider>
+              <PushOpenListener />
               {[
                 <Stack key="stack" screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="(auth)" />

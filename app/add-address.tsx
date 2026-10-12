@@ -1,3 +1,4 @@
+import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
@@ -500,15 +501,11 @@ export default function AddAddressScreen() {
         style={styles.container}
       >
         {/* HEADER */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#9A3412" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {isEditing ? "Edit Address" : "Add New Address"}
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <AppHeader
+          title={isEditing ? "Edit Address" : "Add New Address"}
+          showBack
+          showCart={false}
+        />
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* ADDRESS TYPE */}

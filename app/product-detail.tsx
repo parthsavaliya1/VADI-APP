@@ -1088,7 +1088,7 @@ export default function ProductDetailScreen() {
                                 item.image || "https://via.placeholder.com/150",
                             }}
                             style={styles.similarImage}
-                            resizeMode="contain"
+                            resizeMode="cover"
                           />
                         </View>
 
@@ -1627,17 +1627,14 @@ const styles = StyleSheet.create({
   },
 
   headerButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.92)",
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "#F7F3EC",
+    borderWidth: 1,
+    borderColor: "#E4DDD5",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
   },
   headerTitle: {
     flex: 1,
@@ -2132,7 +2129,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     overflow: "hidden",
   },
-  similarImage: { width: "85%", height: "85%" },
+  similarImage: { width: "100%", height: "100%" },
   similarName: {
     fontSize: 13,
     fontWeight: "700",

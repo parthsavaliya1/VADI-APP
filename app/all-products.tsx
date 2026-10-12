@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AppHeader } from "@/components/AppHeader";
 import { useCart } from "../context/CartContext";
 import { API } from "../utils/api";
 
@@ -389,56 +390,20 @@ export default function AllProductsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       {/* HEADER */}
-      <Animated.View
-        style={[
-          styles.header,
-          {
-            opacity: headerAnim,
-            transform: [
-              {
-                translateY: headerAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-50, 0],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <View style={styles.iconButton}>
-            <Ionicons name="arrow-back" size={24} color="#9A3412" />
-          </View>
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {title || "Products"}
-          </Text>
-          {type && (
-            <View style={styles.headerTypeBadge}>
-              <Text style={styles.headerTypeBadgeText}>
-                {type === "deals"
-                  ? "Best Deals"
-                  : type === "trending"
-                    ? "Trending"
-                    : type === "featured"
-                      ? "Featured"
-                      : "All Products"}
-              </Text>
-            </View>
-          )}
-        </View>
-        <TouchableOpacity onPress={() => router.push("/cart")}>
-          <View style={styles.iconButton}>
-            <Ionicons name="cart-outline" size={24} color="#9A3412" />
-            {items.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{items.length}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
+      <AppHeader
+        title={title || "Products"}
+        subtitle={
+          type === "deals"
+            ? "Best Deals"
+            : type === "trending"
+              ? "Trending"
+              : type === "featured"
+                ? "Featured"
+                : undefined
+        }
+        showBack
+        showCart
+      />
 
       {/* SEARCH */}
       <Animated.View
@@ -909,9 +874,9 @@ const styles = StyleSheet.create({
   },
 
   image: {
-    width: "80%",
-    height: 80,
-    resizeMode: "contain",
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
 
   badgeTopLeft: {

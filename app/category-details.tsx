@@ -1,3 +1,4 @@
+import { AppHeader } from "@/components/AppHeader";
 import { useCart } from "@/context/CartContext";
 import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
@@ -70,22 +71,7 @@ export default function CategoryDetailScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#9A3412" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{title}</Text>
-        <TouchableOpacity onPress={() => router.push("/cart")}>
-          <View style={styles.cartIcon}>
-            <Ionicons name="cart-outline" size={24} color="#9A3412" />
-            {items.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{items.length}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </View>
+      <AppHeader title={String(title || "Category")} showBack showCart />
 
       {/* SEARCH */}
       <View style={styles.searchBox}>

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { API } from "@/utils/api";
 
@@ -84,17 +85,7 @@ export default function NotificationsScreen() {
   if (!isLoggedIn || !user) {
     return (
       <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => router.back()}
-            hitSlop={12}
-          >
-            <Ionicons name="arrow-back" size={24} color="#9A3412" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Notifications</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <AppHeader title="Notifications" showBack showCart={false} />
         <View style={styles.centerBox}>
           <Ionicons name="notifications-off-outline" size={56} color="#9CA3AF" />
           <Text style={styles.emptyTitle}>Sign in to see notifications</Text>
@@ -115,22 +106,12 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => router.back()}
-          hitSlop={12}
-        >
-          <Ionicons name="arrow-back" size={24} color="#9A3412" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Notifications</Text>
-          {unreadCount > 0 && (
-            <Text style={styles.subCount}>{unreadCount} unread</Text>
-          )}
-        </View>
-        <View style={{ width: 40 }} />
-      </View>
+      <AppHeader
+        title="Notifications"
+        subtitle={unreadCount > 0 ? `${unreadCount} unread` : undefined}
+        showBack
+        showCart={false}
+      />
 
       {loading ? (
         <View style={styles.loaderWrap}>

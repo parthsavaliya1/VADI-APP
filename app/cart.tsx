@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AppHeader } from "@/components/AppHeader";
 import { CartItem, useCart } from "../context/CartContext";
 import { FREE_DELIVERY_ABOVE, quoteDeliveryFee } from "../utils/deliveryQuote";
 
@@ -74,16 +75,11 @@ export default function CartScreen() {
   if (items.length === 0) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backBtn}
-          >
-            <Ionicons name="arrow-back" size={22} color="#9A3412" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Cart</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <AppHeader
+          title="My Cart"
+          showBack
+          showCart={false}
+        />
 
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
@@ -109,18 +105,17 @@ export default function CartScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#9A3412" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>My Cart</Text>
-          <Text style={styles.headerSubtitle}>{getCartItemCount()} items</Text>
-        </View>
-        <TouchableOpacity onPress={handleClearCart} style={styles.clearBtn}>
-          <Ionicons name="trash-outline" size={20} color="#F44336" />
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        title="My Cart"
+        subtitle={`${getCartItemCount()} items`}
+        showBack
+        showCart={false}
+        right={
+          <TouchableOpacity onPress={handleClearCart} style={styles.clearBtn}>
+            <Ionicons name="trash-outline" size={20} color="#F44336" />
+          </TouchableOpacity>
+        }
+      />
 
       {/* FREE DELIVERY PROGRESS BANNER */}
       {total <= FREE_DELIVERY_ABOVE ? (
@@ -408,7 +403,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     flexShrink: 0,
   },
-  itemImage: { width: 72, height: 72, resizeMode: "contain" },
+  itemImage: { width: "100%", height: "100%", resizeMode: "cover" },
 
   /* ITEM DETAILS */
   itemDetails: { flex: 1, justifyContent: "space-between" },

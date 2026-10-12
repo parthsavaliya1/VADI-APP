@@ -1,3 +1,4 @@
+import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,13 +39,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Edit profile</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <AppHeader title="Edit profile" showBack showCart={false} />
       <View style={styles.body}>
         <Text style={styles.label}>Name</Text>
         <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Your name" />

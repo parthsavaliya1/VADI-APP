@@ -1,3 +1,4 @@
+import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
@@ -33,15 +34,16 @@ export default function SellerProductsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
-        </TouchableOpacity>
-        <Text style={styles.title}>My products</Text>
-        <TouchableOpacity onPress={() => router.push("/seller-add-product")}>
-          <Ionicons name="add" size={26} color="#C2410C" />
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        title="My products"
+        showBack
+        showCart={false}
+        right={
+          <TouchableOpacity onPress={() => router.push("/seller-add-product")}>
+            <Ionicons name="add" size={26} color="#B56A45" />
+          </TouchableOpacity>
+        }
+      />
       {loading ? (
         <ActivityIndicator color="#C2410C" style={{ marginTop: 40 }} />
       ) : (

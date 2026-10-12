@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useCart } from "@/context/CartContext";
+import { AppHeader } from "@/components/AppHeader";
 import { API } from "@/utils/api";
 
 type Category = {
@@ -44,7 +44,6 @@ const categoryIcons: Record<string, { icon: string; color: string }> = {
 };
 
 export default function CategoriesScreen() {
-  const { items } = useCart();
   const [categories, setCategories] = useState<CategoryUI[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,25 +113,7 @@ export default function CategoriesScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Image
-            source={require("../../assets/images/vadi-brand-logo.png")}
-            style={styles.headerLogo}
-          />
-          <Text style={styles.headerTitle}>Categories</Text>
-        </View>
-        <TouchableOpacity onPress={() => router.push("/cart")}>
-          <View style={styles.iconBtn}>
-            <Ionicons name="cart-outline" size={26} color="#9A3412" />
-            {items.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{items.length}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </View>
+      <AppHeader title="Categories" showCart />
 
       {/* SEARCH */}
       <View style={styles.searchBox}>

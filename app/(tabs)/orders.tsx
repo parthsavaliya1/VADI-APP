@@ -21,7 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useOrders } from "../../context/OrderContext";
 import * as Haptics from "expo-haptics";
-import { useCart } from "@/context/CartContext";
+import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { downloadOrderInvoicePdf } from "@/utils/orderInvoice";
 
@@ -501,7 +501,6 @@ function PriceRow({
 export default function OrdersScreen() {
   const { orders, fetchOrders, loading } = useOrders();
   const { user } = useAuth();
-  const { items } = useCart();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -550,6 +549,7 @@ export default function OrdersScreen() {
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.safe}>
+        <AppHeader title="Orders" showCart />
         <View style={styles.centered}>
           <View style={styles.loadingSpinnerWrap}>
             <ActivityIndicator size="large" color="#B56A45" />
@@ -565,6 +565,7 @@ export default function OrdersScreen() {
   if (!orders || orders.length === 0) {
     return (
       <SafeAreaView style={styles.safe}>
+        <AppHeader title="Orders" showCart />
         <View style={styles.centered}>
           <View style={styles.emptyIconWrap}>
             <Ionicons name="bag-outline" size={48} color="#B56A45" />
@@ -578,28 +579,7 @@ export default function OrdersScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.screenHeader}>
-        <View style={styles.headerLeft}>
-          <Image
-            source={require("../../assets/images/vadi-brand-logo.png")}
-            style={styles.headerLogo}
-          />
-          <View>
-            <Text style={styles.screenHeaderTitle}>Orders</Text>
-            <Text style={styles.screenHeaderSub}>Track, details, and delivery code</Text>
-          </View>
-        </View>
-        <TouchableOpacity onPress={() => router.push("/cart")}>
-          <View style={styles.iconBtn}>
-            <Ionicons name="cart-outline" size={24} color="#9A3412" />
-            {items.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{items.length}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </View>
+      <AppHeader title="Orders" subtitle="Track, details, and delivery code" showCart />
 
       <View style={styles.filtersWrap}>
         <FlatList

@@ -1,3 +1,4 @@
+import { AppHeader } from "@/components/AppHeader";
 import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
@@ -327,21 +328,7 @@ export default function CheckoutScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           {/* HEADER */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.backBtn}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="arrow-back" size={24} color="#000" />
-            </TouchableOpacity>
-            <Text style={styles.title}>Checkout</Text>
-            <View style={styles.stepIndicator}>
-              <View style={[styles.stepDot, styles.stepActive]} />
-              <View style={styles.stepLine} />
-              <View style={styles.stepDot} />
-            </View>
-          </View>
+          <AppHeader title="Checkout" showBack />
 
           {/* DELIVERY ADDRESS */}
           <Animated.View style={[styles.card, styles.cardElevated]}>

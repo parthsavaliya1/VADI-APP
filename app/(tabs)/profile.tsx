@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useOrders } from "../../context/OrderContext";
@@ -106,6 +107,7 @@ function GuestProfileView() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <AppHeader title="Profile" />
       <ScrollView
         contentContainerStyle={styles.guestContainer}
         showsVerticalScrollIndicator={false}
@@ -442,6 +444,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <AppHeader title="Profile" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}

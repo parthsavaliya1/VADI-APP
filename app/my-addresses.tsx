@@ -1,3 +1,4 @@
+import { AppHeader } from "@/components/AppHeader";
 import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
@@ -123,15 +124,11 @@ export default function MyAddressesScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#9A3412" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {fromCheckout ? "Select Address" : "My Addresses"}
-          </Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <AppHeader
+          title={fromCheckout ? "Select Address" : "My Addresses"}
+          showBack
+          showCart={false}
+        />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#C2410C" />
         </View>
@@ -141,15 +138,11 @@ export default function MyAddressesScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#9A3412" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {fromCheckout ? "Select Address" : "My Addresses"}
-        </Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <AppHeader
+        title={fromCheckout ? "Select Address" : "My Addresses"}
+        showBack
+        showCart={false}
+      />
 
       {fromCheckout && (
         <View style={styles.selectHint}>
