@@ -125,7 +125,7 @@ export default function MyAddressesScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+            <Ionicons name="arrow-back" size={24} color="#9A3412" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
             {fromCheckout ? "Select Address" : "My Addresses"}
@@ -133,7 +133,7 @@ export default function MyAddressesScreen() {
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2E7D32" />
+          <ActivityIndicator size="large" color="#C2410C" />
         </View>
       </SafeAreaView>
     );
@@ -143,7 +143,7 @@ export default function MyAddressesScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+          <Ionicons name="arrow-back" size={24} color="#9A3412" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {fromCheckout ? "Select Address" : "My Addresses"}
@@ -153,7 +153,7 @@ export default function MyAddressesScreen() {
 
       {fromCheckout && (
         <View style={styles.selectHint}>
-          <Ionicons name="information-circle" size={18} color="#2E7D32" />
+          <Ionicons name="information-circle" size={18} color="#C2410C" />
           <Text style={styles.selectHintText}>
             Tap on any address to select for delivery
           </Text>
@@ -172,7 +172,7 @@ export default function MyAddressesScreen() {
           <Ionicons
             name="add-circle-outline"
             size={24}
-            color={addresses.length >= 3 ? "#999" : "#2E7D32"}
+            color={addresses.length >= 3 ? "#999" : "#C2410C"}
           />
           <Text
             style={[
@@ -209,7 +209,7 @@ export default function MyAddressesScreen() {
               {/* SELECTED INDICATOR */}
               {fromCheckout && selectedAddress?._id === address._id && (
                 <View style={styles.selectedIndicator}>
-                  <Ionicons name="checkmark-circle" size={24} color="#2E7D32" />
+                  <Ionicons name="checkmark-circle" size={24} color="#C2410C" />
                 </View>
               )}
 
@@ -223,7 +223,7 @@ export default function MyAddressesScreen() {
               {/* ADDRESS INFO */}
               <View style={styles.addressHeader}>
                 <View style={styles.addressIconContainer}>
-                  <Ionicons name="location" size={20} color="#2E7D32" />
+                  <Ionicons name="location" size={20} color="#C2410C" />
                 </View>
                 <View style={styles.addressInfo}>
                   <Text style={styles.addressName}>{address.name}</Text>
@@ -245,7 +245,7 @@ export default function MyAddressesScreen() {
                       <Ionicons
                         name="checkmark-circle-outline"
                         size={18}
-                        color="#2E7D32"
+                        color="#C2410C"
                       />
                       <Text style={styles.actionText}>Set as Default</Text>
                     </TouchableOpacity>
@@ -296,7 +296,7 @@ export default function MyAddressesScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F7F3EC",
   },
   header: {
     flexDirection: "row",
@@ -311,13 +311,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
   },
   selectHint: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginHorizontal: 14,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   selectHintText: {
     fontSize: 13,
-    color: "#2E7D32",
+    color: "#C2410C",
     fontWeight: "600",
   },
   loadingContainer: {
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: "#2E7D32",
+    borderColor: "#C2410C",
     borderStyle: "dashed",
   },
   addButtonDisabled: {
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 15,
     fontWeight: "600",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
   addButtonTextDisabled: {
     color: "#999",
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   selectedCard: {
-    borderColor: "#2E7D32",
+    borderColor: "#C2410C",
     backgroundColor: "#F1F8F4",
   },
   selectedIndicator: {
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 12,
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
   emptyState: {
     alignItems: "center",

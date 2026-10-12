@@ -7,6 +7,7 @@ type RazorpayGatewayOrder = {
   amountInPaise: number;
   currency: string;
   razorpayOrderId: string;
+  description?: string;
 };
 
 type OpenRazorpayOptions = {
@@ -106,7 +107,7 @@ export async function openRazorpay(options: OpenRazorpayOptions) {
         source: "vadi-app",
       },
       prefill,
-      theme: { color: "#2E7D32" },
+      theme: { color: "#C2410C" },
     });
 
     const verifyRes = await API.post("/payments/verify-signature", {
@@ -124,6 +125,70 @@ export async function openRazorpay(options: OpenRazorpayOptions) {
       orderId: paymentResult.razorpay_order_id,
       signature: paymentResult.razorpay_signature,
     });
+  } catch (error: any) {
+    options.onFailure(error?.description || error?.message || "Payment failed");
+  }
+}
+
+export async function openWalletTopup(options: {
+  userId: string;
+  amount: number;
+  customerName?: string;
+  customerPhone?: string;
+  onSuccess: (balance: number) => void;
+  onFailure: (message?: string) => void;
+}) {
+  try {
+    const isExpoGo =
+      Constants.appOwnership === "expo" ||
+      Constants.executionEnvironment === "storeClient";
+    if (isExpoGo) {
+      throw new Error(
+        "Online payment is not supported in Expo Go. Please run a development build.",
+      );
+    }
+
+    let RazorpayCheckout: { open: (config: any) => Promise<any> };
+    try {
+      RazorpayCheckout = require("react-native-razorpay").default;
+    } catch {
+      throw new Error(
+        "Razorpay requires a development build. Expo Go does not support this native module.",
+      );
+    }
+
+    const createOrderRes = await API.post("/wallet/topup/order", {
+      userId: options.userId,
+      amount: options.amount,
+    });
+    if (!createOrderRes.data?.success) {
+      throw new Error(createOrderRes.data?.message || "Unable to start wallet top-up");
+    }
+    const gatewayOrder: RazorpayGatewayOrder = createOrderRes.data.data;
+    const paymentResult = await RazorpayCheckout.open({
+      key: gatewayOrder.key,
+      amount: gatewayOrder.amountInPaise,
+      currency: gatewayOrder.currency,
+      name: "VADI",
+      description: gatewayOrder.description || `Add ₹${options.amount} to wallet`,
+      order_id: gatewayOrder.razorpayOrderId,
+      prefill: {
+        name: options.customerName || "",
+        contact: (options.customerPhone || "").replace(/\s/g, ""),
+      },
+      theme: { color: "#C2410C" },
+    });
+
+    const verifyRes = await API.post("/wallet/topup/verify", {
+      userId: options.userId,
+      razorpayOrderId: paymentResult.razorpay_order_id,
+      razorpayPaymentId: paymentResult.razorpay_payment_id,
+      razorpaySignature: paymentResult.razorpay_signature,
+    });
+    if (!verifyRes.data?.success) {
+      throw new Error(verifyRes.data?.message || "Wallet top-up could not be verified");
+    }
+    options.onSuccess(Number(verifyRes.data?.data?.balance || 0));
   } catch (error: any) {
     options.onFailure(error?.description || error?.message || "Payment failed");
   }

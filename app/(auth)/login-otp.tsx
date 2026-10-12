@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "800",
     textAlign: "center",
-    color: "#1B5E20",
+    color: "#9A3412",
   },
   subtitle: {
     textAlign: "center",
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cta: {
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingVertical: 16,
     borderRadius: 16,
   },
@@ -132,6 +132,6 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 18,
     textAlign: "center",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
 });

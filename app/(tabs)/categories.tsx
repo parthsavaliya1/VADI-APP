@@ -37,10 +37,10 @@ type CategoryUI = {
 };
 
 const categoryIcons: Record<string, { icon: string; color: string }> = {
-  vegetables: { icon: "leaf", color: "#4CAF50" },
-  fruits: { icon: "nutrition", color: "#FF9800" },
-  "dairy-bakery": { icon: "ice-cream", color: "#2196F3" },
-  beverages: { icon: "beer", color: "#00BCD4" },
+  vegetables: { icon: "leaf", color: "#B56A45" },
+  fruits: { icon: "nutrition", color: "#C88A3D" },
+  "dairy-bakery": { icon: "ice-cream", color: "#8F4F32" },
+  beverages: { icon: "beer", color: "#6F6A64" },
 };
 
 export default function CategoriesScreen() {
@@ -124,7 +124,7 @@ export default function CategoriesScreen() {
         </View>
         <TouchableOpacity onPress={() => router.push("/cart")}>
           <View style={styles.iconBtn}>
-            <Ionicons name="cart-outline" size={26} color="#1B5E20" />
+            <Ionicons name="cart-outline" size={26} color="#9A3412" />
             {items.length > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{items.length}</Text>
@@ -136,7 +136,7 @@ export default function CategoriesScreen() {
 
       {/* SEARCH */}
       <View style={styles.searchBox}>
-        <Ionicons name="search" size={18} color="#777" />
+        <Ionicons name="search" size={16} color="#777" style={{ marginLeft: 2, marginRight: 4 }} />
         <TextInput
           placeholder="Search categories"
           style={styles.searchInput}
@@ -153,44 +153,41 @@ export default function CategoriesScreen() {
       {/* CATEGORIES GRID */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2E7D32" />
+          <ActivityIndicator size="large" color="#B56A45" />
         </View>
       ) : filteredCategories.length > 0 ? (
         <FlatList
           data={filteredCategories}
-          numColumns={3}
-          keyExtractor={(item) => item.name}
+          numColumns={2}
+          keyExtractor={(item) => item._id}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.categoryCard}
-              activeOpacity={0.7}
+              activeOpacity={0.85}
               onPress={() => handleCategoryPress(item)}
             >
-              <View
-                style={[
-                  styles.iconCircle,
-                  { backgroundColor: item.color + "20" },
-                ]}
-              >
+              <View style={styles.imageWrap}>
                 {item.image ? (
                   <Image source={{ uri: item.image }} style={styles.categoryImage} />
                 ) : (
                   <Ionicons
                     name={item.icon as any}
-                    size={32}
-                    color={item.color}
+                    size={36}
+                    color="#B56A45"
                   />
                 )}
               </View>
-              <Text style={styles.categoryName}>
-                {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
-              </Text>
-              <Text style={styles.productCount}>
-                {item.count} product{item.count !== 1 ? "s" : ""}
-              </Text>
+              <View style={styles.cardBody}>
+                <Text style={styles.categoryName} numberOfLines={1}>
+                  {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
+                </Text>
+                <Text style={styles.productCount}>
+                  {item.count} product{item.count !== 1 ? "s" : ""}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
         />
@@ -208,7 +205,7 @@ export default function CategoriesScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F7F3EC",
   },
   header: {
     flexDirection: "row",
@@ -229,8 +226,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: "800",
-    color: "#1B5E20",
+    fontWeight: "700",
+    color: "#171717",
   },
   iconBtn: {
     position: "relative",
@@ -247,7 +244,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     right: 0,
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#B56A45",
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -264,21 +261,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginHorizontal: 14,
-    marginBottom: 16,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderRadius: 12,
+    paddingLeft: 14,
+    paddingRight: 10,
+    height: 42,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#E4DDD5",
   },
   searchInput: {
     marginLeft: 8,
-    fontSize: 15,
+    fontSize: 14,
     flex: 1,
+    paddingVertical: 0,
+    height: 42,
   },
   loadingContainer: {
     flex: 1,
@@ -286,49 +283,53 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   list: {
-    padding: 14,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 24,
   },
   row: {
     justifyContent: "space-between",
+    gap: 12,
   },
   categoryCard: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 12,
-    width: "31%",
-    marginBottom: 14,
-    alignItems: "center",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: "center",
-    alignItems: "center",
+    borderRadius: 20,
+    flex: 1,
     marginBottom: 12,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E4DDD5",
+    shadowColor: "#171717",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  imageWrap: {
+    height: 120,
+    width: "100%",
+    backgroundColor: "#E7D9C8",
+    alignItems: "center",
+    justifyContent: "center",
   },
   categoryImage: {
     width: "100%",
     height: "100%",
     resizeMode: "cover",
   },
+  cardBody: {
+    padding: 10,
+  },
   categoryName: {
     fontSize: 15,
-    fontWeight: "700",
-    color: "#222",
-    textAlign: "center",
-    marginBottom: 4,
+    fontWeight: "600",
+    color: "#171717",
   },
   productCount: {
     fontSize: 12,
-    color: "#777",
-    textAlign: "center",
+    color: "#6F6A64",
+    marginTop: 4,
+    fontWeight: "700",
   },
   emptyState: {
     flex: 1,

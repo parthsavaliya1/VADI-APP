@@ -25,9 +25,9 @@ export default function RootLayout() {
 
         const url = getApiUrl();
         console.log("🔥 Remote API URL:", url);
-        // setBaseUrl("http://192.168.1.5:5000");
+        setBaseUrl("http://192.168.1.12:5000");
 
-        setBaseUrl(url);
+        // setBaseUrl(url);
       } catch (err) {
         console.warn("⚠️ Remote Config failed, using default BASE_URL:", err);
       } finally {
@@ -41,7 +41,7 @@ export default function RootLayout() {
   if (!isReady) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#2E7D32" />
+        <ActivityIndicator size="large" color="#C2410C" />
       </View>
     );
   }

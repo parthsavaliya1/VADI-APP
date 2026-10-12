@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     marginBottom: 15,
-    color: "#1B5E20",
+    color: "#9A3412",
   },
   card: {
     backgroundColor: "#fff",
@@ -117,11 +117,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   price: {
-    color: "#2E7D32",
+    color: "#C2410C",
     marginTop: 5,
   },
   addBtn: {
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingHorizontal: 15,
     paddingVertical: 6,
     borderRadius: 6,

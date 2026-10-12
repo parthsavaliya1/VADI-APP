@@ -72,12 +72,12 @@ export default function CategoryDetailScreen() {
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+          <Ionicons name="arrow-back" size={24} color="#9A3412" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>
         <TouchableOpacity onPress={() => router.push("/cart")}>
           <View style={styles.cartIcon}>
-            <Ionicons name="cart-outline" size={24} color="#1B5E20" />
+            <Ionicons name="cart-outline" size={24} color="#9A3412" />
             {items.length > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{items.length}</Text>
@@ -89,7 +89,7 @@ export default function CategoryDetailScreen() {
 
       {/* SEARCH */}
       <View style={styles.searchBox}>
-        <Ionicons name="search" size={18} color="#777" />
+        <Ionicons name="search" size={16} color="#777" style={{ marginLeft: 2, marginRight: 4 }} />
         <TextInput
           placeholder={`Search in ${title}`}
           style={styles.searchInput}
@@ -116,7 +116,7 @@ export default function CategoryDetailScreen() {
       {/* PRODUCTS */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2E7D32" />
+          <ActivityIndicator size="large" color="#B56A45" />
         </View>
       ) : filteredProducts.length > 0 ? (
         <FlatList
@@ -195,35 +195,33 @@ const ProductCard = ({
   return (
     <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
-        <Image
-          source={{
-            uri: item.image || "https://via.placeholder.com/150",
-          }}
-          style={styles.image}
-        />
+        <View style={styles.imageWrap}>
+          <Image
+            source={{
+              uri: item.image || "https://via.placeholder.com/150",
+            }}
+            style={styles.image}
+          />
+          {item.discount && item.discount > 0 && (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>{item.discount}% OFF</Text>
+            </View>
+          )}
+        </View>
 
-        {item.discount && item.discount > 0 && (
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>{item.discount}% OFF</Text>
-          </View>
-        )}
-
-        <Text numberOfLines={2} style={styles.name}>
+        <View style={styles.cardBody}>
+        <Text numberOfLines={1} style={styles.name}>
           {item.name}
         </Text>
-
-        <Text style={styles.unit}>{item.unit}</Text>
+        <Text style={styles.price}>₹{item.price}</Text>
+        <Text style={styles.unit} numberOfLines={1}>{item.unit}</Text>
+        {item.discount && item.discount > 0 && (
+          <Text style={styles.originalPrice}>
+            ₹{Math.round(item.price * (1 + item.discount / 100))}
+          </Text>
+        )}
 
         <View style={styles.footerRow}>
-          <View>
-            <Text style={styles.price}>₹{item.price}</Text>
-            {item.discount && item.discount > 0 && (
-              <Text style={styles.originalPrice}>
-                ₹{Math.round(item.price * (1 + item.discount / 100))}
-              </Text>
-            )}
-          </View>
-
           <TouchableOpacity
             style={[
               styles.addBtn,
@@ -237,7 +235,7 @@ const ProductCard = ({
             disabled={isAdding}
           >
             {isAdding ? (
-              <ActivityIndicator size="small" color="#2E7D32" />
+              <ActivityIndicator size="small" color="#B56A45" />
             ) : inCart ? (
               <Ionicons name="checkmark" size={16} color="#fff" />
             ) : (
@@ -247,6 +245,7 @@ const ProductCard = ({
             )}
           </TouchableOpacity>
         </View>
+        </View>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -255,7 +254,7 @@ const ProductCard = ({
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F7F3EC",
   },
   header: {
     flexDirection: "row",
@@ -269,8 +268,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "800",
-    color: "#1B5E20",
+    fontWeight: "700",
+    color: "#171717",
     flex: 1,
     textAlign: "center",
     marginHorizontal: 8,
@@ -283,7 +282,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     right: 0,
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#B56A45",
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -300,9 +299,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingLeft: 14,
+    paddingRight: 10,
+    height: 42,
     marginHorizontal: 14,
     marginBottom: 8,
     elevation: 3,
@@ -313,8 +313,10 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     marginLeft: 8,
-    fontSize: 15,
+    fontSize: 14,
     flex: 1,
+    paddingVertical: 0,
+    height: 42,
   },
   countContainer: {
     paddingHorizontal: 14,
@@ -338,59 +340,67 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 12,
-    width: "48%",
-    marginBottom: 14,
-    elevation: 3,
-    shadowColor: "#000",
+    borderRadius: 20,
+    flex: 1,
+    marginBottom: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E4DDD5",
+    shadowColor: "#171717",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    position: "relative",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  imageWrap: {
+    height: 120,
+    width: "100%",
+    backgroundColor: "#E7D9C8",
+  },
+  cardBody: {
+    padding: 10,
   },
   discountBadge: {
     position: "absolute",
     top: 8,
-    right: 8,
-    backgroundColor: "#F44336",
+    left: 8,
+    backgroundColor: "#F3E4DB",
     borderRadius: 8,
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     paddingVertical: 3,
     zIndex: 1,
   },
   discountText: {
-    color: "#fff",
-    fontSize: 9,
+    color: "#8F4F32",
+    fontSize: 11,
     fontWeight: "700",
   },
   image: {
     width: "100%",
-    height: 100,
-    resizeMode: "contain",
-    marginBottom: 8,
+    height: "100%",
+    resizeMode: "cover",
   },
   name: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#222",
-    minHeight: 36,
+    color: "#171717",
   },
   unit: {
     fontSize: 12,
-    color: "#777",
-    marginVertical: 4,
+    color: "#6F6A64",
+    marginTop: 4,
   },
   footerRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
-    marginTop: 6,
+    marginTop: 8,
   },
   price: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
-    color: "#2E7D32",
+    color: "#B56A45",
+    marginTop: 4,
   },
   originalPrice: {
     fontSize: 11,
@@ -399,23 +409,22 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   addBtn: {
-    borderWidth: 1.5,
-    borderColor: "#2E7D32",
-    borderRadius: 8,
+    backgroundColor: "#B56A45",
+    borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 6,
     minWidth: 60,
     alignItems: "center",
   },
   addBtnActive: {
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#8F4F32",
   },
   addBtnAdding: {
     opacity: 0.7,
   },
   addText: {
-    color: "#2E7D32",
-    fontWeight: "700",
+    color: "#fff",
+    fontWeight: "800",
     fontSize: 12,
   },
   addTextActive: {

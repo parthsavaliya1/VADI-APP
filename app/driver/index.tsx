@@ -32,7 +32,7 @@ export default function DriverHomeScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#1E7A35" />
+          <ActivityIndicator size="large" color="#C2410C" />
         </View>
       </SafeAreaView>
     );
@@ -73,12 +73,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
     marginBottom: 8,
   },
   sub: { fontSize: 15, color: "#4E7C50", marginBottom: 32 },
   btn: {
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
@@ -87,10 +87,10 @@ const styles = StyleSheet.create({
   btnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   btnOutline: {
     borderWidth: 2,
-    borderColor: "#2E7D32",
+    borderColor: "#C2410C",
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: "center",
   },
-  btnOutlineText: { color: "#2E7D32", fontSize: 15, fontWeight: "600" },
+  btnOutlineText: { color: "#C2410C", fontSize: 15, fontWeight: "600" },
 });

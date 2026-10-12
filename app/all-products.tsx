@@ -355,7 +355,7 @@ export default function AllProductsScreen() {
                 disabled={isAdding || variant.stock === 0}
               >
                 {isAdding ? (
-                  <ActivityIndicator size="small" color="#2E7D32" />
+                  <ActivityIndicator size="small" color="#C2410C" />
                 ) : inCart ? (
                   <Ionicons name="checkmark" size={15} color="#fff" />
                 ) : (
@@ -407,7 +407,7 @@ export default function AllProductsScreen() {
       >
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <View style={styles.iconButton}>
-            <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+            <Ionicons name="arrow-back" size={24} color="#9A3412" />
           </View>
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
@@ -430,7 +430,7 @@ export default function AllProductsScreen() {
         </View>
         <TouchableOpacity onPress={() => router.push("/cart")}>
           <View style={styles.iconButton}>
-            <Ionicons name="cart-outline" size={24} color="#1B5E20" />
+            <Ionicons name="cart-outline" size={24} color="#9A3412" />
             {items.length > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{items.length}</Text>
@@ -456,7 +456,7 @@ export default function AllProductsScreen() {
           },
         ]}
       >
-        <Ionicons name="search" size={20} color="#2E7D32" />
+        <Ionicons name="search" size={16} color="#C2410C" style={{ marginLeft: 2, marginRight: 4 }} />
         <TextInput
           placeholder="Search products, brands..."
           placeholderTextColor="#999"
@@ -486,7 +486,7 @@ export default function AllProductsScreen() {
       {/* FILTER & SORT BAR */}
       <View style={styles.filterBar}>
         <View style={styles.resultCountContainer}>
-          <Ionicons name="grid-outline" size={16} color="#2E7D32" />
+          <Ionicons name="grid-outline" size={16} color="#C2410C" />
           <Text style={styles.resultCount}>
             {displayProducts.length}{" "}
             {displayProducts.length === 1 ? "product" : "products"}
@@ -499,7 +499,7 @@ export default function AllProductsScreen() {
           <Ionicons
             name={showSortModal ? "funnel" : "funnel-outline"}
             size={18}
-            color="#2E7D32"
+            color="#C2410C"
           />
           <Text style={styles.sortText}>
             {sortOptions.find((o) => o.value === sortBy)?.label || "Sort"}
@@ -507,7 +507,7 @@ export default function AllProductsScreen() {
           <Ionicons
             name={showSortModal ? "chevron-up" : "chevron-down"}
             size={16}
-            color="#2E7D32"
+            color="#C2410C"
           />
         </TouchableOpacity>
       </View>
@@ -537,7 +537,7 @@ export default function AllProductsScreen() {
                 <Ionicons
                   name={option.icon as any}
                   size={20}
-                  color={sortBy === option.value ? "#2E7D32" : "#999"}
+                  color={sortBy === option.value ? "#C2410C" : "#999"}
                 />
                 <Text
                   style={[
@@ -550,7 +550,7 @@ export default function AllProductsScreen() {
               </View>
               {sortBy === option.value && (
                 <View style={styles.checkmarkContainer}>
-                  <Ionicons name="checkmark-circle" size={22} color="#2E7D32" />
+                  <Ionicons name="checkmark-circle" size={22} color="#C2410C" />
                 </View>
               )}
             </TouchableOpacity>
@@ -583,7 +583,7 @@ export default function AllProductsScreen() {
           <Text style={styles.loadingText}>Loading fresh products...</Text>
           <ActivityIndicator
             size="small"
-            color="#2E7D32"
+            color="#C2410C"
             style={{ marginTop: 8 }}
           />
         </View>
@@ -628,7 +628,7 @@ export default function AllProductsScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F8FAF5",
+    backgroundColor: "#F7F3EC",
   },
 
   /* HEADER */
@@ -640,9 +640,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#E8F5E9",
+    borderBottomColor: "#FFF1E8",
     elevation: 4,
-    shadowColor: "#1B5E20",
+    shadowColor: "#9A3412",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
     letterSpacing: 0.3,
   },
 
@@ -677,14 +677,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     borderRadius: 10,
   },
 
   headerTypeBadgeText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#2E7D32",
+    color: "#C2410C",
     textTransform: "uppercase",
   },
 
@@ -714,27 +714,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: 12,
+    paddingLeft: 14,
+    paddingRight: 10,
+    height: 42,
     marginHorizontal: 16,
     marginTop: 14,
     marginBottom: 12,
     elevation: 3,
-    shadowColor: "#1B5E20",
+    shadowColor: "#9A3412",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     borderWidth: 1,
-    borderColor: "#E8F5E9",
+    borderColor: "#FFF1E8",
   },
 
   searchInput: {
-    marginLeft: 10,
-    fontSize: 15,
+    marginLeft: 8,
+    fontSize: 14,
     flex: 1,
     color: "#333",
     fontWeight: "500",
+    paddingVertical: 0,
+    height: 42,
   },
 
   /* FILTER BAR */
@@ -764,14 +767,14 @@ const styles = StyleSheet.create({
   resultCount: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
 
   sortBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
@@ -780,7 +783,7 @@ const styles = StyleSheet.create({
   sortText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
 
   /* SORT MODAL */
@@ -841,7 +844,7 @@ const styles = StyleSheet.create({
   },
 
   sortOptionActive: {
-    color: "#2E7D32",
+    color: "#C2410C",
     fontWeight: "700",
   },
 
@@ -869,7 +872,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
     fontWeight: "600",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
 
   list: {
@@ -898,7 +901,7 @@ const styles = StyleSheet.create({
   },
 
   imageWrapper: {
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F7F3EC",
     height: 110,
     justifyContent: "center",
     alignItems: "center",
@@ -970,7 +973,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
 
   originalPriceSmall: {
@@ -982,7 +985,7 @@ const styles = StyleSheet.create({
 
   addBtn: {
     borderWidth: 1.5,
-    borderColor: "#2E7D32",
+    borderColor: "#C2410C",
     borderRadius: 10,
     width: 52,
     height: 32,
@@ -992,8 +995,8 @@ const styles = StyleSheet.create({
   },
 
   addBtnActive: {
-    backgroundColor: "#2E7D32",
-    borderColor: "#2E7D32",
+    backgroundColor: "#C2410C",
+    borderColor: "#C2410C",
   },
 
   addBtnAdding: {
@@ -1006,7 +1009,7 @@ const styles = StyleSheet.create({
   },
 
   addText: {
-    color: "#2E7D32",
+    color: "#C2410C",
     fontWeight: "800",
     fontSize: 11,
   },
@@ -1071,10 +1074,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingHorizontal: 28,
     paddingVertical: 14,
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     borderRadius: 12,
     elevation: 4,
-    shadowColor: "#2E7D32",
+    shadowColor: "#C2410C",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,

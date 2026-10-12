@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { router, useLocalSearchParams } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
@@ -244,7 +243,7 @@ function TrackingStep({
               name={step.icon}
               size={14}
               color={
-                isCompleted ? "#1E7A35" : isActive ? "#F59E0B" : "#9CA3AF"
+                isCompleted ? "#C2410C" : isActive ? "#F59E0B" : "#9CA3AF"
               }
             />
           </View>
@@ -312,7 +311,7 @@ function StatCard({
         },
       ]}
     >
-      <Ionicons name={icon as any} size={18} color="#1E7A35" />
+      <Ionicons name={icon as any} size={18} color="#C2410C" />
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </Animated.View>
@@ -342,6 +341,7 @@ export default function OrderTrackingScreen() {
     totalItems?: number;
     grandTotal?: number;
     deliveryHandoverCode?: string;
+    deliverySlot?: { date?: string; slot?: string };
   } | null>(null);
   const [orderLoading, setOrderLoading] = useState(false);
 
@@ -399,9 +399,7 @@ export default function OrderTrackingScreen() {
     normalizedStatus === "cancelled" || normalizedStatus === "returned";
 
   const orderDate = formatDate(createdAt);
-  const expectedDate = formatDate(
-    new Date(new Date(createdAt).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()
-  );
+  const expectedDate = liveOrder?.deliverySlot?.slot || "15–20 min";
 
   const progressPercent =
     ((currentStepIndex + 1) / TRACKING_STEPS.length) * 100;
@@ -447,7 +445,7 @@ export default function OrderTrackingScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F0F7F1" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF8F4" />
 
       {/* ── Header ── */}
       <Animated.View
@@ -474,7 +472,7 @@ export default function OrderTrackingScreen() {
           style={styles.backBtn}
         >
           <View style={styles.iconButton}>
-            <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+            <Ionicons name="arrow-back" size={24} color="#9A3412" />
           </View>
         </TouchableOpacity>
 
@@ -489,7 +487,7 @@ export default function OrderTrackingScreen() {
 
         <TouchableOpacity onPress={() => router.push("/cart")}>
           <View style={styles.iconButton}>
-            <Ionicons name="cart-outline" size={24} color="#1B5E20" />
+            <Ionicons name="cart-outline" size={24} color="#9A3412" />
             {items.length > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{items.length}</Text>
@@ -530,7 +528,7 @@ export default function OrderTrackingScreen() {
               <Text
                 style={[
                   styles.heroStatus,
-                  isDelivered && { color: "#1B5E20" },
+                  isDelivered && { color: "#9A3412" },
                   isCancelled && { color: "#B42318" },
                 ]}
               >
@@ -554,7 +552,7 @@ export default function OrderTrackingScreen() {
                 }
                 size={22}
                 color={
-                  isDelivered ? "#1B5E20" : isCancelled ? "#B42318" : "#F59E0B"
+                  isDelivered ? "#9A3412" : isCancelled ? "#B42318" : "#F59E0B"
                 }
               />
             </View>
@@ -616,19 +614,19 @@ export default function OrderTrackingScreen() {
               </View>
             </View>
             <View style={styles.etaBannerRight}>
-              <Text style={styles.etaDays}>~1-3 days</Text>
+              <Text style={styles.etaDays}>15–20 min</Text>
             </View>
           </View>
         )}
 
         {isDelivered && (
           <View style={[styles.etaBanner, styles.deliveredBanner]}>
-            <Ionicons name="checkmark-done-circle" size={22} color="#1B5E20" />
+            <Ionicons name="checkmark-done-circle" size={22} color="#9A3412" />
             <View style={{ marginLeft: 10 }}>
-              <Text style={[styles.etaSmall, { color: "#2E7D32" }]}>
+              <Text style={[styles.etaSmall, { color: "#C2410C" }]}>
                 Delivered Successfully
               </Text>
-              <Text style={[styles.etaBig, { color: "#1B5E20" }]}>
+              <Text style={[styles.etaBig, { color: "#9A3412" }]}>
                 Thank you for your order!
               </Text>
             </View>
@@ -659,9 +657,9 @@ export default function OrderTrackingScreen() {
             }}
           >
             {invoiceBusy ? (
-              <ActivityIndicator color="#1B5E20" size="small" />
+              <ActivityIndicator color="#9A3412" size="small" />
             ) : (
-              <Ionicons name="document-text-outline" size={20} color="#1B5E20" />
+              <Ionicons name="document-text-outline" size={20} color="#9A3412" />
             )}
             <Text style={styles.invoiceBtnText}>
               {invoiceBusy ? "Preparing…" : "Download invoice (PDF)"}
@@ -685,7 +683,7 @@ export default function OrderTrackingScreen() {
 
         {orderLoading && params.orderId && effectiveUserId ? (
           <View style={styles.handoverLoading}>
-            <ActivityIndicator color="#1E7A35" />
+            <ActivityIndicator color="#C2410C" />
             <Text style={styles.handoverLoadingText}>Updating order…</Text>
           </View>
         ) : null}
@@ -737,7 +735,7 @@ export default function OrderTrackingScreen() {
             ]}
             onPress={() => Haptics.selectionAsync()}
           >
-            <Ionicons name="headset-outline" size={18} color="#1E7A35" />
+            <Ionicons name="headset-outline" size={18} color="#C2410C" />
             <Text style={styles.actionBtnOutlineText}>Support</Text>
           </Pressable>
 
@@ -765,7 +763,7 @@ export default function OrderTrackingScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F0F7F1",
+    backgroundColor: "#FFF8F4",
   },
 
   // Header (aligned with `all-products`)
@@ -777,9 +775,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#E8F5E9",
+    borderBottomColor: "#FFF1E8",
     elevation: 4,
-    shadowColor: "#1B5E20",
+    shadowColor: "#9A3412",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -802,20 +800,20 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
     letterSpacing: 0.3,
   },
   headerOrderBadge: {
     marginTop: 2,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     borderRadius: 10,
   },
   headerOrderBadgeText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#2E7D32",
+    color: "#C2410C",
     textTransform: "uppercase",
   },
   badge: {
@@ -893,7 +891,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "900",
     letterSpacing: 8,
-    color: "#1B5E20",
+    color: "#9A3412",
     textAlign: "center",
   },
 
@@ -904,7 +902,7 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 12,
     overflow: "hidden",
-    shadowColor: "#1B5E20",
+    shadowColor: "#9A3412",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -948,7 +946,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   statusOrbSuccess: {
-    backgroundColor: "#D1FAE5",
+    backgroundColor: "#FFEDD5",
   },
   statusOrbDanger: {
     backgroundColor: "#FEE2E2",
@@ -968,7 +966,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   progressBarFillSuccess: {
-    backgroundColor: "#1E7A35",
+    backgroundColor: "#C2410C",
   },
   progressBarFillDanger: {
     backgroundColor: "#EF4444",
@@ -1053,7 +1051,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   deliveredBanner: {
-    backgroundColor: "#D1FAE5",
+    backgroundColor: "#FFEDD5",
     borderColor: "#6EE7B7",
   },
   cancelledBanner: {
@@ -1076,7 +1074,7 @@ const styles = StyleSheet.create({
   invoiceBtnText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#14532D",
+    color: "#7C2D12",
   },
 
   // Timeline Card
@@ -1085,7 +1083,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 18,
     marginBottom: 14,
-    shadowColor: "#1B5E20",
+    shadowColor: "#9A3412",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -1121,8 +1119,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dotOuterCompleted: {
-    borderColor: "#1E7A35",
-    backgroundColor: "#1E7A35",
+    borderColor: "#C2410C",
+    backgroundColor: "#C2410C",
   },
   dotOuterActive: {
     borderColor: "#F59E0B",
@@ -1146,12 +1144,12 @@ const styles = StyleSheet.create({
   },
   lineFilledFull: {
     flex: 1,
-    backgroundColor: "#1E7A35",
+    backgroundColor: "#C2410C",
     width: 2,
     alignSelf: "center",
   },
   lineFilled: {
-    backgroundColor: "#1E7A35",
+    backgroundColor: "#C2410C",
     width: 2,
     alignSelf: "center",
   },
@@ -1181,7 +1179,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   iconBadgeCompleted: {
-    backgroundColor: "#D1FAE5",
+    backgroundColor: "#FFEDD5",
   },
   iconBadgeActive: {
     backgroundColor: "#FEF3C7",
@@ -1248,14 +1246,14 @@ const styles = StyleSheet.create({
   },
   actionBtnOutline: {
     borderWidth: 2,
-    borderColor: "#1E7A35",
+    borderColor: "#C2410C",
     backgroundColor: "#fff",
   },
   actionBtnFilled: {
-    backgroundColor: "#1E7A35",
+    backgroundColor: "#C2410C",
   },
   actionBtnOutlineText: {
-    color: "#1E7A35",
+    color: "#C2410C",
     fontWeight: "700",
     fontSize: 14,
   },

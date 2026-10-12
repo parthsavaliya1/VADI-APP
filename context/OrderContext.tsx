@@ -27,7 +27,7 @@ type PlaceOrderPayload = {
     pincode: string;
     landmark?: string;
   };
-  paymentMethod: "cod" | "upi" | "card" | "wallet";
+  paymentMethod: "cod" | "upi" | "card" | "wallet" | "balance";
   paymentDetails?: {
     razorpayPaymentId: string;
     razorpayOrderId: string;
@@ -89,7 +89,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       throw new Error("User not authenticated");
     }
 
-    const res = await API.post("/orders", {
+    let res;
+    try {
+      res = await API.post("/orders", {
       userId: user._id,
       addressId: address._id,
       addressSnapshot: {
@@ -107,6 +109,12 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       deliveryFee,
       notes,
     });
+
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || error.message || "Failed to place order",
+      );
+    }
 
     if (!res.data?.success) {
       throw new Error(res.data?.message || "Failed to place order");

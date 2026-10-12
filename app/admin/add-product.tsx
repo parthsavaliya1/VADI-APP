@@ -356,7 +356,7 @@ export default function AddProductScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerIcon}>
-              <Ionicons name="add-circle" size={32} color="#2E7D32" />
+              <Ionicons name="add-circle" size={32} color="#C2410C" />
             </View>
             <Text style={styles.title}>Add New Product</Text>
             <Text style={styles.subtitle}>Fill in the details below</Text>
@@ -369,7 +369,7 @@ export default function AddProductScreen() {
             {/* Product Name */}
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
-                <Ionicons name="cube-outline" size={16} color="#2E7D32" />
+                <Ionicons name="cube-outline" size={16} color="#C2410C" />
                 <Text style={styles.label}>Product Name *</Text>
               </View>
               <TextInput
@@ -385,7 +385,7 @@ export default function AddProductScreen() {
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <View style={styles.labelRow}>
-                  <Ionicons name="cash-outline" size={16} color="#2E7D32" />
+                  <Ionicons name="cash-outline" size={16} color="#C2410C" />
                   <Text style={styles.label}>Price *</Text>
                 </View>
                 <View style={styles.priceInput}>
@@ -403,7 +403,7 @@ export default function AddProductScreen() {
 
               <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
                 <View style={styles.labelRow}>
-                  <Ionicons name="scale-outline" size={16} color="#2E7D32" />
+                  <Ionicons name="scale-outline" size={16} color="#C2410C" />
                   <Text style={styles.label}>Unit *</Text>
                 </View>
                 <TextInput
@@ -420,7 +420,7 @@ export default function AddProductScreen() {
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <View style={styles.labelRow}>
-                  <Ionicons name="layers-outline" size={16} color="#2E7D32" />
+                  <Ionicons name="layers-outline" size={16} color="#C2410C" />
                   <Text style={styles.label}>Stock *</Text>
                 </View>
                 <TextInput
@@ -438,7 +438,7 @@ export default function AddProductScreen() {
 
               <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
                 <View style={styles.labelRow}>
-                  <Ionicons name="pricetag-outline" size={16} color="#2E7D32" />
+                  <Ionicons name="pricetag-outline" size={16} color="#C2410C" />
                   <Text style={styles.label}>Discount %</Text>
                 </View>
                 <TextInput
@@ -455,13 +455,13 @@ export default function AddProductScreen() {
             {/* Category Dropdown */}
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
-                <Ionicons name="grid-outline" size={16} color="#2E7D32" />
+                <Ionicons name="grid-outline" size={16} color="#C2410C" />
                 <Text style={styles.label}>Category *</Text>
               </View>
               <View style={styles.pickerWrapper}>
                 {loadingCategories ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator color="#2E7D32" size="small" />
+                    <ActivityIndicator color="#C2410C" size="small" />
                     <Text style={styles.loadingText}>
                       Loading categories...
                     </Text>
@@ -501,7 +501,7 @@ export default function AddProductScreen() {
               </View>
               {category && (
                 <View style={styles.selectedBadge}>
-                  <Ionicons name="checkmark-circle" size={16} color="#2E7D32" />
+                  <Ionicons name="checkmark-circle" size={16} color="#C2410C" />
                   <Text style={styles.selectedText}>
                     {
                       categories.find((c) => (c.slug || c._id) === category)
@@ -517,7 +517,7 @@ export default function AddProductScreen() {
             <View style={styles.divider} />
 
             <View style={styles.sectionHeader}>
-              <Ionicons name="star-outline" size={18} color="#2E7D32" />
+              <Ionicons name="star-outline" size={18} color="#C2410C" />
               <Text style={styles.sectionTitle}>Feature Options</Text>
             </View>
 
@@ -536,7 +536,7 @@ export default function AddProductScreen() {
                 value={bestDeal}
                 onValueChange={setBestDeal}
                 trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
-                thumbColor={bestDeal ? "#2E7D32" : "#f4f3f4"}
+                thumbColor={bestDeal ? "#C2410C" : "#f4f3f4"}
               />
             </View>
 
@@ -555,7 +555,7 @@ export default function AddProductScreen() {
                 value={trending}
                 onValueChange={setTrending}
                 trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
-                thumbColor={trending ? "#2E7D32" : "#f4f3f4"}
+                thumbColor={trending ? "#C2410C" : "#f4f3f4"}
               />
             </View>
 
@@ -574,7 +574,7 @@ export default function AddProductScreen() {
                 value={featured}
                 onValueChange={setFeatured}
                 trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
-                thumbColor={featured ? "#2E7D32" : "#f4f3f4"}
+                thumbColor={featured ? "#C2410C" : "#f4f3f4"}
               />
             </View>
 
@@ -583,7 +583,7 @@ export default function AddProductScreen() {
             {/* Image Upload */}
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
-                <Ionicons name="image-outline" size={16} color="#2E7D32" />
+                <Ionicons name="image-outline" size={16} color="#C2410C" />
                 <Text style={styles.label}>Product Image</Text>
                 <Text style={styles.optional}>(Optional)</Text>
               </View>
@@ -597,7 +597,7 @@ export default function AddProductScreen() {
                   <Ionicons
                     name="cloud-upload-outline"
                     size={40}
-                    color="#2E7D32"
+                    color="#C2410C"
                   />
                   <Text style={styles.imageBtnText}>Tap to Upload Image</Text>
                   <Text style={styles.imageBtnSubtext}>JPG, PNG up to 5MB</Text>
@@ -615,7 +615,7 @@ export default function AddProductScreen() {
                     style={styles.changeImageBtn}
                     onPress={pickImage}
                   >
-                    <Ionicons name="refresh" size={16} color="#2E7D32" />
+                    <Ionicons name="refresh" size={16} color="#C2410C" />
                     <Text style={styles.changeImageText}>Change</Text>
                   </TouchableOpacity>
                 </View>
@@ -743,7 +743,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
     marginBottom: 4,
   },
   subtitle: {
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
   currencySymbol: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
   row: {
     flexDirection: "row",
@@ -842,7 +842,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   retryText: {
-    color: "#2E7D32",
+    color: "#C2410C",
     fontSize: 14,
     fontWeight: "600",
     marginTop: 8,
@@ -850,14 +850,14 @@ const styles = StyleSheet.create({
   selectedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     marginTop: 8,
   },
   selectedText: {
-    color: "#2E7D32",
+    color: "#C2410C",
     fontSize: 13,
     fontWeight: "600",
     marginLeft: 6,
@@ -911,7 +911,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   summaryCard: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     borderRadius: 16,
     padding: 16,
     marginTop: 16,
@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#2E7D32",
+    color: "#C2410C",
     marginBottom: 8,
   },
   summaryRow: {
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
   summaryBadgeText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
   imageBtn: {
     backgroundColor: "#F1F8F4",
@@ -944,13 +944,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#C8E6C9",
+    borderColor: "#F5D0C0",
     borderStyle: "dashed",
   },
   imageBtnText: {
     marginTop: 12,
     fontWeight: "700",
-    color: "#2E7D32",
+    color: "#C2410C",
     fontSize: 16,
   },
   imageBtnSubtext: {
@@ -991,7 +991,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   changeImageText: {
-    color: "#2E7D32",
+    color: "#C2410C",
     fontWeight: "700",
     marginLeft: 4,
     fontSize: 14,
@@ -1008,7 +1008,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: "100%",
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
   },
   progressText: {
     textAlign: "center",
@@ -1021,13 +1021,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   saveBtn: {
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingVertical: 18,
     borderRadius: 16,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
-    shadowColor: "#2E7D32",
+    shadowColor: "#C2410C",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

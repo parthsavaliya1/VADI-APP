@@ -502,7 +502,7 @@ export default function AddAddressScreen() {
         {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+            <Ionicons name="arrow-back" size={24} color="#9A3412" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
             {isEditing ? "Edit Address" : "Add New Address"}
@@ -533,7 +533,7 @@ export default function AddAddressScreen() {
                           : "location"
                     }
                     size={18}
-                    color={type === t ? "#fff" : "#2E7D32"}
+                    color={type === t ? "#fff" : "#C2410C"}
                   />
                   <Text
                     style={[
@@ -611,22 +611,22 @@ export default function AddAddressScreen() {
               style={styles.mapCardTouch}
             >
               <LinearGradient
-                colors={["#E8F5E9", "#FFFFFF"]}
+                colors={["#FFF1E8", "#FFFFFF"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.mapCard}
               >
                 <View style={styles.mapCardIconWrap}>
                   {geoLoading ? (
-                    <ActivityIndicator size="small" color="#1B5E20" />
+                    <ActivityIndicator size="small" color="#9A3412" />
                   ) : (
-                    <Ionicons name="map" size={26} color="#1B5E20" />
+                    <Ionicons name="map" size={26} color="#9A3412" />
                   )}
                 </View>
                 <View style={styles.mapCardMid}>
                   <View style={styles.mapCardBadgeRow}>
                     <View style={styles.mapCityPill}>
-                      <Ionicons name="location" size={12} color="#1B5E20" />
+                      <Ionicons name="location" size={12} color="#9A3412" />
                       <Text style={styles.mapCityPillText}>{DELIVERY_CITY}</Text>
                     </View>
                     <View style={styles.mapGooglePill}>
@@ -640,7 +640,7 @@ export default function AddAddressScreen() {
                   </Text>
                 </View>
                 <View style={styles.mapCardArrow}>
-                  <Ionicons name="chevron-forward-circle" size={36} color="#2E7D32" />
+                  <Ionicons name="chevron-forward-circle" size={36} color="#C2410C" />
                 </View>
               </LinearGradient>
             </TouchableOpacity>
@@ -659,7 +659,7 @@ export default function AddAddressScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <View style={styles.mapLinkPill}>
-                    <Ionicons name="map-outline" size={14} color="#1B5E20" />
+                    <Ionicons name="map-outline" size={14} color="#9A3412" />
                     <Text style={styles.mapLinkPillText}>Map</Text>
                   </View>
                 </TouchableOpacity>
@@ -697,7 +697,7 @@ export default function AddAddressScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <View style={styles.mapLinkPill}>
-                    <Ionicons name="map-outline" size={14} color="#1B5E20" />
+                    <Ionicons name="map-outline" size={14} color="#9A3412" />
                     <Text style={styles.mapLinkPillText}>Map</Text>
                   </View>
                 </TouchableOpacity>
@@ -790,7 +790,7 @@ export default function AddAddressScreen() {
                   isDefault ? "checkmark-circle" : "checkmark-circle-outline"
                 }
                 size={24}
-                color={isDefault ? "#2E7D32" : "#999"}
+                color={isDefault ? "#C2410C" : "#999"}
               />
               <View style={styles.defaultToggleText}>
                 <Text style={styles.defaultToggleTitle}>
@@ -884,7 +884,7 @@ export default function AddAddressScreen() {
               </MapView>
               {!mapReady && (
                 <View style={styles.mapLoadingOverlay}>
-                  <ActivityIndicator size="large" color="#2E7D32" />
+                  <ActivityIndicator size="large" color="#C2410C" />
                 </View>
               )}
             </View>
@@ -918,7 +918,7 @@ export default function AddAddressScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F7F3EC",
   },
   container: {
     flex: 1,
@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
   },
   content: {
     flex: 1,
@@ -963,19 +963,19 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: "#fff",
     borderWidth: 1.5,
-    borderColor: "#2E7D32",
+    borderColor: "#C2410C",
     borderRadius: 12,
     paddingVertical: 12,
     elevation: 2,
   },
   typeButtonActive: {
-    backgroundColor: "#2E7D32",
-    borderColor: "#2E7D32",
+    backgroundColor: "#C2410C",
+    borderColor: "#C2410C",
   },
   typeText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
   typeTextActive: {
     color: "#fff",
@@ -1053,7 +1053,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#f0f0f0",
   },
   saveButton: {
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
@@ -1108,7 +1108,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderRadius: 16,
     elevation: 4,
-    shadowColor: "#1B5E20",
+    shadowColor: "#9A3412",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -1154,7 +1154,7 @@ const styles = StyleSheet.create({
   mapCityPillText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
     letterSpacing: 0.3,
   },
   mapGooglePill: {
@@ -1171,7 +1171,7 @@ const styles = StyleSheet.create({
   mapCardTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
     marginBottom: 4,
   },
   mapCardSubtitle: {
@@ -1194,11 +1194,11 @@ const styles = StyleSheet.create({
   mapLinkPillText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#1B5E20",
+    color: "#9A3412",
   },
   mapModalRoot: {
     flex: 1,
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F7F3EC",
   },
   mapModalSafe: {
     flex: 1,
@@ -1228,11 +1228,11 @@ const styles = StyleSheet.create({
   mapModalTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
     textAlign: "center",
   },
   mapModalZonePill: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 12,
@@ -1240,7 +1240,7 @@ const styles = StyleSheet.create({
   mapModalZonePillText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
   mapHint: {
     fontSize: 13,
@@ -1273,7 +1273,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     borderRadius: 12,
     paddingVertical: 16,
   },

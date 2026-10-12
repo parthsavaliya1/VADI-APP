@@ -263,7 +263,7 @@ export default function VerifyOtpScreen() {
                     <Ionicons
                       name="checkmark-circle"
                       size={26}
-                      color="#4CAF50"
+                      color="#B56A45"
                       style={styles.otpCompleteIcon}
                     />
                   )}
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     ...Platform.select({
       ios: {
-        shadowColor: "#2E7D32",
+        shadowColor: "#C2410C",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.28,
         shadowRadius: 10,

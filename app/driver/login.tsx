@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
     marginBottom: 8,
   },
   sub: { fontSize: 14, color: "#4E7C50", marginBottom: 24, lineHeight: 20 },
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cta: {
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   ctaText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   sentTo: { fontSize: 13, color: "#374151", marginBottom: 12 },
   link: { marginTop: 16, alignSelf: "center" },
-  linkText: { color: "#2E7D32", fontWeight: "600" },
+  linkText: { color: "#C2410C", fontWeight: "600" },
   err: { color: "#B42318", marginTop: 12, textAlign: "center" },
   back: { marginTop: 32, alignSelf: "flex-start" },
   backText: { color: "#6B7280", fontSize: 15 },

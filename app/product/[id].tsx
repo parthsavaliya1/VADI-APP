@@ -145,11 +145,11 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 18,
-    color: "#2E7D32",
+    color: "#C2410C",
     marginBottom: 20,
   },
   addBtn: {
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingVertical: 14,
     borderRadius: 10,
     marginTop: 20,

@@ -27,7 +27,7 @@ function getInitials(name?: string) {
 
 /* ── Avatar colour from name ── */
 const AVATAR_COLORS = [
-  ["#1B5E20", "#A5D6A7"],
+  ["#9A3412", "#A5D6A7"],
   ["#1A237E", "#90CAF9"],
   ["#4A148C", "#CE93D8"],
   ["#B71C1C", "#EF9A9A"],
@@ -75,7 +75,7 @@ function BenefitRow({
     <Animated.View
       style={[styles.benefitRow, { opacity, transform: [{ translateX }] }]}
     >
-      <Ionicons name={icon} size={20} color="#2E7D32" />
+      <Ionicons name={icon} size={20} color="#C2410C" />
       <Text style={styles.benefitText}>{text}</Text>
     </Animated.View>
   );
@@ -119,7 +119,7 @@ function GuestProfileView() {
           {/* Icon */}
           <View style={styles.guestIconWrap}>
             <View style={styles.guestIconCircle}>
-              <Ionicons name="person-outline" size={64} color="#2E7D32" />
+              <Ionicons name="person-outline" size={64} color="#C2410C" />
             </View>
           </View>
 
@@ -264,7 +264,7 @@ function MenuRow({
           <Ionicons
             name={icon}
             size={20}
-            color={accent ? "#E65100" : "#2E7D32"}
+            color={accent ? "#E65100" : "#C2410C"}
           />
         </View>
         <View style={styles.menuTextWrap}>
@@ -475,7 +475,7 @@ export default function ProfileScreen() {
 
           <Text style={styles.heroName}>{user?.name || "VADI Customer"}</Text>
           <View style={styles.heroPill}>
-            <Ionicons name="call" size={12} color="#2E7D32" />
+            <Ionicons name="call" size={12} color="#C2410C" />
             <Text style={styles.heroPillText}>
               {user?.phone || "+91 XXXXXXXXXX"}
             </Text>
@@ -488,7 +488,7 @@ export default function ProfileScreen() {
             value={totalOrders}
             label="Total Orders"
             icon="bag-outline"
-            color="#2E7D32"
+            color="#C2410C"
             delay={200}
           />
           <StatTile
@@ -510,6 +510,22 @@ export default function ProfileScreen() {
         {/* ── ACCOUNT SECTION ── */}
         <Section title="Account">
           <MenuRow
+            icon="wallet-outline"
+            label="Wallet"
+            subtitle="Add money and pay from your balance"
+            onPress={() => requireAuth(() => router.push("/wallet"))}
+            delay={220}
+          />
+          <View style={styles.rowDivider} />
+          <MenuRow
+            icon="person-outline"
+            label="Edit profile"
+            subtitle="Update your name"
+            onPress={() => requireAuth(() => router.push("/edit-profile"))}
+            delay={250}
+          />
+          <View style={styles.rowDivider} />
+          <MenuRow
             icon="receipt-outline"
             label="My Orders"
             subtitle="Track & view your orders"
@@ -523,6 +539,14 @@ export default function ProfileScreen() {
             subtitle="Manage delivery locations"
             onPress={() => requireAuth(() => router.push("/my-addresses"))}
             delay={310}
+          />
+          <View style={styles.rowDivider} />
+          <MenuRow
+            icon="storefront-outline"
+            label="Sell on VADI"
+            subtitle="Create a shop and add products"
+            onPress={() => requireAuth(() => router.push("/seller"))}
+            delay={340}
           />
           <View style={styles.rowDivider} />
           <MenuRow
@@ -590,7 +614,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F0F4F0",
+    backgroundColor: "#FFF8F4",
   },
   scroll: {
     paddingBottom: 20,
@@ -612,7 +636,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     top: -80,
     right: -60,
   },
@@ -630,7 +654,7 @@ const styles = StyleSheet.create({
     height: 92,
     borderRadius: 46,
     borderWidth: 3,
-    borderColor: "#2E7D32",
+    borderColor: "#C2410C",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
@@ -655,7 +679,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#B56A45",
     borderWidth: 2,
     borderColor: "#fff",
   },
@@ -670,7 +694,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
@@ -678,7 +702,7 @@ const styles = StyleSheet.create({
   heroPillText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#2E7D32",
+    color: "#C2410C",
   },
 
   /* ── Stats ── */
@@ -762,7 +786,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -789,7 +813,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   badge: {
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
@@ -846,11 +870,11 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
-    borderColor: "#2E7D32",
+    borderColor: "#C2410C",
   },
   guestTitle: {
     fontSize: 28,
@@ -887,12 +911,12 @@ const styles = StyleSheet.create({
   },
   loginBtn: {
     width: "100%",
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
     marginBottom: 12,
-    shadowColor: "#2E7D32",
+    shadowColor: "#C2410C",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -908,14 +932,14 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "#fff",
     borderWidth: 2,
-    borderColor: "#2E7D32",
+    borderColor: "#C2410C",
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
     marginBottom: 20,
   },
   signupBtnText: {
-    color: "#2E7D32",
+    color: "#C2410C",
     fontSize: 16,
     fontWeight: "800",
     letterSpacing: 0.5,

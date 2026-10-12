@@ -7,7 +7,6 @@
     "icon": "./assets/images/vadi-brand-logo.png",
     "scheme": "vadiapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vadi.app",
@@ -23,7 +22,6 @@
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/favicon.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.vadi.app"
     },

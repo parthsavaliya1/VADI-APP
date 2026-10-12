@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CartItem, useCart } from "../context/CartContext";
+import { FREE_DELIVERY_ABOVE, quoteDeliveryFee } from "../utils/deliveryQuote";
 
 export default function CartScreen() {
   const {
@@ -64,7 +65,7 @@ export default function CartScreen() {
   };
 
   const total = getCartTotal();
-  const deliveryFee = total > 500 ? 0 : 40;
+  const deliveryFee = quoteDeliveryFee(total);
   const discount = total > 1000 ? total * 0.1 : 0;
   const finalTotal = total + deliveryFee - discount;
   const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
@@ -78,7 +79,7 @@ export default function CartScreen() {
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <Ionicons name="arrow-back" size={22} color="#1B5E20" />
+            <Ionicons name="arrow-back" size={22} color="#9A3412" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>My Cart</Text>
           <View style={{ width: 40 }} />
@@ -86,7 +87,7 @@ export default function CartScreen() {
 
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
-            <Ionicons name="cart-outline" size={64} color="#C8E6C9" />
+            <Ionicons name="cart-outline" size={64} color="#F5D0C0" />
           </View>
           <Text style={styles.emptyTitle}>Your cart is empty</Text>
           <Text style={styles.emptySubtitle}>
@@ -110,7 +111,7 @@ export default function CartScreen() {
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color="#1B5E20" />
+          <Ionicons name="arrow-back" size={22} color="#9A3412" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>My Cart</Text>
@@ -122,14 +123,14 @@ export default function CartScreen() {
       </View>
 
       {/* FREE DELIVERY PROGRESS BANNER */}
-      {total <= 500 ? (
+      {total <= FREE_DELIVERY_ABOVE ? (
         <View style={styles.progressBanner}>
-          <Ionicons name="bicycle-outline" size={18} color="#2E7D32" />
+          <Ionicons name="bicycle-outline" size={18} color="#C2410C" />
           <View style={styles.progressTextGroup}>
             <Text style={styles.progressLabel}>
               Add{" "}
               <Text style={styles.progressHighlight}>
-                ₹{(500 - total).toFixed(0)}
+                ₹{(FREE_DELIVERY_ABOVE - total).toFixed(0)}
               </Text>{" "}
               more for free delivery!
             </Text>
@@ -137,7 +138,7 @@ export default function CartScreen() {
               <View
                 style={[
                   styles.progressBarFill,
-                  { width: `${Math.min((total / 500) * 100, 100)}%` as any },
+                  { width: `${Math.min((total / FREE_DELIVERY_ABOVE) * 100, 100)}%` as any },
                 ]}
               />
             </View>
@@ -145,7 +146,7 @@ export default function CartScreen() {
         </View>
       ) : (
         <View style={[styles.progressBanner, styles.progressBannerSuccess]}>
-          <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
+          <Ionicons name="checkmark-circle" size={18} color="#C2410C" />
           <Text style={styles.progressLabel}>
             🎉 You've unlocked{" "}
             <Text style={styles.progressHighlight}>free delivery!</Text>
@@ -204,7 +205,7 @@ export default function CartScreen() {
                     <Ionicons
                       name={item.qty === 1 ? "trash-outline" : "remove"}
                       size={15}
-                      color={item.qty === 1 ? "#F44336" : "#2E7D32"}
+                      color={item.qty === 1 ? "#F44336" : "#C2410C"}
                     />
                   </TouchableOpacity>
                   <Text style={styles.qtyText}>{item.qty}</Text>
@@ -212,7 +213,7 @@ export default function CartScreen() {
                     style={styles.qtyBtn}
                     onPress={() => incrementQty(item)}
                   >
-                    <Ionicons name="add" size={15} color="#2E7D32" />
+                    <Ionicons name="add" size={15} color="#C2410C" />
                   </TouchableOpacity>
                 </View>
 
@@ -232,7 +233,7 @@ export default function CartScreen() {
       {/* BILL SUMMARY */}
       <View style={styles.billContainer}>
         <View style={styles.billTitleRow}>
-          <Ionicons name="receipt-outline" size={15} color="#1B5E20" />
+          <Ionicons name="receipt-outline" size={15} color="#9A3412" />
           <Text style={styles.billTitle}>Bill Summary</Text>
         </View>
 
@@ -255,14 +256,14 @@ export default function CartScreen() {
         <View style={styles.billRow}>
           <View style={styles.deliveryRow}>
             <Text style={styles.billLabel}>Delivery Fee</Text>
-            {total > 500 && (
+            {total > FREE_DELIVERY_ABOVE && (
               <View style={styles.freeBadge}>
                 <Text style={styles.freeText}>FREE</Text>
               </View>
             )}
           </View>
-          <Text style={[styles.billValue, total > 500 && styles.freePrice]}>
-            {total > 500 ? "₹0.00" : `₹${deliveryFee.toFixed(2)}`}
+          <Text style={[styles.billValue, deliveryFee === 0 && styles.freePrice]}>
+            {deliveryFee === 0 ? "₹0.00" : `₹${deliveryFee.toFixed(2)}`}
           </Text>
         </View>
 
@@ -275,7 +276,7 @@ export default function CartScreen() {
 
         {discount > 0 && (
           <View style={styles.savingsContainer}>
-            <Ionicons name="gift-outline" size={15} color="#4CAF50" />
+            <Ionicons name="gift-outline" size={15} color="#B56A45" />
             <Text style={styles.savingsText}>
               You saved ₹{discount.toFixed(2)} on this order!
             </Text>
@@ -311,7 +312,7 @@ export default function CartScreen() {
 
 const styles = StyleSheet.create({
   // ── original background preserved ──────────────────────────────────────────
-  safe: { flex: 1, backgroundColor: "#F5F7F2" },
+  safe: { flex: 1, backgroundColor: "#F7F3EC" },
 
   /* HEADER */
   header: {
@@ -333,12 +334,12 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     justifyContent: "center",
     alignItems: "center",
   },
   headerCenter: { flex: 1, alignItems: "center" },
-  headerTitle: { fontSize: 17, fontWeight: "800", color: "#1B5E20" },
+  headerTitle: { fontSize: 17, fontWeight: "800", color: "#9A3412" },
   headerSubtitle: {
     fontSize: 11,
     color: "#888",
@@ -359,26 +360,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#C8E6C9",
+    borderBottomColor: "#F5D0C0",
   },
   progressBannerSuccess: {
     backgroundColor: "#F1F8E9",
     borderBottomColor: "#DCEDC8",
   },
   progressTextGroup: { flex: 1, gap: 5 },
-  progressLabel: { fontSize: 12, color: "#2E7D32", fontWeight: "600" },
-  progressHighlight: { fontWeight: "800", color: "#1B5E20" },
+  progressLabel: { fontSize: 12, color: "#C2410C", fontWeight: "600" },
+  progressHighlight: { fontWeight: "800", color: "#9A3412" },
   progressBarBg: {
     height: 4,
-    backgroundColor: "#C8E6C9",
+    backgroundColor: "#F5D0C0",
     borderRadius: 4,
     overflow: "hidden",
   },
-  progressBarFill: { height: 4, backgroundColor: "#2E7D32", borderRadius: 4 },
+  progressBarFill: { height: 4, backgroundColor: "#C2410C", borderRadius: 4 },
 
   /* LIST */
   listContent: { padding: 14, paddingBottom: 420 },
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 12,
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F7F3EC",
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
@@ -423,13 +424,13 @@ const styles = StyleSheet.create({
 
   variantChip: {
     alignSelf: "flex-start",
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     borderRadius: 7,
     paddingHorizontal: 8,
     paddingVertical: 3,
     marginTop: 4,
   },
-  variantChipText: { fontSize: 11, color: "#2E7D32", fontWeight: "600" },
+  variantChipText: { fontSize: 11, color: "#C2410C", fontWeight: "600" },
 
   itemBottomRow: {
     flexDirection: "row",
@@ -442,17 +443,17 @@ const styles = StyleSheet.create({
   qtyContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F7F3EC",
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: "#C8E6C9",
+    borderColor: "#F5D0C0",
     overflow: "hidden",
   },
   qtyBtn: { paddingHorizontal: 10, paddingVertical: 7 },
   qtyText: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#2E7D32",
+    color: "#C2410C",
     minWidth: 22,
     textAlign: "center",
   },
@@ -460,7 +461,7 @@ const styles = StyleSheet.create({
   /* PRICE */
   priceGroup: { alignItems: "flex-end" },
   itemUnitPrice: { fontSize: 11, color: "#999", fontWeight: "500" },
-  itemTotal: { fontSize: 16, fontWeight: "800", color: "#2E7D32" },
+  itemTotal: { fontSize: 16, fontWeight: "800", color: "#C2410C" },
 
   /* BILL */
   billContainer: {
@@ -483,7 +484,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 12,
   },
-  billTitle: { fontSize: 15, fontWeight: "800", color: "#1B5E20" },
+  billTitle: { fontSize: 15, fontWeight: "800", color: "#9A3412" },
   billRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -492,35 +493,35 @@ const styles = StyleSheet.create({
   },
   billLabel: { fontSize: 13, color: "#666" },
   billValue: { fontSize: 13, fontWeight: "600", color: "#222" },
-  discountLabel: { color: "#4CAF50" },
-  discountValue: { color: "#4CAF50" },
+  discountLabel: { color: "#B56A45" },
+  discountValue: { color: "#B56A45" },
   deliveryRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   freeBadge: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
   },
-  freeText: { fontSize: 10, fontWeight: "700", color: "#4CAF50" },
-  freePrice: { color: "#4CAF50" },
+  freeText: { fontSize: 10, fontWeight: "700", color: "#B56A45" },
+  freePrice: { color: "#B56A45" },
   divider: { height: 1, backgroundColor: "#EEEEEE", marginVertical: 10 },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  totalLabel: { fontSize: 15, fontWeight: "700", color: "#1B5E20" },
-  totalValue: { fontSize: 20, fontWeight: "900", color: "#2E7D32" },
+  totalLabel: { fontSize: 15, fontWeight: "700", color: "#9A3412" },
+  totalValue: { fontSize: 20, fontWeight: "900", color: "#C2410C" },
   savingsContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#FFF1E8",
     padding: 9,
     borderRadius: 9,
     marginTop: 10,
     gap: 6,
   },
-  savingsText: { fontSize: 12, fontWeight: "600", color: "#4CAF50" },
+  savingsText: { fontSize: 12, fontWeight: "600", color: "#B56A45" },
 
   /* CHECKOUT */
   checkoutContainer: {
@@ -539,7 +540,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   checkoutBtn: {
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 18,
@@ -547,7 +548,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     elevation: 4,
-    shadowColor: "#2E7D32",
+    shadowColor: "#C2410C",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
@@ -557,7 +558,7 @@ const styles = StyleSheet.create({
   checkoutTotal: { fontSize: 19, fontWeight: "900", color: "#fff" },
   checkoutSubtext: {
     fontSize: 11,
-    color: "#C8E6C9",
+    color: "#F5D0C0",
     marginTop: 1,
     fontWeight: "500",
   },
@@ -575,17 +576,17 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: "#F5F7F2",
+    backgroundColor: "#F7F3EC",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
     borderWidth: 2,
-    borderColor: "#C8E6C9",
+    borderColor: "#F5D0C0",
   },
   emptyTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
     marginBottom: 8,
   },
   emptySubtitle: {
@@ -598,12 +599,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingHorizontal: 28,
     paddingVertical: 14,
     borderRadius: 14,
     elevation: 4,
-    shadowColor: "#2E7D32",
+    shadowColor: "#C2410C",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

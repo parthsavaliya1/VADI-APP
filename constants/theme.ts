@@ -5,7 +5,20 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#111111';
+/** Property Setu palette — warm terracotta, cream page, white cards. */
+export const brand = {
+  primary: "#B56A45",
+  primaryDark: "#8F4F32",
+  primarySoft: "#F3E4DB",
+  page: "#F7F3EC",
+  card: "#FFFFFF",
+  ink: "#171717",
+  muted: "#6F6A64",
+  line: "#E4DDD5",
+  success: "#4F7D5B",
+};
+
+const tintColorLight = '#B56A45';
 const tintColorDark = '#fff';
 
 export const Colors = {

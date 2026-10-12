@@ -169,7 +169,7 @@ export default function EnhancedLoginScreen() {
                   {/* Country code pill */}
                   <View style={styles.countryPill}>
                     <View style={styles.phoneIconCircle}>
-                      <Ionicons name="call" size={16} color="#4CAF50" />
+                      <Ionicons name="call" size={16} color="#B56A45" />
                     </View>
                     <Text style={styles.countryCode}>+91</Text>
                     <Ionicons name="chevron-down" size={14} color="#888" />
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     ...Platform.select({
       ios: {
-        shadowColor: "#2E7D32",
+        shadowColor: "#C2410C",
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
 
   checkboxChecked: {
     borderColor: "#3A8A3A",
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#B56A45",
   },
 
   privacyText: {
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     ...Platform.select({
       ios: {
-        shadowColor: "#2E7D32",
+        shadowColor: "#C2410C",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.28,
         shadowRadius: 10,

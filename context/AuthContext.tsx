@@ -17,7 +17,7 @@ type User = {
   otpVerifiedAt?: Date;
   isPhoneVerified: boolean;
   dob?: string;
-  role: "user" | "admin";
+  role: "user" | "seller" | "admin";
   status: "active" | "blocked";
   lastLoginAt?: Date;
   createdAt: Date;

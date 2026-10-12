@@ -90,7 +90,7 @@ export default function NotificationsScreen() {
             onPress={() => router.back()}
             hitSlop={12}
           >
-            <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+            <Ionicons name="arrow-back" size={24} color="#9A3412" />
           </TouchableOpacity>
           <Text style={styles.title}>Notifications</Text>
           <View style={{ width: 40 }} />
@@ -121,7 +121,7 @@ export default function NotificationsScreen() {
           onPress={() => router.back()}
           hitSlop={12}
         >
-          <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+          <Ionicons name="arrow-back" size={24} color="#9A3412" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Notifications</Text>
@@ -134,7 +134,7 @@ export default function NotificationsScreen() {
 
       {loading ? (
         <View style={styles.loaderWrap}>
-          <ActivityIndicator size="large" color="#2E7D32" />
+          <ActivityIndicator size="large" color="#C2410C" />
         </View>
       ) : (
         <FlatList
@@ -147,8 +147,8 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#2E7D32"]}
-              tintColor="#2E7D32"
+              colors={["#C2410C"]}
+              tintColor="#C2410C"
             />
           }
           ListEmptyComponent={
@@ -173,7 +173,7 @@ export default function NotificationsScreen() {
                   <Image source={{ uri: item.imageUrl }} style={styles.thumb} />
                 ) : (
                   <View style={styles.thumbPlaceholder}>
-                    <Ionicons name="megaphone-outline" size={22} color="#2E7D32" />
+                    <Ionicons name="megaphone-outline" size={22} color="#C2410C" />
                   </View>
                 )}
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     marginTop: 24,
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     paddingHorizontal: 28,
     paddingVertical: 12,
     borderRadius: 10,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   cardUnread: {
     borderColor: "#BBF7D0",
-    backgroundColor: "#F0FDF4",
+    backgroundColor: "#FFF7ED",
   },
   cardRow: { flexDirection: "row", alignItems: "flex-start" },
   thumb: {
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 8,
-    backgroundColor: "#DCFCE7",
+    backgroundColor: "#F3E4DB",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#22C55E",
+    backgroundColor: "#B56A45",
   },
   cardBody: { marginTop: 6, fontSize: 14, color: "#4B5563", lineHeight: 20 },
   cardDate: { marginTop: 8, fontSize: 12, color: "#9CA3AF" },

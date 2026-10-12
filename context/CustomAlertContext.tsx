@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#9A3412",
     textAlign: "center",
   },
   message: {
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   button: {
     minHeight: 46,
     borderRadius: 12,
-    backgroundColor: "#2E7D32",
+    backgroundColor: "#C2410C",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
