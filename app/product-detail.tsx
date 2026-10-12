@@ -41,6 +41,7 @@ type ProductVariant = {
   stock: number;
   lowStockThreshold: number;
   sku?: string;
+  image?: string;
   isDefault: boolean;
   isActive: boolean;
 };
@@ -330,6 +331,7 @@ export default function ProductDetailScreen() {
 
   const handleVariantSelect = (variant: ProductVariant) => {
     setSelectedVariant(variant);
+    setSelectedImageIndex(0);
     Animated.sequence([
       Animated.timing(variantAnimation, {
         toValue: 1,
@@ -362,6 +364,7 @@ export default function ProductDetailScreen() {
       variantLabel: `${selectedVariant.packSize}${selectedVariant.packUnit}`,
       price: selectedVariant.price,
       qty: 1,
+      image: selectedVariant.image || product.image,
     });
   };
 
@@ -565,8 +568,12 @@ export default function ProductDetailScreen() {
   }
 
   const allImages = [product.image, ...(product.images || [])].filter(Boolean);
-  const displayImages =
-    allImages.length > 0 ? allImages : ["https://via.placeholder.com/400"];
+  const variantPhoto = selectedVariant.image?.trim() || "";
+  const displayImages = variantPhoto
+    ? [variantPhoto]
+    : allImages.length > 0
+      ? allImages
+      : ["https://via.placeholder.com/400"];
   const discount =
     selectedVariant.mrp > selectedVariant.price
       ? Math.round(
@@ -654,6 +661,7 @@ export default function ProductDetailScreen() {
         {/* ─── Image Carousel ─── */}
         <View style={styles.imageContainer}>
           <ScrollView
+            key={selectedVariant._id}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
@@ -810,6 +818,12 @@ export default function ProductDetailScreen() {
                       disabled={variant.stock === 0}
                     >
                       <View style={styles.variantInfo}>
+                        {!!variant.image && (
+                          <Image
+                            source={{ uri: variant.image }}
+                            style={styles.variantThumb}
+                          />
+                        )}
                         <Text
                           style={[
                             styles.variantSize,
@@ -1823,6 +1837,13 @@ const styles = StyleSheet.create({
   variantCardSelected: { backgroundColor: "#FFF1E8", borderColor: "#B56A45" },
   variantCardDisabled: { opacity: 0.45 },
   variantInfo: { alignItems: "center" },
+  variantThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    marginBottom: 6,
+    backgroundColor: "#fff",
+  },
   variantSize: {
     fontSize: 14,
     fontWeight: "700",

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/context/CustomAlertContext";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FlatList,
   Image,
@@ -13,7 +13,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/components/AppHeader";
 import { CartItem, useCart } from "../context/CartContext";
-import { FREE_DELIVERY_ABOVE, quoteDeliveryFee } from "../utils/deliveryQuote";
+import {
+  DEFAULT_FEE_SETTINGS,
+  fetchFeeSettings,
+  quoteDeliveryFee,
+  type FeeSettings,
+} from "../utils/deliveryQuote";
 
 export default function CartScreen() {
   const {
@@ -26,6 +31,11 @@ export default function CartScreen() {
   } = useCart();
 
   const [loading, setLoading] = useState(false);
+  const [fees, setFees] = useState<FeeSettings>(DEFAULT_FEE_SETTINGS);
+
+  useEffect(() => {
+    fetchFeeSettings().then(setFees);
+  }, []);
 
   const handleRemoveItem = (
     productId: string,
@@ -66,7 +76,8 @@ export default function CartScreen() {
   };
 
   const total = getCartTotal();
-  const deliveryFee = quoteDeliveryFee(total);
+  const deliveryFee = quoteDeliveryFee(total, fees);
+  const freeAbove = fees.freeDeliveryAbove;
   const discount = total > 1000 ? total * 0.1 : 0;
   const finalTotal = total + deliveryFee - discount;
   const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
@@ -118,14 +129,14 @@ export default function CartScreen() {
       />
 
       {/* FREE DELIVERY PROGRESS BANNER */}
-      {total <= FREE_DELIVERY_ABOVE ? (
+      {freeAbove > 0 && total <= freeAbove ? (
         <View style={styles.progressBanner}>
           <Ionicons name="bicycle-outline" size={18} color="#C2410C" />
           <View style={styles.progressTextGroup}>
             <Text style={styles.progressLabel}>
               Add{" "}
               <Text style={styles.progressHighlight}>
-                ₹{(FREE_DELIVERY_ABOVE - total).toFixed(0)}
+                ₹{(freeAbove - total).toFixed(0)}
               </Text>{" "}
               more for free delivery!
             </Text>
@@ -133,13 +144,13 @@ export default function CartScreen() {
               <View
                 style={[
                   styles.progressBarFill,
-                  { width: `${Math.min((total / FREE_DELIVERY_ABOVE) * 100, 100)}%` as any },
+                  { width: `${Math.min((total / freeAbove) * 100, 100)}%` as any },
                 ]}
               />
             </View>
           </View>
         </View>
-      ) : (
+      ) : freeAbove > 0 ? (
         <View style={[styles.progressBanner, styles.progressBannerSuccess]}>
           <Ionicons name="checkmark-circle" size={18} color="#C2410C" />
           <Text style={styles.progressLabel}>
@@ -147,7 +158,7 @@ export default function CartScreen() {
             <Text style={styles.progressHighlight}>free delivery!</Text>
           </Text>
         </View>
-      )}
+      ) : null}
 
       {/* CART ITEMS */}
       <FlatList
@@ -160,7 +171,9 @@ export default function CartScreen() {
             {/* Image */}
             <View style={styles.imageWrapper}>
               <Image
-                source={{ uri: "https://via.placeholder.com/80" }}
+                source={{
+                  uri: item.image || "https://via.placeholder.com/80",
+                }}
                 style={styles.itemImage}
               />
             </View>
@@ -251,7 +264,7 @@ export default function CartScreen() {
         <View style={styles.billRow}>
           <View style={styles.deliveryRow}>
             <Text style={styles.billLabel}>Delivery Fee</Text>
-            {total > FREE_DELIVERY_ABOVE && (
+            {freeAbove > 0 && total > freeAbove && (
               <View style={styles.freeBadge}>
                 <Text style={styles.freeText}>FREE</Text>
               </View>

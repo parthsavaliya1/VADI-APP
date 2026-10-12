@@ -23,9 +23,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCart } from "../context/CartContext";
 import {
-  DELIVERY_FEE,
-  FREE_DELIVERY_ABOVE,
+  fetchFeeSettings,
   quoteDeliveryFee,
+  DEFAULT_FEE_SETTINGS,
+  type FeeSettings,
 } from "../utils/deliveryQuote";
 
 if (Platform.OS === "android") {
@@ -50,6 +51,7 @@ export default function CheckoutScreen() {
     "googlepay" | "upi" | "card" | "netbanking"
   >("googlepay");
   const [upiId, setUpiId] = useState("");
+  const [fees, setFees] = useState<FeeSettings>(DEFAULT_FEE_SETTINGS);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -57,7 +59,9 @@ export default function CheckoutScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const deliveryFee = quoteDeliveryFee(total);
+  const deliveryFee = quoteDeliveryFee(total, fees);
+  const listedDeliveryFee = fees.deliveryFee;
+  const freeAbove = fees.freeDeliveryAbove;
   const grandTotal = total + deliveryFee;
   const activeAddress = selectedAddress || defaultAddress || addresses[0] || null;
 
@@ -67,6 +71,10 @@ export default function CheckoutScreen() {
       .then((res) => setWalletBalance(Number(res.data?.data?.balance || 0)))
       .catch(() => setWalletBalance(0));
   }, [user?._id]);
+
+  useEffect(() => {
+    fetchFeeSettings().then(setFees);
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -528,11 +536,11 @@ export default function CheckoutScreen() {
                       deliveryFee === 0 && styles.strikethrough,
                     ]}
                   >
-                    ₹{deliveryFee === 0 ? DELIVERY_FEE : deliveryFee}
+                    ₹{deliveryFee === 0 ? listedDeliveryFee : deliveryFee}
                   </Text>
                 </View>
 
-                {total < FREE_DELIVERY_ABOVE && (
+                {freeAbove > 0 && total <= freeAbove && (
                   <View style={styles.savingTip}>
                     <Ionicons
                       name="information-circle"
@@ -541,13 +549,13 @@ export default function CheckoutScreen() {
                     />
                     <View style={styles.savingTipContent}>
                       <Text style={styles.savingText}>
-                        Add ₹{FREE_DELIVERY_ABOVE - total} more for FREE delivery!
+                        Add ₹{Math.max(0, freeAbove - total)} more for FREE delivery!
                       </Text>
                       <View style={styles.progressBar}>
                         <View
                           style={[
                             styles.progressFill,
-                            { width: `${(total / FREE_DELIVERY_ABOVE) * 100}%` },
+                            { width: `${Math.min((total / freeAbove) * 100, 100)}%` },
                           ]}
                         />
                       </View>
