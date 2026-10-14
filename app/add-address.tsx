@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { C, themed } from "@/constants/theme";
 
 /** Rough Rajkot bounding box — pins are clamped & validated here only */
 const RAJKOT_BOUNDS = {
@@ -530,7 +531,7 @@ export default function AddAddressScreen() {
                           : "location"
                     }
                     size={18}
-                    color={type === t ? "#fff" : "#C2410C"}
+                    color={type === t ? "#fff" : C.primary}
                   />
                   <Text
                     style={[
@@ -549,7 +550,7 @@ export default function AddAddressScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Display Name (Optional)</Text>
             <View style={styles.inputContainer}>
-              <Ionicons name="pricetag-outline" size={20} color="#666" />
+              <Ionicons name="pricetag-outline" size={20} color={C.muted} />
               <TextInput
                 style={styles.input}
                 placeholder="e.g., My Home, Office, etc."
@@ -566,7 +567,7 @@ export default function AddAddressScreen() {
               Phone Number <Text style={styles.required}>*</Text>
             </Text>
             <View style={styles.inputContainer}>
-              <Ionicons name="call-outline" size={20} color="#666" />
+              <Ionicons name="call-outline" size={20} color={C.muted} />
               <TextInput
                 editable={!isEditing}
                 style={styles.input}
@@ -608,22 +609,22 @@ export default function AddAddressScreen() {
               style={styles.mapCardTouch}
             >
               <LinearGradient
-                colors={["#FFF1E8", "#FFFFFF"]}
+                colors={[C.soft, "#FFFFFF"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.mapCard}
               >
                 <View style={styles.mapCardIconWrap}>
                   {geoLoading ? (
-                    <ActivityIndicator size="small" color="#9A3412" />
+                    <ActivityIndicator size="small" color={C.ink} />
                   ) : (
-                    <Ionicons name="map" size={26} color="#9A3412" />
+                    <Ionicons name="map" size={26} color={C.ink} />
                   )}
                 </View>
                 <View style={styles.mapCardMid}>
                   <View style={styles.mapCardBadgeRow}>
                     <View style={styles.mapCityPill}>
-                      <Ionicons name="location" size={12} color="#9A3412" />
+                      <Ionicons name="location" size={12} color={C.ink} />
                       <Text style={styles.mapCityPillText}>{DELIVERY_CITY}</Text>
                     </View>
                     <View style={styles.mapGooglePill}>
@@ -637,7 +638,7 @@ export default function AddAddressScreen() {
                   </Text>
                 </View>
                 <View style={styles.mapCardArrow}>
-                  <Ionicons name="chevron-forward-circle" size={36} color="#C2410C" />
+                  <Ionicons name="chevron-forward-circle" size={36} color={C.primary} />
                 </View>
               </LinearGradient>
             </TouchableOpacity>
@@ -656,7 +657,7 @@ export default function AddAddressScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <View style={styles.mapLinkPill}>
-                    <Ionicons name="map-outline" size={14} color="#9A3412" />
+                    <Ionicons name="map-outline" size={14} color={C.ink} />
                     <Text style={styles.mapLinkPillText}>Map</Text>
                   </View>
                 </TouchableOpacity>
@@ -666,7 +667,7 @@ export default function AddAddressScreen() {
               <Ionicons
                 name="home-outline"
                 size={20}
-                color="#666"
+                color={C.muted}
                 style={styles.textAreaIcon}
               />
               <TextInput
@@ -694,14 +695,14 @@ export default function AddAddressScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <View style={styles.mapLinkPill}>
-                    <Ionicons name="map-outline" size={14} color="#9A3412" />
+                    <Ionicons name="map-outline" size={14} color={C.ink} />
                     <Text style={styles.mapLinkPillText}>Map</Text>
                   </View>
                 </TouchableOpacity>
               )}
             </View>
             <View style={styles.inputContainer}>
-              <Ionicons name="location-outline" size={20} color="#666" />
+              <Ionicons name="location-outline" size={20} color={C.muted} />
               <TextInput
                 style={styles.input}
                 placeholder="Area, Colony, Sector"
@@ -715,7 +716,7 @@ export default function AddAddressScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Landmark (Optional)</Text>
             <View style={styles.inputContainer}>
-              <Ionicons name="navigate-outline" size={20} color="#666" />
+              <Ionicons name="navigate-outline" size={20} color={C.muted} />
               <TextInput
                 style={styles.input}
                 placeholder="Nearby landmark"
@@ -731,7 +732,7 @@ export default function AddAddressScreen() {
               City <Text style={styles.required}>*</Text>
             </Text>
             <View style={styles.inputContainer}>
-              <Ionicons name="business-outline" size={20} color="#666" />
+              <Ionicons name="business-outline" size={20} color={C.muted} />
               <TextInput
                 style={styles.input}
                 placeholder={DELIVERY_CITY}
@@ -748,7 +749,7 @@ export default function AddAddressScreen() {
                 State <Text style={styles.required}>*</Text>
               </Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="map-outline" size={20} color="#666" />
+                <Ionicons name="map-outline" size={20} color={C.muted} />
                 <TextInput
                   style={styles.input}
                   placeholder="State"
@@ -763,7 +764,7 @@ export default function AddAddressScreen() {
                 Pincode <Text style={styles.required}>*</Text>
               </Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="pin-outline" size={20} color="#666" />
+                <Ionicons name="pin-outline" size={20} color={C.muted} />
                 <TextInput
                   style={styles.input}
                   placeholder="360001–360007"
@@ -787,7 +788,7 @@ export default function AddAddressScreen() {
                   isDefault ? "checkmark-circle" : "checkmark-circle-outline"
                 }
                 size={24}
-                color={isDefault ? "#C2410C" : "#999"}
+                color={isDefault ? C.primary : "#999"}
               />
               <View style={styles.defaultToggleText}>
                 <Text style={styles.defaultToggleTitle}>
@@ -881,7 +882,7 @@ export default function AddAddressScreen() {
               </MapView>
               {!mapReady && (
                 <View style={styles.mapLoadingOverlay}>
-                  <ActivityIndicator size="large" color="#C2410C" />
+                  <ActivityIndicator size="large" color={C.primary} />
                 </View>
               )}
             </View>
@@ -912,10 +913,10 @@ export default function AddAddressScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
   },
   container: {
     flex: 1,
@@ -930,7 +931,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
   },
   content: {
     flex: 1,
@@ -942,7 +943,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
+    color: C.ink,
     marginBottom: 8,
   },
   required: {
@@ -958,21 +959,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderWidth: 1.5,
-    borderColor: "#C2410C",
+    borderColor: C.primary,
     borderRadius: 12,
     paddingVertical: 12,
     elevation: 2,
   },
   typeButtonActive: {
-    backgroundColor: "#C2410C",
-    borderColor: "#C2410C",
+    backgroundColor: C.primary,
+    borderColor: C.primary,
   },
   typeText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#C2410C",
+    color: C.primary,
   },
   typeTextActive: {
     color: "#fff",
@@ -980,7 +981,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -1000,7 +1001,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: "#222",
+    color: C.ink,
     marginLeft: 10,
   },
   textArea: {
@@ -1016,7 +1017,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   defaultToggle: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     padding: 16,
     elevation: 2,
@@ -1036,21 +1037,21 @@ const styles = StyleSheet.create({
   defaultToggleTitle: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#222",
+    color: C.ink,
     marginBottom: 2,
   },
   defaultToggleSubtitle: {
     fontSize: 12,
-    color: "#777",
+    color: C.muted,
   },
   footer: {
     padding: 14,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
   },
   saveButton: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
@@ -1105,7 +1106,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderRadius: 16,
     elevation: 4,
-    shadowColor: "#9A3412",
+    shadowColor: C.ink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -1151,7 +1152,7 @@ const styles = StyleSheet.create({
   mapCityPillText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     letterSpacing: 0.3,
   },
   mapGooglePill: {
@@ -1168,7 +1169,7 @@ const styles = StyleSheet.create({
   mapCardTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     marginBottom: 4,
   },
   mapCardSubtitle: {
@@ -1191,11 +1192,11 @@ const styles = StyleSheet.create({
   mapLinkPillText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#9A3412",
+    color: C.ink,
   },
   mapModalRoot: {
     flex: 1,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
   },
   mapModalSafe: {
     flex: 1,
@@ -1208,7 +1209,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#e8ece9",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
   },
   mapModalCancel: {
     fontSize: 16,
@@ -1225,11 +1226,11 @@ const styles = StyleSheet.create({
   mapModalTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     textAlign: "center",
   },
   mapModalZonePill: {
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 12,
@@ -1237,11 +1238,11 @@ const styles = StyleSheet.create({
   mapModalZonePillText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#C2410C",
+    color: C.primary,
   },
   mapHint: {
     fontSize: 13,
-    color: "#555",
+    color: C.muted,
     paddingHorizontal: 16,
     paddingVertical: 10,
     lineHeight: 19,
@@ -1261,7 +1262,7 @@ const styles = StyleSheet.create({
   },
   mapModalFooter: {
     padding: 14,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
   },
@@ -1270,7 +1271,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     borderRadius: 12,
     paddingVertical: 16,
   },
@@ -1282,4 +1283,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-});
+}));

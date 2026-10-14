@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/components/AppHeader";
 import { useCart } from "../context/CartContext";
 import { API } from "../utils/api";
+import { C, themed } from "@/constants/theme";
 
 type ProductVariant = {
   _id: string;
@@ -134,7 +135,7 @@ export default function CategoryScreen() {
 
       {/* SEARCH */}
       <View style={styles.searchBox}>
-        <Ionicons name="search" size={16} color="#777" style={{ marginLeft: 2, marginRight: 4 }} />
+        <Ionicons name="search" size={16} color={C.muted} style={{ marginLeft: 2, marginRight: 4 }} />
         <TextInput
           placeholder={`Search in ${title}`}
           style={styles.searchInput}
@@ -146,7 +147,7 @@ export default function CategoryScreen() {
       {/* PRODUCTS */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#B56A45" />
+          <ActivityIndicator size="large" color={C.primary} />
         </View>
       ) : filteredProducts.length > 0 ? (
         <FlatList
@@ -207,10 +208,10 @@ export default function CategoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
   },
   header: {
     flexDirection: "row",
@@ -224,7 +225,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#171717",
+    color: C.ink,
   },
   cartIcon: {
     position: "relative",
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -6,
     right: -8,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.badge,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -242,14 +243,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
-    color: "#fff",
+    color: C.badgeText,
     fontSize: 10,
     fontWeight: "700",
   },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingLeft: 14,
     paddingRight: 10,
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#E4DDD5",
+    borderColor: C.line,
   },
   searchInput: {
     marginLeft: 8,
@@ -281,14 +282,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 20,
     flex: 1,
     marginBottom: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#E4DDD5",
-    shadowColor: "#171717",
+    borderColor: C.line,
+    shadowColor: C.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
   imageWrap: {
     height: 120,
     width: "100%",
-    backgroundColor: "#E7D9C8",
+    backgroundColor: C.soft,
   },
   image: {
     width: "100%",
@@ -310,23 +311,23 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#171717",
+    color: C.ink,
   },
   price: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#B56A45",
+    color: C.primary,
     marginTop: 4,
   },
   unit: {
     fontSize: 12,
-    color: "#6F6A64",
+    color: C.muted,
     marginTop: 4,
   },
   addBtn: {
     marginTop: 8,
     alignSelf: "flex-start",
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#666",
+    color: C.muted,
     marginTop: 16,
   },
-});
+}));

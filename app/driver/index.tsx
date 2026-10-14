@@ -9,6 +9,7 @@ import {
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getDriverToken } from "@/utils/driverSession";
+import { C, themed } from "@/constants/theme";
 
 export default function DriverHomeScreen() {
   const [checking, setChecking] = useState(true);
@@ -32,7 +33,7 @@ export default function DriverHomeScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#C2410C" />
+          <ActivityIndicator size="large" color={C.primary} />
         </View>
       </SafeAreaView>
     );
@@ -66,19 +67,19 @@ export default function DriverHomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F6F7F2" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   container: { flex: 1, padding: 24, paddingTop: 48 },
   title: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     marginBottom: 8,
   },
   sub: { fontSize: 15, color: "#4E7C50", marginBottom: 32 },
   btn: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
@@ -87,10 +88,10 @@ const styles = StyleSheet.create({
   btnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   btnOutline: {
     borderWidth: 2,
-    borderColor: "#C2410C",
+    borderColor: C.primary,
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: "center",
   },
-  btnOutlineText: { color: "#C2410C", fontSize: 15, fontWeight: "600" },
-});
+  btnOutlineText: { color: C.primary, fontSize: 15, fontWeight: "600" },
+}));

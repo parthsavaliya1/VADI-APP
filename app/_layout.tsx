@@ -3,8 +3,11 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { CustomAlertProvider } from "@/context/CustomAlertContext";
 import { OrderProvider } from "@/context/OrderContext";
+import { C } from "@/constants/theme";
 import { getApiUrl, loadRemoteConfig } from "@/firebase";
 import { setBaseUrl } from "@/utils/api";
+import { loadAppTheme } from "@/utils/appTheme";
+import { ensurePushChannel } from "@/utils/pushNotifications";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
@@ -41,14 +44,16 @@ export default function RootLayout() {
           new Promise((resolve) => setTimeout(resolve, 3000)),
         ]);
 
-        const url = getApiUrl();
+        // Local dev override: set EXPO_PUBLIC_API_URL in vadi-app/.env.local (git-ignored).
+        const url = process.env.EXPO_PUBLIC_API_URL || getApiUrl();
         console.log("🔥 Remote API URL:", url);
-        setBaseUrl("http://192.168.1.12:5000");
-
-        // setBaseUrl(url);
+        setBaseUrl(url);
+        await ensurePushChannel();
       } catch (err) {
         console.warn("⚠️ Remote Config failed, using default BASE_URL:", err);
       } finally {
+        // Colour theme selected in the admin panel; must be set before first render.
+        await loadAppTheme();
         setIsReady(true);
       }
     };
@@ -59,7 +64,7 @@ export default function RootLayout() {
   if (!isReady) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#C2410C" />
+        <ActivityIndicator size="large" color={C.primary} />
       </View>
     );
   }

@@ -30,6 +30,7 @@ import {
   BG_SURFACE,
 } from "../../constants/authScreenTheme";
 import { useAuth } from "../../context/AuthContext";
+import { C, themed } from "@/constants/theme";
 
 export default function EnhancedSignupScreen() {
   const { sendOtp } = useAuth();
@@ -172,7 +173,7 @@ export default function EnhancedSignupScreen() {
                   {/* Name Input */}
                   <View style={styles.inputCard}>
                     <View style={styles.inputIconCircle}>
-                      <Ionicons name="person" size={16} color="#B56A45" />
+                      <Ionicons name="person" size={16} color={C.primary} />
                     </View>
                     <View style={styles.inputDivider} />
                     <TextInput
@@ -187,7 +188,7 @@ export default function EnhancedSignupScreen() {
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color="#B56A45"
+                        color={C.primary}
                         style={{ marginLeft: 4 }}
                       />
                     )}
@@ -198,10 +199,10 @@ export default function EnhancedSignupScreen() {
                     {/* Country code pill */}
                     <View style={styles.countryPill}>
                       <View style={styles.phoneIconCircle}>
-                        <Ionicons name="call" size={16} color="#B56A45" />
+                        <Ionicons name="call" size={16} color={C.primary} />
                       </View>
                       <Text style={styles.countryCode}>+91</Text>
-                      <Ionicons name="chevron-down" size={14} color="#888" />
+                      <Ionicons name="chevron-down" size={14} color={C.muted} />
                     </View>
                     <View style={styles.inputDivider} />
                     <TextInput
@@ -217,7 +218,7 @@ export default function EnhancedSignupScreen() {
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
-                        color="#B56A45"
+                        color={C.primary}
                         style={{ marginLeft: 4 }}
                       />
                     )}
@@ -332,7 +333,7 @@ export default function EnhancedSignupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: BG_SURFACE,
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
   inputCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: "#D8EDD8",
@@ -414,7 +415,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     ...Platform.select({
       ios: {
-        shadowColor: "#C2410C",
+        shadowColor: C.primary,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
@@ -455,7 +456,7 @@ const styles = StyleSheet.create({
   countryCode: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#333",
+    color: C.ink,
   },
 
   inputDivider: {
@@ -468,7 +469,7 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 15,
-    color: "#222",
+    color: C.ink,
     paddingVertical: 12,
     letterSpacing: 0.3,
   },
@@ -497,7 +498,7 @@ const styles = StyleSheet.create({
 
   checkboxChecked: {
     borderColor: "#3A8A3A",
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
   },
 
   privacyText: {
@@ -527,7 +528,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     ...Platform.select({
       ios: {
-        shadowColor: "#C2410C",
+        shadowColor: C.primary,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.28,
         shadowRadius: 10,
@@ -602,4 +603,4 @@ const styles = StyleSheet.create({
     color: "#3A8A3A",
     textDecorationLine: "underline",
   },
-});
+}));

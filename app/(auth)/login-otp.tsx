@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { C, themed } from "@/constants/theme";
 import { useAuth } from "../../context/AuthContext"; // ✅ ADD THIS
 
 export default function LoginOtpScreen() {
@@ -93,8 +94,8 @@ export default function LoginOtpScreen() {
 }
 
 /* 🎨 STYLES — UNCHANGED */
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F6F7F2" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   container: { padding: 20, paddingTop: 40 },
   logoWrap: { alignItems: "center", marginBottom: 20 },
   logo: { width: 120, height: 120, resizeMode: "contain" },
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "800",
     textAlign: "center",
-    color: "#9A3412",
+    color: C.ink,
   },
   subtitle: {
     textAlign: "center",
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 16,
     fontSize: 15,
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cta: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     paddingVertical: 16,
     borderRadius: 16,
   },
@@ -132,6 +133,6 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 18,
     textAlign: "center",
-    color: "#C2410C",
+    color: C.primary,
   },
-});
+}));

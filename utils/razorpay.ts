@@ -1,5 +1,6 @@
 import { API } from "@/utils/api";
 import Constants from "expo-constants";
+import { C } from "@/constants/theme";
 
 type RazorpayGatewayOrder = {
   key: string;
@@ -107,7 +108,7 @@ export async function openRazorpay(options: OpenRazorpayOptions) {
         source: "vadi-app",
       },
       prefill,
-      theme: { color: "#C2410C" },
+      theme: { color: C.primary },
     });
 
     const verifyRes = await API.post("/payments/verify-signature", {
@@ -176,7 +177,7 @@ export async function openWalletTopup(options: {
         name: options.customerName || "",
         contact: (options.customerPhone || "").replace(/\s/g, ""),
       },
-      theme: { color: "#C2410C" },
+      theme: { color: C.primary },
     });
 
     const verifyRes = await API.post("/wallet/topup/verify", {

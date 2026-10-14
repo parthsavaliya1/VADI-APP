@@ -23,7 +23,13 @@
         "foregroundImage": "./assets/images/favicon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.vadi.app"
+      "package": "com.vadi.app",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK"
+      ]
     },
     "web": {
       "output": "static",
@@ -36,7 +42,8 @@
         "expo-notifications",
         {
           "icon": "./assets/images/vadi-brand-logo.png",
-          "color": "#ffffff"
+          "color": "#ffffff",
+          "defaultChannel": "default"
         }
       ],
       [

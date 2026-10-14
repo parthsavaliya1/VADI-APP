@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { C, themed } from "@/constants/theme";
 
 export default function EditProfileScreen() {
   const { user, updateProfile } = useAuth();
@@ -53,26 +54,26 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FFF8F4" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
   },
   title: { fontSize: 18, fontWeight: "800" },
   body: { padding: 16 },
   label: { fontWeight: "700", marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: "#fff", borderRadius: 12, padding: 14, fontSize: 16 },
-  locked: { color: "#777" },
+  input: { backgroundColor: C.card, borderRadius: 12, padding: 14, fontSize: 16 },
+  locked: { color: C.muted },
   btn: {
     marginTop: 24,
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     borderRadius: 14,
     padding: 16,
     alignItems: "center",
   },
   btnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
-});
+}));

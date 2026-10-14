@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { useCart } from "@/context/CartContext";
+import { C, themed } from "@/constants/theme";
 
 type Props = {
   title: string;
@@ -36,7 +37,7 @@ export function AppHeader({
           hitSlop={10}
           style={styles.backBtn}
         >
-          <Ionicons name="arrow-back" size={24} color="#171717" />
+          <Ionicons name="arrow-back" size={24} color={C.ink} />
         </TouchableOpacity>
       ) : null}
 
@@ -55,7 +56,7 @@ export function AppHeader({
         right
       ) : showCart ? (
         <TouchableOpacity onPress={() => router.push("/cart")} hitSlop={8} style={styles.cartBtn}>
-          <Ionicons name="cart-outline" size={24} color="#171717" />
+          <Ionicons name="cart-outline" size={24} color={C.ink} />
           {count > 0 ? (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{count > 99 ? "99" : count}</Text>
@@ -69,7 +70,7 @@ export function AppHeader({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   bar: {
     flexDirection: "row",
     alignItems: "center",
@@ -87,8 +88,8 @@ const styles = StyleSheet.create({
   },
   titles: { flex: 1 },
   titlesAfterBack: { marginLeft: 12 },
-  title: { fontSize: 20, fontWeight: "800", color: "#171717" },
-  subtitle: { marginTop: 2, fontSize: 13, color: "#6F6A64" },
+  title: { fontSize: 20, fontWeight: "800", color: C.ink },
+  subtitle: { marginTop: 2, fontSize: 13, color: C.muted },
   spacer: { width: 46 },
   cartBtn: { width: 46, height: 46, alignItems: "center", justifyContent: "center" },
   badge: {
@@ -98,10 +99,10 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 3,
   },
   badgeText: { color: "#fff", fontSize: 9, fontWeight: "800" },
-});
+}));

@@ -6,7 +6,7 @@ import { uploadProductImage } from "@/utils/uploadImage";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { C, themed } from "@/constants/theme";
 
 type Category = { _id: string; name: string };
 
@@ -44,22 +45,48 @@ const emptyVariant = (): VariantDraft => ({
 
 export default function SellerAddProductScreen() {
   const { user } = useAuth();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const productId = typeof params.id === "string" ? params.id : "";
   const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [variants, setVariants] = useState<VariantDraft[]>([emptyVariant()]);
   const [saving, setSaving] = useState(false);
+  const [loadingProduct, setLoadingProduct] = useState(Boolean(productId));
 
   useEffect(() => {
     API.get("/categories")
       .then((res) => {
         const list = res.data?.data || res.data || [];
         setCategories(Array.isArray(list) ? list : []);
-        if (list[0]?._id) setCategory(list[0]._id);
+        if (!productId && list[0]?._id) setCategory(list[0]._id);
       })
       .catch(() => showAlert("Categories", "Could not load categories"));
-  }, []);
+  }, [productId]);
+
+  useEffect(() => {
+    if (!productId) return;
+    API.get(`/products/${productId}`)
+      .then((res) => {
+        const product = res.data?.data;
+        if (!product) return;
+        setName(product.name || "");
+        setDescription(product.description || "");
+        setCategory(product.category?._id || product.category || "");
+        const loaded = (product.variants || []).map((variant: any) => ({
+          packSize: String(variant.packSize ?? "1"),
+          packUnit: variant.packUnit || "g",
+          price: String(variant.price ?? ""),
+          mrp: String(variant.mrp ?? ""),
+          stock: String(variant.stock ?? ""),
+          imageUri: variant.image || "",
+        }));
+        setVariants(loaded.length ? loaded : [emptyVariant()]);
+      })
+      .catch(() => showAlert("Product", "Could not load this product"))
+      .finally(() => setLoadingProduct(false));
+  }, [productId]);
 
   const updateVariant = (
     index: number,
@@ -106,9 +133,10 @@ export default function SellerAddProductScreen() {
     try {
       const uploaded = [];
       for (const variant of variants) {
-        const image = variant.imageUri
-          ? await uploadProductImage(variant.imageUri)
-          : "";
+        const image =
+          variant.imageUri && !variant.imageUri.startsWith("http")
+            ? await uploadProductImage(variant.imageUri)
+            : variant.imageUri || "";
         uploaded.push({
           packSize: Number(variant.packSize) || 1,
           packUnit: variant.packUnit,
@@ -120,7 +148,7 @@ export default function SellerAddProductScreen() {
         });
       }
 
-      const res = await API.post("/products/mine", {
+      const payload = {
         userId: user?._id,
         name: name.trim(),
         description: description.trim(),
@@ -128,7 +156,10 @@ export default function SellerAddProductScreen() {
         unit: uploaded[0].packUnit,
         variants: uploaded,
         image: uploaded.find((variant) => variant.image)?.image || "",
-      });
+      };
+      const res = productId
+        ? await API.put(`/sellers/me/products/${productId}`, payload)
+        : await API.post("/products/mine", payload);
       showAlert("Product", res.data?.message || "Submitted", [
         { text: "OK", onPress: () => router.replace("/seller-products") },
       ]);
@@ -144,7 +175,10 @@ export default function SellerAddProductScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <AppHeader title="Add product" showBack showCart={false} />
+      <AppHeader title={productId ? "Edit product" : "Add product"} showBack showCart={false} />
+      {loadingProduct ? (
+        <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} />
+      ) : (
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <TextInput style={styles.input} placeholder="Product name" value={name} onChangeText={setName} />
         <TextInput
@@ -178,7 +212,7 @@ export default function SellerAddProductScreen() {
                     setVariants((current) => current.filter((_, i) => i !== index))
                   }
                 >
-                  <Ionicons name="trash-outline" size={18} color="#C2410C" />
+                  <Ionicons name="trash-outline" size={18} color={C.primary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -226,7 +260,7 @@ export default function SellerAddProductScreen() {
                 <Image source={{ uri: variant.imageUri }} style={styles.preview} />
               ) : (
                 <View style={styles.imagePlaceholder}>
-                  <Ionicons name="image-outline" size={22} color="#C2410C" />
+                  <Ionicons name="image-outline" size={22} color={C.primary} />
                   <Text style={styles.imageBtnText}>Add image for this size</Text>
                 </View>
               )}
@@ -242,21 +276,26 @@ export default function SellerAddProductScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.btn} onPress={submit} disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Submit product</Text>}
+          {saving ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.btnText}>{productId ? "Save changes" : "Submit product"}</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FFF8F4" },
-  input: { backgroundColor: "#fff", borderRadius: 12, padding: 14, marginBottom: 10 },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
+  input: { backgroundColor: C.card, borderRadius: 12, padding: 14, marginBottom: 10 },
   label: { fontWeight: "700", marginBottom: 6, marginTop: 4 },
-  hint: { color: "#6B7280", marginBottom: 10, lineHeight: 18 },
-  pickerWrap: { backgroundColor: "#fff", borderRadius: 12, marginBottom: 10 },
+  hint: { color: C.muted, marginBottom: 10, lineHeight: 18 },
+  pickerWrap: { backgroundColor: C.card, borderRadius: 12, marginBottom: 10 },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 12,
     marginBottom: 12,
@@ -281,17 +320,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
   },
-  imageBtnText: { color: "#C2410C", fontWeight: "700" },
+  imageBtnText: { color: C.primary, fontWeight: "700" },
   preview: { width: "100%", height: 140, borderRadius: 12 },
   secondaryBtn: {
     borderRadius: 14,
     padding: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#C2410C",
+    borderColor: C.primary,
     marginBottom: 10,
   },
-  secondaryBtnText: { color: "#C2410C", fontWeight: "800" },
-  btn: { backgroundColor: "#C2410C", borderRadius: 14, padding: 16, alignItems: "center", marginTop: 8 },
+  secondaryBtnText: { color: C.primary, fontWeight: "800" },
+  btn: { backgroundColor: C.primary, borderRadius: 14, padding: 16, alignItems: "center", marginTop: 8 },
   btnText: { color: "#fff", fontWeight: "800" },
-});
+}));

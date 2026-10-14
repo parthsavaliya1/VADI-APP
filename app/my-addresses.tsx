@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { C, themed } from "@/constants/theme";
 
 type Address = {
   _id: string;
@@ -130,7 +131,7 @@ export default function MyAddressesScreen() {
           showCart={false}
         />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#C2410C" />
+          <ActivityIndicator size="large" color={C.primary} />
         </View>
       </SafeAreaView>
     );
@@ -146,7 +147,7 @@ export default function MyAddressesScreen() {
 
       {fromCheckout && (
         <View style={styles.selectHint}>
-          <Ionicons name="information-circle" size={18} color="#C2410C" />
+          <Ionicons name="information-circle" size={18} color={C.primary} />
           <Text style={styles.selectHintText}>
             Tap on any address to select for delivery
           </Text>
@@ -165,7 +166,7 @@ export default function MyAddressesScreen() {
           <Ionicons
             name="add-circle-outline"
             size={24}
-            color={addresses.length >= 3 ? "#999" : "#C2410C"}
+            color={addresses.length >= 3 ? "#999" : C.primary}
           />
           <Text
             style={[
@@ -202,7 +203,7 @@ export default function MyAddressesScreen() {
               {/* SELECTED INDICATOR */}
               {fromCheckout && selectedAddress?._id === address._id && (
                 <View style={styles.selectedIndicator}>
-                  <Ionicons name="checkmark-circle" size={24} color="#C2410C" />
+                  <Ionicons name="checkmark-circle" size={24} color={C.primary} />
                 </View>
               )}
 
@@ -216,7 +217,7 @@ export default function MyAddressesScreen() {
               {/* ADDRESS INFO */}
               <View style={styles.addressHeader}>
                 <View style={styles.addressIconContainer}>
-                  <Ionicons name="location" size={20} color="#C2410C" />
+                  <Ionicons name="location" size={20} color={C.primary} />
                 </View>
                 <View style={styles.addressInfo}>
                   <Text style={styles.addressName}>{address.name}</Text>
@@ -238,7 +239,7 @@ export default function MyAddressesScreen() {
                       <Ionicons
                         name="checkmark-circle-outline"
                         size={18}
-                        color="#C2410C"
+                        color={C.primary}
                       />
                       <Text style={styles.actionText}>Set as Default</Text>
                     </TouchableOpacity>
@@ -286,10 +287,10 @@ export default function MyAddressesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
   },
   header: {
     flexDirection: "row",
@@ -297,20 +298,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    borderBottomColor: C.line,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
   },
   selectHint: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginHorizontal: 14,
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
   },
   selectHintText: {
     fontSize: 13,
-    color: "#C2410C",
+    color: C.primary,
     fontWeight: "600",
   },
   loadingContainer: {
@@ -335,12 +336,12 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: "#C2410C",
+    borderColor: C.primary,
     borderStyle: "dashed",
   },
   addButtonDisabled: {
@@ -351,13 +352,13 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 15,
     fontWeight: "600",
-    color: "#C2410C",
+    color: C.primary,
   },
   addButtonTextDisabled: {
-    color: "#999",
+    color: C.muted,
   },
   addressCard: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   selectedCard: {
-    borderColor: "#C2410C",
+    borderColor: C.primary,
     backgroundColor: "#F1F8F4",
   },
   selectedIndicator: {
@@ -383,13 +384,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 12,
-    backgroundColor: "#C2410C",
+    backgroundColor: C.badge,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   defaultBadgeText: {
-    color: "#fff",
+    color: C.badgeText,
     fontSize: 10,
     fontWeight: "700",
   },
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -413,17 +414,17 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#222",
+    color: C.ink,
     marginBottom: 4,
   },
   addressLine: {
     fontSize: 14,
-    color: "#555",
+    color: C.muted,
     marginBottom: 4,
   },
   addressDetails: {
     fontSize: 13,
-    color: "#777",
+    color: C.muted,
   },
   actions: {
     flexDirection: "row",
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#C2410C",
+    color: C.primary,
   },
   emptyState: {
     alignItems: "center",
@@ -451,12 +452,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#666",
+    color: C.muted,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#999",
+    color: C.muted,
     marginTop: 8,
   },
-});
+}));

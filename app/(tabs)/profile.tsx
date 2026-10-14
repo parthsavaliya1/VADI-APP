@@ -16,6 +16,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useOrders } from "../../context/OrderContext";
+import { C, themed } from "@/constants/theme";
 
 /* ── Avatar initials helper ── */
 function getInitials(name?: string) {
@@ -27,8 +28,8 @@ function getInitials(name?: string) {
 }
 
 /* ── Avatar colour from name ── */
-const AVATAR_COLORS = [
-  ["#9A3412", "#A5D6A7"],
+const getAvatarColors = () => [
+  [C.ink, "#A5D6A7"],
   ["#1A237E", "#90CAF9"],
   ["#4A148C", "#CE93D8"],
   ["#B71C1C", "#EF9A9A"],
@@ -36,6 +37,7 @@ const AVATAR_COLORS = [
   ["#006064", "#80DEEA"],
 ];
 function avatarColor(name?: string) {
+  const AVATAR_COLORS = getAvatarColors();
   const idx = (name?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx];
 }
@@ -76,7 +78,7 @@ function BenefitRow({
     <Animated.View
       style={[styles.benefitRow, { opacity, transform: [{ translateX }] }]}
     >
-      <Ionicons name={icon} size={20} color="#C2410C" />
+      <Ionicons name={icon} size={20} color={C.primary} />
       <Text style={styles.benefitText}>{text}</Text>
     </Animated.View>
   );
@@ -121,7 +123,7 @@ function GuestProfileView() {
           {/* Icon */}
           <View style={styles.guestIconWrap}>
             <View style={styles.guestIconCircle}>
-              <Ionicons name="person-outline" size={64} color="#C2410C" />
+              <Ionicons name="person-outline" size={64} color={C.primary} />
             </View>
           </View>
 
@@ -266,7 +268,7 @@ function MenuRow({
           <Ionicons
             name={icon}
             size={20}
-            color={accent ? "#E65100" : "#C2410C"}
+            color={accent ? "#E65100" : C.primary}
           />
         </View>
         <View style={styles.menuTextWrap}>
@@ -478,7 +480,7 @@ export default function ProfileScreen() {
 
           <Text style={styles.heroName}>{user?.name || "VADI Customer"}</Text>
           <View style={styles.heroPill}>
-            <Ionicons name="call" size={12} color="#C2410C" />
+            <Ionicons name="call" size={12} color={C.primary} />
             <Text style={styles.heroPillText}>
               {user?.phone || "+91 XXXXXXXXXX"}
             </Text>
@@ -491,7 +493,7 @@ export default function ProfileScreen() {
             value={totalOrders}
             label="Total Orders"
             icon="bag-outline"
-            color="#C2410C"
+            color={C.primary}
             delay={200}
           />
           <StatTile
@@ -614,10 +616,10 @@ export default function ProfileScreen() {
 /* ══════════════════════════════════════
    STYLES
 ══════════════════════════════════════ */
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#FFF8F4",
+    backgroundColor: C.page,
   },
   scroll: {
     paddingBottom: 20,
@@ -625,7 +627,7 @@ const styles = StyleSheet.create({
 
   /* ── Hero ── */
   hero: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     alignItems: "center",
     paddingTop: 36,
     paddingBottom: 28,
@@ -639,7 +641,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     top: -80,
     right: -60,
   },
@@ -657,7 +659,7 @@ const styles = StyleSheet.create({
     height: 92,
     borderRadius: 46,
     borderWidth: 3,
-    borderColor: "#C2410C",
+    borderColor: C.primary,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
@@ -682,14 +684,14 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     borderWidth: 2,
     borderColor: "#fff",
   },
   heroName: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#1A1A1A",
+    color: C.ink,
     letterSpacing: -0.3,
     marginBottom: 6,
   },
@@ -697,7 +699,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
@@ -705,7 +707,7 @@ const styles = StyleSheet.create({
   heroPillText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#C2410C",
+    color: C.primary,
   },
 
   /* ── Stats ── */
@@ -718,7 +720,7 @@ const styles = StyleSheet.create({
   },
   statTile: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
@@ -744,7 +746,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 11,
-    color: "#888",
+    color: C.muted,
     fontWeight: "600",
     textAlign: "center",
   },
@@ -757,14 +759,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#888",
+    color: C.muted,
     letterSpacing: 1.2,
     textTransform: "uppercase",
     marginBottom: 8,
     marginLeft: 4,
   },
   sectionCard: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 18,
     overflow: "hidden",
     shadowColor: "#000",
@@ -789,7 +791,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -799,30 +801,30 @@ const styles = StyleSheet.create({
   menuLabel: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#1A1A1A",
+    color: C.ink,
     marginBottom: 1,
   },
   menuSub: {
     fontSize: 12,
-    color: "#999",
+    color: C.muted,
     fontWeight: "500",
   },
   menuChevronWrap: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: C.soft,
     alignItems: "center",
     justifyContent: "center",
   },
   badge: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.badge,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
   },
   badgeText: {
-    color: "#fff",
+    color: C.badgeText,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -873,23 +875,23 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
-    borderColor: "#C2410C",
+    borderColor: C.primary,
   },
   guestTitle: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#1A1A1A",
+    color: C.ink,
     marginBottom: 12,
     textAlign: "center",
     letterSpacing: -0.5,
   },
   guestSubtitle: {
     fontSize: 15,
-    color: "#666",
+    color: C.muted,
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 32,
@@ -908,18 +910,18 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     fontSize: 15,
-    color: "#333",
+    color: C.ink,
     fontWeight: "500",
     flex: 1,
   },
   loginBtn: {
     width: "100%",
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
     marginBottom: 12,
-    shadowColor: "#C2410C",
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -933,16 +935,16 @@ const styles = StyleSheet.create({
   },
   signupBtn: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderWidth: 2,
-    borderColor: "#C2410C",
+    borderColor: C.primary,
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
     marginBottom: 20,
   },
   signupBtnText: {
-    color: "#C2410C",
+    color: C.primary,
     fontSize: 16,
     fontWeight: "800",
     letterSpacing: 0.5,
@@ -951,9 +953,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   browseGuestText: {
-    color: "#888",
+    color: C.muted,
     fontSize: 14,
     fontWeight: "600",
     textDecorationLine: "underline",
   },
-});
+}));

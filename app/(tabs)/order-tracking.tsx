@@ -21,6 +21,7 @@ import { useCart } from "@/context/CartContext";
 import { API } from "@/utils/api";
 import { downloadOrderInvoicePdf } from "@/utils/orderInvoice";
 import { useAuth } from "@/context/AuthContext";
+import { C, themed } from "@/constants/theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -243,7 +244,7 @@ function TrackingStep({
               name={step.icon}
               size={14}
               color={
-                isCompleted ? "#C2410C" : isActive ? "#F59E0B" : "#9CA3AF"
+                isCompleted ? C.primary : isActive ? "#F59E0B" : C.muted
               }
             />
           </View>
@@ -311,7 +312,7 @@ function StatCard({
         },
       ]}
     >
-      <Ionicons name={icon as any} size={18} color="#C2410C" />
+      <Ionicons name={icon as any} size={18} color={C.primary} />
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </Animated.View>
@@ -445,7 +446,7 @@ export default function OrderTrackingScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFF8F4" />
+      <StatusBar barStyle="dark-content" backgroundColor={C.page} />
 
       {/* ── Header ── */}
       <Animated.View
@@ -472,7 +473,7 @@ export default function OrderTrackingScreen() {
           style={styles.backBtn}
         >
           <View style={styles.iconButton}>
-            <Ionicons name="arrow-back" size={24} color="#9A3412" />
+            <Ionicons name="arrow-back" size={24} color={C.ink} />
           </View>
         </TouchableOpacity>
 
@@ -487,7 +488,7 @@ export default function OrderTrackingScreen() {
 
         <TouchableOpacity onPress={() => router.push("/cart")}>
           <View style={styles.iconButton}>
-            <Ionicons name="cart-outline" size={24} color="#9A3412" />
+            <Ionicons name="cart-outline" size={24} color={C.ink} />
             {items.length > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{items.length}</Text>
@@ -528,7 +529,7 @@ export default function OrderTrackingScreen() {
               <Text
                 style={[
                   styles.heroStatus,
-                  isDelivered && { color: "#9A3412" },
+                  isDelivered && { color: C.ink },
                   isCancelled && { color: "#B42318" },
                 ]}
               >
@@ -552,7 +553,7 @@ export default function OrderTrackingScreen() {
                 }
                 size={22}
                 color={
-                  isDelivered ? "#9A3412" : isCancelled ? "#B42318" : "#F59E0B"
+                  isDelivered ? C.ink : isCancelled ? "#B42318" : "#F59E0B"
                 }
               />
             </View>
@@ -621,12 +622,12 @@ export default function OrderTrackingScreen() {
 
         {isDelivered && (
           <View style={[styles.etaBanner, styles.deliveredBanner]}>
-            <Ionicons name="checkmark-done-circle" size={22} color="#9A3412" />
+            <Ionicons name="checkmark-done-circle" size={22} color={C.ink} />
             <View style={{ marginLeft: 10 }}>
-              <Text style={[styles.etaSmall, { color: "#C2410C" }]}>
+              <Text style={[styles.etaSmall, { color: C.primary }]}>
                 Delivered Successfully
               </Text>
-              <Text style={[styles.etaBig, { color: "#9A3412" }]}>
+              <Text style={[styles.etaBig, { color: C.ink }]}>
                 Thank you for your order!
               </Text>
             </View>
@@ -657,9 +658,9 @@ export default function OrderTrackingScreen() {
             }}
           >
             {invoiceBusy ? (
-              <ActivityIndicator color="#9A3412" size="small" />
+              <ActivityIndicator color={C.ink} size="small" />
             ) : (
-              <Ionicons name="document-text-outline" size={20} color="#9A3412" />
+              <Ionicons name="document-text-outline" size={20} color={C.ink} />
             )}
             <Text style={styles.invoiceBtnText}>
               {invoiceBusy ? "Preparing…" : "Download invoice (PDF)"}
@@ -683,7 +684,7 @@ export default function OrderTrackingScreen() {
 
         {orderLoading && params.orderId && effectiveUserId ? (
           <View style={styles.handoverLoading}>
-            <ActivityIndicator color="#C2410C" />
+            <ActivityIndicator color={C.primary} />
             <Text style={styles.handoverLoadingText}>Updating order…</Text>
           </View>
         ) : null}
@@ -735,7 +736,7 @@ export default function OrderTrackingScreen() {
             ]}
             onPress={() => Haptics.selectionAsync()}
           >
-            <Ionicons name="headset-outline" size={18} color="#C2410C" />
+            <Ionicons name="headset-outline" size={18} color={C.primary} />
             <Text style={styles.actionBtnOutlineText}>Support</Text>
           </Pressable>
 
@@ -760,10 +761,10 @@ export default function OrderTrackingScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#FFF8F4",
+    backgroundColor: C.page,
   },
 
   // Header (aligned with `all-products`)
@@ -773,11 +774,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: "#FFF1E8",
     elevation: 4,
-    shadowColor: "#9A3412",
+    shadowColor: C.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -800,27 +801,27 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     letterSpacing: 0.3,
   },
   headerOrderBadge: {
     marginTop: 2,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.badge,
     borderRadius: 10,
   },
   headerOrderBadgeText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#C2410C",
+    color: C.badgeText,
     textTransform: "uppercase",
   },
   badge: {
     position: "absolute",
     top: -2,
     right: -2,
-    backgroundColor: "#F44336",
+    backgroundColor: C.primary,
     borderRadius: 12,
     minWidth: 22,
     height: 22,
@@ -855,7 +856,7 @@ const styles = StyleSheet.create({
   },
   handoverLoadingText: {
     fontSize: 14,
-    color: "#4B5563",
+    color: C.muted,
   },
 
   handoverCard: {
@@ -891,18 +892,18 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "900",
     letterSpacing: 8,
-    color: "#9A3412",
+    color: C.ink,
     textAlign: "center",
   },
 
   // Hero Card
   heroCard: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 20,
     padding: 18,
     marginBottom: 12,
     overflow: "hidden",
-    shadowColor: "#9A3412",
+    shadowColor: C.ink,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -925,7 +926,7 @@ const styles = StyleSheet.create({
   },
   heroStatusLabel: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: C.muted,
     fontWeight: "600",
     letterSpacing: 0.8,
     textTransform: "uppercase",
@@ -946,7 +947,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   statusOrbSuccess: {
-    backgroundColor: "#FFEDD5",
+    backgroundColor: C.soft,
   },
   statusOrbDanger: {
     backgroundColor: "#FEE2E2",
@@ -955,7 +956,7 @@ const styles = StyleSheet.create({
   // Progress Bar
   progressBarTrack: {
     height: 8,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: C.line,
     borderRadius: 4,
     overflow: "hidden",
     marginBottom: 6,
@@ -966,14 +967,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   progressBarFillSuccess: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
   },
   progressBarFillDanger: {
     backgroundColor: "#EF4444",
   },
   progressText: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: C.muted,
     textAlign: "right",
     marginBottom: 16,
   },
@@ -984,7 +985,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
+    borderTopColor: C.line,
   },
   statCard: {
     flex: 1,
@@ -994,20 +995,20 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#111827",
+    color: C.ink,
     marginTop: 2,
     textAlign: "center",
   },
   statLabel: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: C.muted,
     fontWeight: "500",
     textAlign: "center",
   },
   statDivider: {
     width: 1,
     height: 36,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: C.line,
   },
 
   // ETA Banner
@@ -1051,7 +1052,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   deliveredBanner: {
-    backgroundColor: "#FFEDD5",
+    backgroundColor: C.soft,
     borderColor: "#6EE7B7",
   },
   cancelledBanner: {
@@ -1063,7 +1064,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -1074,16 +1075,16 @@ const styles = StyleSheet.create({
   invoiceBtnText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#7C2D12",
+    color: C.ink,
   },
 
   // Timeline Card
   timelineCard: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 20,
     padding: 18,
     marginBottom: 14,
-    shadowColor: "#9A3412",
+    shadowColor: C.ink,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -1092,7 +1093,7 @@ const styles = StyleSheet.create({
   timelineTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#6B7280",
+    color: C.muted,
     letterSpacing: 0.8,
     textTransform: "uppercase",
     marginBottom: 16,
@@ -1119,8 +1120,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dotOuterCompleted: {
-    borderColor: "#C2410C",
-    backgroundColor: "#C2410C",
+    borderColor: C.primary,
+    backgroundColor: C.primary,
   },
   dotOuterActive: {
     borderColor: "#F59E0B",
@@ -1144,18 +1145,18 @@ const styles = StyleSheet.create({
   },
   lineFilledFull: {
     flex: 1,
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     width: 2,
     alignSelf: "center",
   },
   lineFilled: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     width: 2,
     alignSelf: "center",
   },
   lineEmpty: {
     flex: 1,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: C.line,
     width: 2,
     alignSelf: "center",
   },
@@ -1174,12 +1175,12 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 6,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: C.line,
     alignItems: "center",
     justifyContent: "center",
   },
   iconBadgeCompleted: {
-    backgroundColor: "#FFEDD5",
+    backgroundColor: C.badge,
   },
   iconBadgeActive: {
     backgroundColor: "#FEF3C7",
@@ -1187,11 +1188,11 @@ const styles = StyleSheet.create({
   stepLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: C.muted,
     flex: 1,
   },
   stepLabelCompleted: {
-    color: "#111827",
+    color: C.ink,
     fontWeight: "700",
   },
   stepLabelActive: {
@@ -1227,7 +1228,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   stepSubLabelVisible: {
-    color: "#6B7280",
+    color: C.muted,
   },
 
   // Action Buttons
@@ -1246,14 +1247,14 @@ const styles = StyleSheet.create({
   },
   actionBtnOutline: {
     borderWidth: 2,
-    borderColor: "#C2410C",
-    backgroundColor: "#fff",
+    borderColor: C.primary,
+    backgroundColor: C.card,
   },
   actionBtnFilled: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
   },
   actionBtnOutlineText: {
-    color: "#C2410C",
+    color: C.primary,
     fontWeight: "700",
     fontSize: 14,
   },
@@ -1262,4 +1263,4 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
   },
-});
+}));

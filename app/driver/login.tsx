@@ -13,6 +13,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { API } from "@/utils/api";
 import { clearDriverToken, setDriverToken } from "@/utils/driverSession";
+import { C, themed } from "@/constants/theme";
 
 export default function DriverLoginScreen() {
   const [phone, setPhone] = useState("");
@@ -159,25 +160,25 @@ export default function DriverLoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F6F7F2" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   container: { flex: 1, padding: 24, paddingTop: 40 },
   title: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     marginBottom: 8,
   },
   sub: { fontSize: 14, color: "#4E7C50", marginBottom: 24, lineHeight: 20 },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 16,
     fontSize: 17,
     marginBottom: 16,
   },
   cta: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
@@ -185,8 +186,8 @@ const styles = StyleSheet.create({
   ctaText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   sentTo: { fontSize: 13, color: "#374151", marginBottom: 12 },
   link: { marginTop: 16, alignSelf: "center" },
-  linkText: { color: "#C2410C", fontWeight: "600" },
+  linkText: { color: C.primary, fontWeight: "600" },
   err: { color: "#B42318", marginTop: 12, textAlign: "center" },
   back: { marginTop: 32, alignSelf: "flex-start" },
-  backText: { color: "#6B7280", fontSize: 15 },
-});
+  backText: { color: C.muted, fontSize: 15 },
+}));

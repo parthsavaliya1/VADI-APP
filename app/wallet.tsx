@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { AppHeader } from "@/components/AppHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { C, themed } from "@/constants/theme";
 
 type Txn = {
   _id: string;
@@ -86,7 +87,7 @@ export default function WalletScreen() {
       <AppHeader title="Wallet" showBack showCart={false} />
 
       {loading ? (
-        <ActivityIndicator color="#C2410C" style={{ marginTop: 40 }} />
+        <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={history}
@@ -154,57 +155,57 @@ export default function WalletScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FFF8F4" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
   },
   headerTitle: { fontSize: 18, fontWeight: "800" },
   balanceCard: {
-    backgroundColor: "#9A3412",
+    backgroundColor: C.ink,
     borderRadius: 20,
     padding: 22,
     marginBottom: 18,
   },
-  balanceLabel: { color: "#F5D0C0", fontSize: 13, fontWeight: "600" },
+  balanceLabel: { color: C.page, fontSize: 13, fontWeight: "600" },
   balanceValue: { color: "#fff", fontSize: 36, fontWeight: "800", marginTop: 6 },
-  balanceHint: { color: "#FFF1E8", marginTop: 6 },
-  section: { fontSize: 16, fontWeight: "800", marginBottom: 10, color: "#1A1A1A" },
+  balanceHint: { color: C.soft, marginTop: 6 },
+  section: { fontSize: 16, fontWeight: "800", marginBottom: 10, color: C.ink },
   presets: { flexDirection: "row", gap: 8, marginBottom: 12 },
   preset: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingVertical: 10,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: C.line,
   },
-  presetOn: { backgroundColor: "#FFF1E8", borderColor: "#C2410C" },
-  presetText: { fontWeight: "700", color: "#333" },
-  presetTextOn: { color: "#9A3412" },
+  presetOn: { backgroundColor: C.soft, borderColor: C.primary },
+  presetText: { fontWeight: "700", color: C.ink },
+  presetTextOn: { color: C.ink },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
     marginBottom: 12,
   },
   addBtn: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     borderRadius: 14,
     padding: 16,
     alignItems: "center",
     marginBottom: 22,
   },
   addBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
-  empty: { color: "#777", marginTop: 8 },
+  empty: { color: C.muted, marginTop: 8 },
   row: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 8,
@@ -212,9 +213,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  rowTitle: { fontWeight: "700", color: "#1A1A1A" },
-  rowDate: { color: "#888", fontSize: 12, marginTop: 4 },
+  rowTitle: { fontWeight: "700", color: C.ink },
+  rowDate: { color: C.muted, fontSize: 12, marginTop: 4 },
   rowAmount: { fontWeight: "800", fontSize: 16 },
-  credit: { color: "#C2410C" },
+  credit: { color: C.primary },
   debit: { color: "#C62828" },
-});
+}));

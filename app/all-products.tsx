@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/components/AppHeader";
 import { useCart } from "../context/CartContext";
 import { API } from "../utils/api";
+import { C, themed } from "@/constants/theme";
 
 type ProductVariant = {
   _id: string;
@@ -316,7 +317,7 @@ export default function AllProductsScreen() {
             )}
             {discount > 0 && (
               <View style={styles.badgeTopRight}>
-                <Text style={styles.badgeText}>{discount}% OFF</Text>
+                <Text style={[styles.badgeText, { color: C.ink }]}>{discount}% OFF</Text>
               </View>
             )}
           </View>
@@ -356,7 +357,7 @@ export default function AllProductsScreen() {
                 disabled={isAdding || variant.stock === 0}
               >
                 {isAdding ? (
-                  <ActivityIndicator size="small" color="#C2410C" />
+                  <ActivityIndicator size="small" color={C.primary} />
                 ) : inCart ? (
                   <Ionicons name="checkmark" size={15} color="#fff" />
                 ) : (
@@ -421,10 +422,10 @@ export default function AllProductsScreen() {
           },
         ]}
       >
-        <Ionicons name="search" size={16} color="#C2410C" style={{ marginLeft: 2, marginRight: 4 }} />
+        <Ionicons name="search" size={16} color={C.primary} style={{ marginLeft: 2, marginRight: 4 }} />
         <TextInput
           placeholder="Search products, brands..."
-          placeholderTextColor="#999"
+          placeholderTextColor={C.muted}
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -443,7 +444,7 @@ export default function AllProductsScreen() {
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={20} color="#999" />
+            <Ionicons name="close-circle" size={20} color={C.muted} />
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -451,7 +452,7 @@ export default function AllProductsScreen() {
       {/* FILTER & SORT BAR */}
       <View style={styles.filterBar}>
         <View style={styles.resultCountContainer}>
-          <Ionicons name="grid-outline" size={16} color="#C2410C" />
+          <Ionicons name="grid-outline" size={16} color={C.primary} />
           <Text style={styles.resultCount}>
             {displayProducts.length}{" "}
             {displayProducts.length === 1 ? "product" : "products"}
@@ -464,7 +465,7 @@ export default function AllProductsScreen() {
           <Ionicons
             name={showSortModal ? "funnel" : "funnel-outline"}
             size={18}
-            color="#C2410C"
+            color={C.primary}
           />
           <Text style={styles.sortText}>
             {sortOptions.find((o) => o.value === sortBy)?.label || "Sort"}
@@ -472,7 +473,7 @@ export default function AllProductsScreen() {
           <Ionicons
             name={showSortModal ? "chevron-up" : "chevron-down"}
             size={16}
-            color="#C2410C"
+            color={C.primary}
           />
         </TouchableOpacity>
       </View>
@@ -483,7 +484,7 @@ export default function AllProductsScreen() {
           <View style={styles.sortModalHeader}>
             <Text style={styles.sortModalTitle}>Sort By</Text>
             <TouchableOpacity onPress={() => setShowSortModal(false)}>
-              <Ionicons name="close" size={24} color="#666" />
+              <Ionicons name="close" size={24} color={C.muted} />
             </TouchableOpacity>
           </View>
           {sortOptions.map((option, index) => (
@@ -502,7 +503,7 @@ export default function AllProductsScreen() {
                 <Ionicons
                   name={option.icon as any}
                   size={20}
-                  color={sortBy === option.value ? "#C2410C" : "#999"}
+                  color={sortBy === option.value ? C.primary : "#999"}
                 />
                 <Text
                   style={[
@@ -515,7 +516,7 @@ export default function AllProductsScreen() {
               </View>
               {sortBy === option.value && (
                 <View style={styles.checkmarkContainer}>
-                  <Ionicons name="checkmark-circle" size={22} color="#C2410C" />
+                  <Ionicons name="checkmark-circle" size={22} color={C.primary} />
                 </View>
               )}
             </TouchableOpacity>
@@ -548,7 +549,7 @@ export default function AllProductsScreen() {
           <Text style={styles.loadingText}>Loading fresh products...</Text>
           <ActivityIndicator
             size="small"
-            color="#C2410C"
+            color={C.primary}
             style={{ marginTop: 8 }}
           />
         </View>
@@ -567,7 +568,7 @@ export default function AllProductsScreen() {
       ) : (
         <View style={styles.emptyState}>
           <View style={styles.emptyIconContainer}>
-            <Ionicons name="search-outline" size={80} color="#E0E0E0" />
+            <Ionicons name="search-outline" size={80} color={C.line} />
           </View>
           <Text style={styles.emptyText}>No Products Found</Text>
           <Text style={styles.emptySubtext}>
@@ -590,10 +591,10 @@ export default function AllProductsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
   },
 
   /* HEADER */
@@ -603,11 +604,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: "#FFF1E8",
     elevation: 4,
-    shadowColor: "#9A3412",
+    shadowColor: C.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -634,7 +635,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     letterSpacing: 0.3,
   },
 
@@ -642,14 +643,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.badge,
     borderRadius: 10,
   },
 
   headerTypeBadgeText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#C2410C",
+    color: C.badgeText,
     textTransform: "uppercase",
   },
 
@@ -669,7 +670,7 @@ const styles = StyleSheet.create({
   },
 
   badgeText: {
-    color: "#fff",
+    color: C.badgeText,
     fontSize: 11,
     fontWeight: "800",
   },
@@ -678,7 +679,7 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingLeft: 14,
     paddingRight: 10,
@@ -687,7 +688,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     marginBottom: 12,
     elevation: 3,
-    shadowColor: "#9A3412",
+    shadowColor: C.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -699,7 +700,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     flex: 1,
-    color: "#333",
+    color: C.ink,
     fontWeight: "500",
     paddingVertical: 0,
     height: 42,
@@ -712,7 +713,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 14,
@@ -732,14 +733,14 @@ const styles = StyleSheet.create({
   resultCount: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#C2410C",
+    color: C.primary,
   },
 
   sortBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
@@ -748,12 +749,12 @@ const styles = StyleSheet.create({
   sortText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#C2410C",
+    color: C.primary,
   },
 
   /* SORT MODAL */
   sortModal: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 16,
@@ -772,14 +773,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-    backgroundColor: "#FAFAFA",
+    borderBottomColor: C.line,
+    backgroundColor: C.card,
   },
 
   sortModalTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#333",
+    color: C.ink,
   },
 
   sortOption: {
@@ -789,7 +790,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F5F5F5",
+    borderBottomColor: C.line,
   },
 
   sortOptionLast: {
@@ -804,12 +805,12 @@ const styles = StyleSheet.create({
 
   sortOptionText: {
     fontSize: 15,
-    color: "#666",
+    color: C.muted,
     fontWeight: "500",
   },
 
   sortOptionActive: {
-    color: "#C2410C",
+    color: C.primary,
     fontWeight: "700",
   },
 
@@ -837,7 +838,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
     fontWeight: "600",
-    color: "#C2410C",
+    color: C.primary,
   },
 
   list: {
@@ -851,7 +852,7 @@ const styles = StyleSheet.create({
 
   /* PRODUCT CARD */
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 16,
     width: "48%",
     marginBottom: 12,
@@ -862,11 +863,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: C.line,
   },
 
   imageWrapper: {
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
     height: 110,
     justifyContent: "center",
     alignItems: "center",
@@ -883,7 +884,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     left: 8,
-    backgroundColor: "#3B82F6",
+    backgroundColor: C.badge,
     borderRadius: 6,
     paddingHorizontal: 7,
     paddingVertical: 3,
@@ -892,13 +893,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: "#EF4444",
+    backgroundColor: C.badge,
     borderRadius: 6,
     paddingHorizontal: 7,
     paddingVertical: 3,
   },
   badgeTextTopLeft: {
-    color: "#fff",
+    color: C.ink,
     fontSize: 8,
     fontWeight: "800",
     letterSpacing: 0.3,
@@ -907,7 +908,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#1F2937",
+    color: C.ink,
     minHeight: 34,
     paddingHorizontal: 10,
     paddingTop: 8,
@@ -915,7 +916,7 @@ const styles = StyleSheet.create({
 
   unit: {
     fontSize: 11,
-    color: "#9CA3AF",
+    color: C.muted,
     marginTop: 2,
     marginBottom: 8,
     fontWeight: "500",
@@ -938,7 +939,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#C2410C",
+    color: C.primary,
   },
 
   originalPriceSmall: {
@@ -950,7 +951,7 @@ const styles = StyleSheet.create({
 
   addBtn: {
     borderWidth: 1.5,
-    borderColor: "#C2410C",
+    borderColor: C.primary,
     borderRadius: 10,
     width: 52,
     height: 32,
@@ -960,8 +961,8 @@ const styles = StyleSheet.create({
   },
 
   addBtnActive: {
-    backgroundColor: "#C2410C",
-    borderColor: "#C2410C",
+    backgroundColor: C.primary,
+    borderColor: C.primary,
   },
 
   addBtnAdding: {
@@ -970,17 +971,17 @@ const styles = StyleSheet.create({
 
   addBtnDisabled: {
     borderColor: "#CCC",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: C.soft,
   },
 
   addText: {
-    color: "#C2410C",
+    color: C.primary,
     fontWeight: "800",
     fontSize: 11,
   },
 
   addTextDisabled: {
-    color: "#999",
+    color: C.muted,
   },
 
   stockWarning: {
@@ -1011,7 +1012,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: C.soft,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
@@ -1020,13 +1021,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#666",
+    color: C.muted,
     marginTop: 8,
   },
 
   emptySubtext: {
     fontSize: 15,
-    color: "#999",
+    color: C.muted,
     marginTop: 8,
     textAlign: "center",
     fontWeight: "500",
@@ -1039,10 +1040,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingHorizontal: 28,
     paddingVertical: 14,
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     borderRadius: 12,
     elevation: 4,
-    shadowColor: "#C2410C",
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -1054,4 +1055,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 0.5,
   },
-});
+}));

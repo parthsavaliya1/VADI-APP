@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { C, themed } from "@/constants/theme";
 
 type PopupButtonStyle = "default" | "cancel" | "destructive";
 
@@ -119,7 +120,7 @@ export function CustomAlertProvider({ children }: { children: ReactNode }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.45)",
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 380,
     borderRadius: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.card,
     padding: 18,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -153,14 +154,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     textAlign: "center",
   },
   message: {
     marginTop: 8,
     fontSize: 14,
     lineHeight: 20,
-    color: "#4B5563",
+    color: C.muted,
     textAlign: "center",
   },
   buttonGroup: {
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
   button: {
     minHeight: 46,
     borderRadius: 12,
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -192,4 +193,4 @@ const styles = StyleSheet.create({
   destructiveButtonText: {
     color: "#DC2626",
   },
-});
+}));

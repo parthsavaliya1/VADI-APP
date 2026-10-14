@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppHeader } from "@/components/AppHeader";
 import { API } from "@/utils/api";
+import { C, themed } from "@/constants/theme";
 
 type Category = {
   _id: string;
@@ -36,12 +37,12 @@ type CategoryUI = {
   count: number;
 };
 
-const categoryIcons: Record<string, { icon: string; color: string }> = {
-  vegetables: { icon: "leaf", color: "#B56A45" },
+const categoryIcons: Record<string, { icon: string; color: string }> = themed(() => ({
+  vegetables: { icon: "leaf", color: C.primary },
   fruits: { icon: "nutrition", color: "#C88A3D" },
-  "dairy-bakery": { icon: "ice-cream", color: "#8F4F32" },
-  beverages: { icon: "beer", color: "#6F6A64" },
-};
+  "dairy-bakery": { icon: "ice-cream", color: C.primaryDark },
+  beverages: { icon: "beer", color: C.muted },
+}));
 
 export default function CategoriesScreen() {
   const [categories, setCategories] = useState<CategoryUI[]>([]);
@@ -117,7 +118,7 @@ export default function CategoriesScreen() {
 
       {/* SEARCH */}
       <View style={styles.searchBox}>
-        <Ionicons name="search" size={16} color="#777" style={{ marginLeft: 2, marginRight: 4 }} />
+        <Ionicons name="search" size={16} color={C.muted} style={{ marginLeft: 2, marginRight: 4 }} />
         <TextInput
           placeholder="Search categories"
           style={styles.searchInput}
@@ -126,7 +127,7 @@ export default function CategoriesScreen() {
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={18} color="#999" />
+            <Ionicons name="close-circle" size={18} color={C.muted} />
           </TouchableOpacity>
         )}
       </View>
@@ -134,7 +135,7 @@ export default function CategoriesScreen() {
       {/* CATEGORIES GRID */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#B56A45" />
+          <ActivityIndicator size="large" color={C.primary} />
         </View>
       ) : filteredCategories.length > 0 ? (
         <FlatList
@@ -157,7 +158,7 @@ export default function CategoriesScreen() {
                   <Ionicons
                     name={item.icon as any}
                     size={36}
-                    color="#B56A45"
+                    color={C.primary}
                   />
                 )}
               </View>
@@ -183,10 +184,10 @@ export default function CategoriesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
   },
   header: {
     flexDirection: "row",
@@ -208,12 +209,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#171717",
+    color: C.ink,
   },
   iconBtn: {
     position: "relative",
     padding: 6,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     elevation: 2,
     shadowColor: "#000",
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     right: 0,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.badge,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -234,14 +235,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
-    color: "#fff",
+    color: C.badgeText,
     fontSize: 10,
     fontWeight: "700",
   },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingLeft: 14,
     paddingRight: 10,
@@ -249,7 +250,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#E4DDD5",
+    borderColor: C.line,
   },
   searchInput: {
     marginLeft: 8,
@@ -273,14 +274,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   categoryCard: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 20,
     flex: 1,
     marginBottom: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#E4DDD5",
-    shadowColor: "#171717",
+    borderColor: C.line,
+    shadowColor: C.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -289,7 +290,7 @@ const styles = StyleSheet.create({
   imageWrap: {
     height: 120,
     width: "100%",
-    backgroundColor: "#E7D9C8",
+    backgroundColor: C.soft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -304,11 +305,11 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#171717",
+    color: C.ink,
   },
   productCount: {
     fontSize: 12,
-    color: "#6F6A64",
+    color: C.muted,
     marginTop: 4,
     fontWeight: "700",
   },
@@ -321,13 +322,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#666",
+    color: C.muted,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#999",
+    color: C.muted,
     marginTop: 8,
     textAlign: "center",
   },
-});
+}));

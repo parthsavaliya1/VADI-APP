@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCart } from "../../context/CartContext";
 import { API } from "../../utils/api";
+import { C, themed } from "@/constants/theme";
 
 type Product = {
   _id: string;
@@ -85,10 +86,10 @@ export default function ProductListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F6F7F2",
+    backgroundColor: C.page,
   },
   container: {
     padding: 15,
@@ -97,10 +98,10 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     marginBottom: 15,
-    color: "#9A3412",
+    color: C.ink,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 10,
     padding: 15,
     marginBottom: 12,
@@ -117,11 +118,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   price: {
-    color: "#C2410C",
+    color: C.primary,
     marginTop: 5,
   },
   addBtn: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     paddingHorizontal: 15,
     paddingVertical: 6,
     borderRadius: 6,
@@ -130,4 +131,4 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
   },
-});
+}));

@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { C, themed } from "@/constants/theme";
 
 type Product = {
   _id: string;
@@ -75,7 +76,7 @@ export default function CategoryDetailScreen() {
 
       {/* SEARCH */}
       <View style={styles.searchBox}>
-        <Ionicons name="search" size={16} color="#777" style={{ marginLeft: 2, marginRight: 4 }} />
+        <Ionicons name="search" size={16} color={C.muted} style={{ marginLeft: 2, marginRight: 4 }} />
         <TextInput
           placeholder={`Search in ${title}`}
           style={styles.searchInput}
@@ -84,7 +85,7 @@ export default function CategoryDetailScreen() {
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={18} color="#999" />
+            <Ionicons name="close-circle" size={18} color={C.muted} />
           </TouchableOpacity>
         )}
       </View>
@@ -102,7 +103,7 @@ export default function CategoryDetailScreen() {
       {/* PRODUCTS */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#B56A45" />
+          <ActivityIndicator size="large" color={C.primary} />
         </View>
       ) : filteredProducts.length > 0 ? (
         <FlatList
@@ -221,7 +222,7 @@ const ProductCard = ({
             disabled={isAdding}
           >
             {isAdding ? (
-              <ActivityIndicator size="small" color="#B56A45" />
+              <ActivityIndicator size="small" color={C.primary} />
             ) : inCart ? (
               <Ionicons name="checkmark" size={16} color="#fff" />
             ) : (
@@ -237,10 +238,10 @@ const ProductCard = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
   },
   header: {
     flexDirection: "row",
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#171717",
+    color: C.ink,
     flex: 1,
     textAlign: "center",
     marginHorizontal: 8,
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     right: 0,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.badge,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -277,14 +278,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
-    color: "#fff",
+    color: C.badgeText,
     fontSize: 10,
     fontWeight: "700",
   },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     paddingLeft: 14,
     paddingRight: 10,
@@ -310,7 +311,7 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 13,
-    color: "#666",
+    color: C.muted,
     fontWeight: "600",
   },
   loadingContainer: {
@@ -325,14 +326,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 20,
     flex: 1,
     marginBottom: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#E4DDD5",
-    shadowColor: "#171717",
+    borderColor: C.line,
+    shadowColor: C.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
   imageWrap: {
     height: 120,
     width: "100%",
-    backgroundColor: "#E7D9C8",
+    backgroundColor: C.soft,
   },
   cardBody: {
     padding: 10,
@@ -350,14 +351,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     left: 8,
-    backgroundColor: "#F3E4DB",
+    backgroundColor: C.badge,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
     zIndex: 1,
   },
   discountText: {
-    color: "#8F4F32",
+    color: C.badgeText,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -369,11 +370,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#171717",
+    color: C.ink,
   },
   unit: {
     fontSize: 12,
-    color: "#6F6A64",
+    color: C.muted,
     marginTop: 4,
   },
   footerRow: {
@@ -385,17 +386,17 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#B56A45",
+    color: C.primary,
     marginTop: 4,
   },
   originalPrice: {
     fontSize: 11,
-    color: "#999",
+    color: C.muted,
     textDecorationLine: "line-through",
     marginTop: 2,
   },
   addBtn: {
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -403,7 +404,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   addBtnActive: {
-    backgroundColor: "#8F4F32",
+    backgroundColor: C.primaryDark,
   },
   addBtnAdding: {
     opacity: 0.7,
@@ -425,13 +426,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#666",
+    color: C.muted,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#999",
+    color: C.muted,
     marginTop: 8,
     textAlign: "center",
   },
-});
+}));

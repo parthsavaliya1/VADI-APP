@@ -28,6 +28,7 @@ import {
   offerDeadlineToFutureMs,
   remainingMsToCountdownDHMS,
 } from "../../utils/offerEnd";
+import { C, themed } from "@/constants/theme";
 
 type SpeechEventName = "start" | "end" | "result" | "error";
 
@@ -51,14 +52,15 @@ const HORIZONTAL_CARD_W = (width - 16 * 2 - 12) / 2;
 const DEAL_CARD_W = width - 56;
 
 // ─── Fallbacks ────────────────────────────────────────────────────────────────
-const FALLBACK_BANNERS = [
+// Built lazily so they pick up the colour theme loaded at startup.
+const getFallbackBanners = () => [
   {
     id: "b1",
     title: "Farm Fresh\nDelivered",
     subtitle: "Handpicked produce from\ntrusted local farms.",
     ctaText: "Shop Now",
-    ctaColor: "#C2410C",
-    bg: "#FFF1E8",
+    ctaColor: C.primary,
+    bg: C.soft,
     badgeText: "100%\nNATURAL",
     image: "https://images.unsplash.com/photo-1543168256-418811576931?w=400&q=80",
   },
@@ -67,8 +69,8 @@ const FALLBACK_BANNERS = [
     title: "Today's\nBest Deals",
     subtitle: "Up to 30% off on\nseasonal fruits & veggies.",
     ctaText: "Grab Deals",
-    ctaColor: "#F59E0B",
-    bg: "#FFF8E1",
+    ctaColor: C.primary,
+    bg: C.soft,
     badgeText: "UP TO\n30% OFF",
     image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&q=80",
   },
@@ -77,26 +79,26 @@ const FALLBACK_BANNERS = [
     title: "Dairy &\nOrganic",
     subtitle: "Fresh from local farms,\ndelivered daily.",
     ctaText: "Order Now",
-    ctaColor: "#3F51B5",
-    bg: "#E8EAF6",
+    ctaColor: C.primary,
+    bg: C.soft,
     badgeText: "FRESH\nDAILY",
     image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&q=80",
   },
 ];
 
-const FEATURES = [
-  { icon: "leaf-outline", label: "100% Natural", sub: "Chemical free", color: "#B56A45", bg: "#F3E4DB" },
-  { icon: "home-outline", label: "From Local\nFarms", sub: "Support local", color: "#B56A45", bg: "#F3E4DB" },
-  { icon: "flash-outline", label: "Fast Delivery", sub: "At your door", color: "#B56A45", bg: "#F3E4DB" },
-  { icon: "shield-checkmark-outline", label: "Secure\nPayment", sub: "Safe & easy", color: "#B56A45", bg: "#F3E4DB" },
+const getFeatures = () => [
+  { icon: "leaf-outline", label: "100% Natural", sub: "Chemical free", color: C.primary, bg: C.soft },
+  { icon: "home-outline", label: "From Local\nFarms", sub: "Support local", color: C.primary, bg: C.soft },
+  { icon: "flash-outline", label: "Fast Delivery", sub: "At your door", color: C.primary, bg: C.soft },
+  { icon: "shield-checkmark-outline", label: "Secure\nPayment", sub: "Safe & easy", color: C.primary, bg: C.soft },
 ];
 
-const QUICK_ACTIONS = [
-  { color: "#B56A45", bg: "#F3E4DB", icon: "leaf" },
-  { color: "#F97316", bg: "#FFEDD5", icon: "nutrition" },
-  { color: "#3B82F6", bg: "#DBEAFE", icon: "ice-cream" },
-  { color: "#A78BFA", bg: "#EDE9FE", icon: "basket-outline" },
-  { color: "#F59E0B", bg: "#FEF9C3", icon: "cafe-outline" },
+const getQuickActions = () => [
+  { color: C.primary, bg: C.soft, icon: "leaf" },
+  { color: C.primary, bg: C.soft, icon: "nutrition" },
+  { color: C.primary, bg: C.soft, icon: "ice-cream" },
+  { color: C.primary, bg: C.soft, icon: "basket-outline" },
+  { color: C.primary, bg: C.soft, icon: "cafe-outline" },
 ];
 
 const SEARCH_PLACEHOLDERS = [
@@ -203,7 +205,7 @@ function GuestBanner() {
     <Animated.View style={[s.guestBanner, { opacity: fade, transform: [{ translateY: slide }] }]}>
       <View style={s.guestLeft}>
         <View style={s.guestIconWrap}>
-          <Ionicons name="person-outline" size={16} color="#C2410C" />
+          <Ionicons name="person-outline" size={16} color={C.ink} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={s.guestTitle}>Browsing as guest</Text>
@@ -215,7 +217,7 @@ function GuestBanner() {
           <Text style={s.guestLoginText}>Log In</Text>
         </TouchableOpacity>
         <Pressable onPress={dismiss} hitSlop={10} style={s.guestDismiss}>
-          <Ionicons name="close" size={15} color="#999" />
+          <Ionicons name="close" size={15} color={C.muted} />
         </Pressable>
       </View>
     </Animated.View>
@@ -245,7 +247,7 @@ function ProductSkeleton() {
 }
 
 // ─── Hero Banner Slide ────────────────────────────────────────────────────────
-function BannerSlide({ item }: { item: typeof FALLBACK_BANNERS[0] }) {
+function BannerSlide({ item }: { item: ReturnType<typeof getFallbackBanners>[0] }) {
   return (
     <TouchableOpacity 
       style={[s.bannerSlide, { width: width - 32 }]}
@@ -347,7 +349,7 @@ function FeaturedCard({ item, onAdd }: { item: Product; onAdd: () => void }) {
     >
       <View style={s.featImgZone}>
         <View style={s.starBadge}>
-          <Ionicons name="star" size={11} color="#fff" />
+          <Ionicons name="star" size={11} color={C.badgeText} />
         </View>
         <Image source={{ uri: item.image || "https://via.placeholder.com/150" }} style={s.featImg} />
       </View>
@@ -394,7 +396,7 @@ function ProductCard({
             <View style={s.trendBadge}><Text style={s.prodBadgeTxt}>TRENDING</Text></View>
           )}
           {disc > 0 && (
-            <View style={s.offBadge}><Text style={s.prodBadgeTxt}>{disc}% OFF</Text></View>
+            <View style={s.offBadge}><Text style={[s.prodBadgeTxt, { color: C.ink }]}>{disc}% OFF</Text></View>
           )}
         </View>
         <Text numberOfLines={2} style={s.prodName}>{item.name}</Text>
@@ -411,7 +413,7 @@ function ProductCard({
             activeOpacity={0.8}
           >
             {isAdding ? (
-              <ActivityIndicator size="small" color="#C2410C" />
+              <ActivityIndicator size="small" color={C.primary} />
             ) : inCart ? (
               <Ionicons name="checkmark" size={15} color="#fff" />
             ) : (
@@ -545,7 +547,9 @@ export default function HomeScreen() {
     }, [user?._id]),
   );
 
-  // Banner slides — use dynamic banners if available, else FALLBACK_BANNERS
+  // Banner slides — use dynamic banners if available, else fallback banners
+  const FALLBACK_BANNERS = getFallbackBanners();
+  const QUICK_ACTIONS = getQuickActions();
   const bannerSlides = homeBanners.length > 0
     ? homeBanners.map((b, i) => ({ ...FALLBACK_BANNERS[i % FALLBACK_BANNERS.length], id: b._id, image: b.image }))
     : FALLBACK_BANNERS;
@@ -666,7 +670,7 @@ export default function HomeScreen() {
   }, []);
 
   if (authLoading) {
-    return <View style={s.loadingScreen}><ActivityIndicator size="large" color="#C2410C" /></View>;
+    return <View style={s.loadingScreen}><ActivityIndicator size="large" color={C.primary} /></View>;
   }
 
   const trendingProducts = (() => {
@@ -744,7 +748,7 @@ export default function HomeScreen() {
                   <Text style={s.addressText} numberOfLines={1}>
                     {defaultAddress ? `${defaultAddress.name} · ${defaultAddress.city}` : "Add delivery address"}
                   </Text>
-                  <Ionicons name="chevron-down" size={15} color="#9A3412" />
+                  <Ionicons name="chevron-down" size={15} color={C.ink} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -755,11 +759,11 @@ export default function HomeScreen() {
               onPress={() => router.push("/notifications")}
               activeOpacity={0.85}
             >
-              <Ionicons name="notifications-outline" size={22} color="#9A3412" />
+              <Ionicons name="notifications-outline" size={22} color={C.ink} />
               {notifUnread > 0 && <View style={s.notifDot} />}
             </TouchableOpacity>
             <TouchableOpacity style={s.iconBtn} onPress={() => router.push("/cart")}>
-              <Ionicons name="cart-outline" size={24} color="#9A3412" />
+              <Ionicons name="cart-outline" size={24} color={C.ink} />
               {getCartItemCount() > 0 && (
                 <View style={s.cartBadge}><Text style={s.cartBadgeText}>{getCartItemCount()}</Text></View>
               )}
@@ -771,7 +775,7 @@ export default function HomeScreen() {
 
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#C2410C"]} tintColor="#C2410C" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}
         contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 70 }]}
@@ -780,10 +784,10 @@ export default function HomeScreen() {
 
         {/* ── SEARCH ─────────────────────────────────────────────────────── */}
         <Animated.View style={[s.searchBox, { transform: [{ scale: searchScale }] }]}>
-          <Ionicons name="search" size={16} color="#9CA3AF" style={{ marginLeft: 2, marginRight: 8 }} />
+          <Ionicons name="search" size={16} color={C.muted} style={{ marginLeft: 2, marginRight: 8 }} />
           <TextInput
             placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={C.muted}
             style={s.searchInput}
             value={searchQuery}
             onChangeText={(t) => { setSearchQuery(t); setSelectedCatId(null); }}
@@ -798,16 +802,16 @@ export default function HomeScreen() {
             <Ionicons
               name={isListening ? "mic" : "mic-outline"}
               size={16}
-              color={isListening ? "#fff" : "#C2410C"}
+              color={isListening ? "#fff" : C.ink}
             />
           </TouchableOpacity>
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+              <Ionicons name="close-circle" size={18} color={C.muted} />
             </TouchableOpacity>
           )}
           <View style={s.filterPill}>
-            <Ionicons name="options-outline" size={16} color="#C2410C" />
+            <Ionicons name="options-outline" size={16} color={C.ink} />
           </View>
         </Animated.View>
 
@@ -815,10 +819,10 @@ export default function HomeScreen() {
         {selectedCatId && (
           <View style={s.filterChipRow}>
             <View style={s.filterChip}>
-              <Ionicons name="pricetag-outline" size={13} color="#C2410C" />
+              <Ionicons name="pricetag-outline" size={13} color={C.ink} />
               <Text style={s.filterChipText}>{selectedCatName()}</Text>
               <TouchableOpacity onPress={() => setSelectedCatId(null)} hitSlop={8}>
-                <Ionicons name="close-circle" size={16} color="#C2410C" />
+                <Ionicons name="close-circle" size={16} color={C.ink} />
               </TouchableOpacity>
             </View>
           </View>
@@ -859,7 +863,7 @@ export default function HomeScreen() {
         {/* ── FEATURE BADGES ──────────────────────────────────────────────── */}
         {!isFiltering && homeLayout.showFeatureBadgesRow && (
           <View style={s.featBadgesRow}>
-            {FEATURES.map((f, i) => (
+            {getFeatures().map((f, i) => (
               <View key={i} style={s.featBadge}>
                 <View style={[s.featIconCircle, { backgroundColor: f.bg }]}>
                   <Ionicons name={f.icon as any} size={20} color={f.color} />
@@ -959,7 +963,7 @@ export default function HomeScreen() {
                         : <Ionicons name={qa.icon as any} size={22} color={qa.color} />
                       }
                     </View>
-                    <Text style={[s.catName, selected && { color: "#C2410C" }]} numberOfLines={2}>
+                    <Text style={[s.catName, selected && { color: C.primary }]} numberOfLines={2}>
                       {item.name}
                     </Text>
                   </TouchableOpacity>
@@ -1086,10 +1090,10 @@ export default function HomeScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F7F3EC" },
+const s = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   scrollContent: {},
-  loadingScreen: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F7F3EC" },
+  loadingScreen: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: C.page },
 
   // HEADER
   headerFixed: {
@@ -1098,51 +1102,51 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 50,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
   },
   headerWrap: {
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
   },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 4, paddingBottom: 10 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 0 },
   headerLogo: { width: 40, height: 40, resizeMode: "contain" },
-  brandTagline: { fontSize: 13, fontWeight: "800", color: "#7C2D12" },
-  brandSubTagline: { fontSize: 11, color: "#6B7280", marginTop: 2 },
-  deliverLabel: { fontSize: 11, color: "#6B7280", fontWeight: "500", marginBottom: 2 },
+  brandTagline: { fontSize: 13, fontWeight: "800", color: C.ink },
+  brandSubTagline: { fontSize: 11, color: C.muted, marginTop: 2 },
+  deliverLabel: { fontSize: 11, color: C.muted, fontWeight: "500", marginBottom: 2 },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  addressText: { fontSize: 15, fontWeight: "800", color: "#9A3412", maxWidth: width * 0.5 },
+  addressText: { fontSize: 15, fontWeight: "800", color: C.ink, maxWidth: width * 0.5 },
   headerIcons: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconBtn: {
-    position: "relative", padding: 7, backgroundColor: "#fff", borderRadius: 12,
+    position: "relative", padding: 7, backgroundColor: C.card, borderRadius: 12,
     elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 3,
   },
   notifDot: { position: "absolute", top: 5, right: 5, width: 7, height: 7, borderRadius: 4, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#fff" },
-  cartBadge: { position: "absolute", top: 0, right: 0, backgroundColor: "#C2410C", borderRadius: 10, minWidth: 17, height: 17, justifyContent: "center", alignItems: "center", paddingHorizontal: 3 },
+  cartBadge: { position: "absolute", top: 0, right: 0, backgroundColor: C.primary, borderRadius: 10, minWidth: 17, height: 17, justifyContent: "center", alignItems: "center", paddingHorizontal: 3 },
   cartBadgeText: { color: "#fff", fontSize: 9, fontWeight: "800" },
 
   // SEARCH
   searchBox: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 12,
+    flexDirection: "row", alignItems: "center", backgroundColor: C.card, borderRadius: 12,
     paddingLeft: 14, paddingRight: 8, height: 42, marginHorizontal: 16, marginBottom: 14,
-    elevation: 2, shadowColor: "#8F4F32", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4,
-    borderWidth: 1, borderColor: "#E4DDD5", gap: 8,
+    elevation: 2, shadowColor: C.primaryDark, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4,
+    borderWidth: 1, borderColor: C.line, gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 13, color: "#1F2937", paddingVertical: 0, height: 42 },
-  filterPill: { backgroundColor: "#FFF1E8", borderRadius: 8, padding: 6 },
+  searchInput: { flex: 1, fontSize: 13, color: C.ink, paddingVertical: 0, height: 42 },
+  filterPill: { backgroundColor: C.soft, borderRadius: 8, padding: 6 },
   voicePill: {
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
   voicePillActive: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
   },
 
   // FILTER CHIP
   filterChipRow: { paddingHorizontal: 16, marginBottom: 12 },
-  filterChip: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", backgroundColor: "#FFF1E8", borderRadius: 24, paddingHorizontal: 12, paddingVertical: 8, gap: 6, borderWidth: 1, borderColor: "#F5D0C0" },
-  filterChipText: { color: "#C2410C", fontSize: 13, fontWeight: "700" },
+  filterChip: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", backgroundColor: C.soft, borderRadius: 24, paddingHorizontal: 12, paddingVertical: 8, gap: 6, borderWidth: 1, borderColor: C.line },
+  filterChipText: { color: C.ink, fontSize: 13, fontWeight: "700" },
 
   // BANNER
   bannerSection: { marginBottom: 16, marginHorizontal: 0, paddingHorizontal: 0, marginTop: 0 },
@@ -1150,28 +1154,28 @@ const s = StyleSheet.create({
   bannerSlide: { borderRadius: 16, overflow: "hidden", width: "100%", marginHorizontal: 16 },
   bannerImg: { width: "100%", height: 128, resizeMode: "cover", borderRadius: 16 },
   bannerDots: { flexDirection: "row", justifyContent: "center", gap: 5, marginTop: 8 },
-  dot: { height: 5, width: 5, borderRadius: 3, backgroundColor: "#F5D0C0" },
-  dotActive: { width: 18, backgroundColor: "#C2410C" },
+  dot: { height: 5, width: 5, borderRadius: 3, backgroundColor: C.line },
+  dotActive: { width: 18, backgroundColor: C.primary },
 
   // FEATURE BADGES
   featBadgesRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 12, marginBottom: 22, gap: 6 },
-  featBadge: { flex: 1, backgroundColor: "#fff", borderRadius: 14, padding: 10, alignItems: "center", elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, borderWidth: 1, borderColor: "#FFF8F4" },
+  featBadge: { flex: 1, backgroundColor: C.card, borderRadius: 14, padding: 10, alignItems: "center", elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, borderWidth: 1, borderColor: C.page },
   featIconCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center", marginBottom: 6 },
-  featBadgeTitle: { fontSize: 10, fontWeight: "800", color: "#9A3412", textAlign: "center", lineHeight: 14 },
-  featBadgeSub: { fontSize: 9, color: "#6B7280", textAlign: "center", marginTop: 1 },
+  featBadgeTitle: { fontSize: 10, fontWeight: "800", color: C.ink, textAlign: "center", lineHeight: 14 },
+  featBadgeSub: { fontSize: 9, color: C.muted, textAlign: "center", marginTop: 1 },
 
   // SECTION
   section: { marginBottom: 24, marginHorizontal: 0, paddingHorizontal: 0 },
-  dealSection: { marginBottom: 24, marginHorizontal: 16, backgroundColor: "#FEF3E2", paddingVertical: 14, paddingHorizontal: 12, borderRadius: 16 },
+  dealSection: { marginBottom: 24, marginHorizontal: 16, backgroundColor: C.badge, paddingVertical: 14, paddingHorizontal: 12, borderRadius: 16 },
   secHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12 },
-  secTitle: { fontSize: 17, fontWeight: "900", color: "#9A3412" },
-  seeAll: { fontSize: 13, color: "#C2410C", fontWeight: "700" },
+  secTitle: { fontSize: 17, fontWeight: "900", color: C.ink },
+  seeAll: { fontSize: 13, color: C.primary, fontWeight: "700" },
   dealHeaderTopRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   dealViewAllBtn: { marginLeft: "auto" },
 
   // COUNTDOWN
   countdownRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
-  countdownLabel: { fontSize: 12, color: "#6B7280", fontWeight: "700" },
+  countdownLabel: { fontSize: 12, color: C.muted, fontWeight: "700" },
   countdown: { flexDirection: "row", alignItems: "center", gap: 0, backgroundColor: "#FFE0E0", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   countNum: { fontSize: 14, fontWeight: "900", color: "#DC2626", minWidth: 20, textAlign: "center" },
   countSep: { fontSize: 14, fontWeight: "900", color: "#DC2626", marginHorizontal: 2, textAlign: "center" },
@@ -1179,30 +1183,30 @@ const s = StyleSheet.create({
   // DEAL CARD
   dealListContent: { paddingRight: 0 },
   dealCard: {
-    backgroundColor: "#fff", borderRadius: 14, elevation: 3, flexDirection: "row",
+    backgroundColor: C.card, borderRadius: 14, elevation: 3, flexDirection: "row",
     shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6,
     borderWidth: 1, borderColor: "#F0F0F0", overflow: "hidden", minHeight: 112,
   },
   dealImgZone: { width: 96, minHeight: 112, backgroundColor: "#FAFAF8", alignItems: "center", justifyContent: "center", position: "relative", alignSelf: "stretch" },
-  dealBadge: { position: "absolute", top: 6, right: 6, backgroundColor: "#EF4444", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, zIndex: 10, elevation: 5 },
-  badgeTxt: { color: "#fff", fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
+  dealBadge: { position: "absolute", top: 6, right: 6, backgroundColor: C.badge, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, zIndex: 10, elevation: 5 },
+  badgeTxt: { color: C.badgeText, fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
   dealImg: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", resizeMode: "cover", zIndex: 1 },
   dealInfo: { flex: 1, paddingHorizontal: 12, paddingVertical: 14, justifyContent: "center" },
-  dealName: { fontSize: 12, fontWeight: "800", color: "#1F2937", marginBottom: 7, lineHeight: 16 },
-  dealUnit: { fontSize: 11, color: "#6B7280", fontWeight: "600", marginBottom: 4 },
+  dealName: { fontSize: 12, fontWeight: "800", color: C.ink, marginBottom: 7, lineHeight: 16 },
+  dealUnit: { fontSize: 11, color: C.muted, fontWeight: "600", marginBottom: 4 },
   dealCardTimer: { fontSize: 10, fontWeight: "800", color: "#DC2626", marginBottom: 6 },
   dealFooter: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },
-  dealPrice: { fontSize: 14, fontWeight: "900", color: "#9A3412" },
+  dealPrice: { fontSize: 14, fontWeight: "900", color: C.ink },
   strikePrice: { fontSize: 10, color: "#D1D5DB", textDecorationLine: "line-through", marginTop: 2 },
-  roundAddBtn: { backgroundColor: "#C2410C", width: 28, height: 28, borderRadius: 8, justifyContent: "center", alignItems: "center", flexShrink: 0, elevation: 3 },
+  roundAddBtn: { backgroundColor: C.primary, width: 28, height: 28, borderRadius: 8, justifyContent: "center", alignItems: "center", flexShrink: 0, elevation: 3 },
 
   // CATEGORY
   catCard: {
-    backgroundColor: "#fff", width: 82, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 6,
+    backgroundColor: C.card, width: 82, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 6,
     alignItems: "center", elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.07, shadowRadius: 4, borderWidth: 1.5, borderColor: "transparent",
   },
-  catCardSelected: { borderColor: "#C2410C", backgroundColor: "#F7F3EC" },
+  catCardSelected: { borderColor: C.primary, backgroundColor: C.page },
   catIconWrap: { width: 48, height: 48, borderRadius: 24, justifyContent: "center", alignItems: "center", marginBottom: 8, overflow: "hidden" },
   catImg: { width: "100%", height: "100%", resizeMode: "cover" },
   catName: { fontSize: 11, fontWeight: "700", color: "#374151", textAlign: "center", lineHeight: 15 },
@@ -1212,73 +1216,73 @@ const s = StyleSheet.create({
 
   // PRODUCT CARD
   prodCard: {
-    backgroundColor: "#fff", borderRadius: 20, elevation: 2,
-    shadowColor: "#171717", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
-    borderWidth: 1, borderColor: "#E4DDD5", overflow: "hidden",
+    backgroundColor: C.card, borderRadius: 20, elevation: 2,
+    shadowColor: C.ink, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
+    borderWidth: 1, borderColor: C.line, overflow: "hidden",
   },
-  prodImgZone: { backgroundColor: "#E7D9C8", height: 120, justifyContent: "center", alignItems: "center", position: "relative" },
+  prodImgZone: { backgroundColor: C.soft, height: 120, justifyContent: "center", alignItems: "center", position: "relative" },
   prodImg: { width: "100%", height: "100%", resizeMode: "cover" },
-  trendBadge: { position: "absolute", top: 8, left: 8, backgroundColor: "#3B82F6", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  offBadge: { position: "absolute", top: 8, right: 8, backgroundColor: "#EF4444", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  prodBadgeTxt: { color: "#fff", fontSize: 8, fontWeight: "800", letterSpacing: 0.3 },
-  prodName: { fontSize: 13, fontWeight: "700", color: "#1F2937", minHeight: 34, paddingHorizontal: 10, paddingTop: 8, lineHeight: 18 },
-  prodUnit: { fontSize: 11, color: "#9CA3AF", fontWeight: "600", marginTop: 2, marginBottom: 8, paddingHorizontal: 10 },
+  trendBadge: { position: "absolute", top: 8, left: 8, backgroundColor: C.badge, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  offBadge: { position: "absolute", top: 8, right: 8, backgroundColor: C.badge, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  prodBadgeTxt: { color: C.badgeText, fontSize: 8, fontWeight: "800", letterSpacing: 0.3 },
+  prodName: { fontSize: 13, fontWeight: "700", color: C.ink, minHeight: 34, paddingHorizontal: 10, paddingTop: 8, lineHeight: 18 },
+  prodUnit: { fontSize: 11, color: C.muted, fontWeight: "600", marginTop: 2, marginBottom: 8, paddingHorizontal: 10 },
   prodFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10, paddingBottom: 10 },
-  prodPrice: { fontSize: 15, fontWeight: "800", color: "#B56A45" },
-  addBtn: { borderWidth: 1.5, borderColor: "#C2410C", borderRadius: 10, width: 52, height: 32, alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  addBtnActive: { backgroundColor: "#C2410C", borderColor: "#C2410C" },
-  addBtnText: { color: "#C2410C", fontWeight: "800", fontSize: 11 },
+  prodPrice: { fontSize: 15, fontWeight: "800", color: C.primary },
+  addBtn: { borderWidth: 1.5, borderColor: C.primary, borderRadius: 10, width: 52, height: 32, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  addBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
+  addBtnText: { color: C.primary, fontWeight: "800", fontSize: 11 },
 
   // FEATURED CARD
   featCard: {
-    backgroundColor: "#fff", borderRadius: 20, elevation: 2,
-    shadowColor: "#171717", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
-    borderWidth: 1, borderColor: "#E4DDD5", overflow: "hidden",
+    backgroundColor: C.card, borderRadius: 20, elevation: 2,
+    shadowColor: C.ink, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
+    borderWidth: 1, borderColor: C.line, overflow: "hidden",
   },
-  featImgZone: { height: 120, backgroundColor: "#E7D9C8", alignItems: "center", justifyContent: "center", position: "relative" },
-  starBadge: { position: "absolute", top: 8, right: 8, backgroundColor: "#FBBF24", borderRadius: 7, width: 26, height: 26, justifyContent: "center", alignItems: "center", zIndex: 10 },
+  featImgZone: { height: 120, backgroundColor: C.soft, alignItems: "center", justifyContent: "center", position: "relative" },
+  starBadge: { position: "absolute", top: 8, right: 8, backgroundColor: C.badge, borderRadius: 7, width: 26, height: 26, justifyContent: "center", alignItems: "center", zIndex: 10 },
   featImg: { width: "100%", height: "100%", resizeMode: "cover" },
   featContent: { padding: 10 },
-  featName: { fontSize: 12, fontWeight: "700", color: "#1F2937", minHeight: 32, marginBottom: 3, lineHeight: 16 },
-  featUnit: { fontSize: 10, color: "#9CA3AF", fontWeight: "600", marginBottom: 8 },
+  featName: { fontSize: 12, fontWeight: "700", color: C.ink, minHeight: 32, marginBottom: 3, lineHeight: 16 },
+  featUnit: { fontSize: 10, color: C.muted, fontWeight: "600", marginBottom: 8 },
   featFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  featPrice: { fontSize: 14, fontWeight: "800", color: "#B56A45", flex: 1 },
-  featAddBtn: { backgroundColor: "#C2410C", width: 28, height: 28, borderRadius: 8, flexShrink: 0, justifyContent: "center", alignItems: "center" },
+  featPrice: { fontSize: 14, fontWeight: "800", color: C.primary, flex: 1 },
+  featAddBtn: { backgroundColor: C.primary, width: 28, height: 28, borderRadius: 8, flexShrink: 0, justifyContent: "center", alignItems: "center" },
 
   // FRESH STRIP
   // EMPTY STATES
   emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 48 },
-  emptyText: { fontSize: 17, fontWeight: "700", color: "#6B7280", marginTop: 14 },
-  emptySub: { fontSize: 13, color: "#9CA3AF", marginTop: 6 },
+  emptyText: { fontSize: 17, fontWeight: "700", color: C.muted, marginTop: 14 },
+  emptySub: { fontSize: 13, color: C.muted, marginTop: 6 },
   emptyCategory: { alignItems: "center", paddingVertical: 40, paddingHorizontal: 24 },
-  emptyCategoryIcon: { width: 100, height: 100, borderRadius: 50, backgroundColor: "#F7F3EC", justifyContent: "center", alignItems: "center", marginBottom: 16, borderWidth: 2, borderColor: "#F5D0C0" },
-  emptyCategoryTitle: { fontSize: 18, fontWeight: "800", color: "#9A3412", textAlign: "center", marginBottom: 8 },
-  emptyCategoryText: { fontSize: 13, color: "#6B7280", textAlign: "center", lineHeight: 20, marginBottom: 24 },
-  emptyCategoryBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#C2410C", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14 },
+  emptyCategoryIcon: { width: 100, height: 100, borderRadius: 50, backgroundColor: C.page, justifyContent: "center", alignItems: "center", marginBottom: 16, borderWidth: 2, borderColor: C.line },
+  emptyCategoryTitle: { fontSize: 18, fontWeight: "800", color: C.ink, textAlign: "center", marginBottom: 8 },
+  emptyCategoryText: { fontSize: 13, color: C.muted, textAlign: "center", lineHeight: 20, marginBottom: 24 },
+  emptyCategoryBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14 },
   emptyCategoryBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
 
   // SKELETON
-  skelImg: { width: "100%", height: 100, backgroundColor: "#E5E7EB" },
-  skelLine: { height: 11, backgroundColor: "#E5E7EB", borderRadius: 4, marginHorizontal: 10, marginBottom: 6 },
+  skelImg: { width: "100%", height: 100, backgroundColor: C.line },
+  skelLine: { height: 11, backgroundColor: C.line, borderRadius: 4, marginHorizontal: 10, marginBottom: 6 },
 
   // CART FOOTER
   cartFooter: { position: "absolute", bottom: 12, left: 16, right: 16 },
-  cartFooterInner: { backgroundColor: "#C2410C", borderRadius: 18, padding: 15, flexDirection: "row", justifyContent: "space-between", alignItems: "center", elevation: 10, shadowColor: "#C2410C", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12 },
+  cartFooterInner: { backgroundColor: C.primary, borderRadius: 18, padding: 15, flexDirection: "row", justifyContent: "space-between", alignItems: "center", elevation: 10, shadowColor: C.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12 },
   cartFooterLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   cartIconCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.2)", justifyContent: "center", alignItems: "center" },
-  cartFooterItems: { color: "#F5D0C0", fontSize: 11, fontWeight: "600" },
+  cartFooterItems: { color: "#fff", fontSize: 11, fontWeight: "600" },
   cartFooterTotal: { color: "#fff", fontSize: 17, fontWeight: "800" },
   cartFooterRight: { flexDirection: "row", alignItems: "center", gap: 5 },
   cartFooterBtn: { color: "#fff", fontSize: 14, fontWeight: "700" },
 
   // GUEST BANNER
-  guestBanner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 10, paddingVertical: 11, paddingHorizontal: 14, borderRadius: 16, borderWidth: 1.5, borderColor: "#F5D0C0", shadowColor: "#C2410C", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
+  guestBanner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: C.card, marginHorizontal: 16, marginBottom: 10, paddingVertical: 11, paddingHorizontal: 14, borderRadius: 16, borderWidth: 1.5, borderColor: C.line, shadowColor: C.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
   guestLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
-  guestIconWrap: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#FFF1E8", alignItems: "center", justifyContent: "center" },
-  guestTitle: { fontSize: 13, fontWeight: "700", color: "#1A1A1A" },
-  guestSub: { fontSize: 11, color: "#9CA3AF", fontWeight: "500", marginTop: 1 },
+  guestIconWrap: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.soft, alignItems: "center", justifyContent: "center" },
+  guestTitle: { fontSize: 13, fontWeight: "700", color: C.ink },
+  guestSub: { fontSize: 11, color: C.muted, fontWeight: "500", marginTop: 1 },
   guestRight: { flexDirection: "row", alignItems: "center", gap: 8 },
-  guestLoginBtn: { backgroundColor: "#C2410C", paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
+  guestLoginBtn: { backgroundColor: C.primary, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
   guestLoginText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  guestDismiss: { width: 26, height: 26, borderRadius: 13, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-});
+  guestDismiss: { width: 26, height: 26, borderRadius: 13, backgroundColor: C.soft, alignItems: "center", justifyContent: "center" },
+}));

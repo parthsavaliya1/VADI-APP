@@ -24,6 +24,7 @@ import * as Haptics from "expo-haptics";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { downloadOrderInvoicePdf } from "@/utils/orderInvoice";
+import { C, themed } from "@/constants/theme";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -96,7 +97,7 @@ const getStatusConfig = (status: string) => {
   const normalized = normalizeStatus(status);
   switch (normalized) {
     case "delivered":
-      return { text: "#9A3412", bg: "#FFEDD5", dot: "#B56A45", icon: "checkmark-done-circle", label: formatStatus(normalized) };
+      return { text: C.ink, bg: C.soft, dot: C.primary, icon: "checkmark-done-circle", label: formatStatus(normalized) };
     case "cancelled":
     case "returned":
       return { text: "#991B1B", bg: "#FEE2E2", dot: "#EF4444", icon: "close-circle", label: formatStatus(normalized) };
@@ -106,7 +107,7 @@ const getStatusConfig = (status: string) => {
     case "out_for_delivery":
       return { text: "#92400E", bg: "#FEF3C7", dot: "#F59E0B", icon: "bicycle", label: formatStatus(normalized) };
     case "packed":
-      return { text: "#9A3412", bg: "#FFEDD5", dot: "#EA580C", icon: "archive", label: formatStatus(normalized) };
+      return { text: C.ink, bg: C.soft, dot: "#EA580C", icon: "archive", label: formatStatus(normalized) };
     default:
       return { text: "#5B21B6", bg: "#EDE9FE", dot: "#8B5CF6", icon: "time", label: formatStatus(normalized) };
   }
@@ -183,7 +184,7 @@ function FilterChip({
         <Ionicons
           name={filter.icon as any}
           size={13}
-          color={isActive ? "#fff" : "#6B7280"}
+          color={isActive ? "#fff" : C.muted}
           style={{ marginRight: 4 }}
         />
         <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
@@ -312,7 +313,7 @@ function OrderCard({
           <Text style={styles.amountLabel}>Total</Text>
           <Text style={styles.amountValue}>₹{item.grandTotal.toFixed(0)}</Text>
           <View style={styles.paymentPill}>
-            <Ionicons name={getPaymentIcon(item.payment.method) as any} size={10} color="#6B7280" />
+            <Ionicons name={getPaymentIcon(item.payment.method) as any} size={10} color={C.muted} />
             <Text style={styles.paymentText}>{item.payment.method.toUpperCase()}</Text>
           </View>
         </View>
@@ -321,7 +322,7 @@ function OrderCard({
       {/* ── Action Row ── */}
       {normalizeStatus(item.status) === "out_for_delivery" && (
         <View style={styles.codeHint}>
-          <Ionicons name="key-outline" size={14} color="#9A3412" />
+          <Ionicons name="key-outline" size={14} color={C.ink} />
           <Text style={styles.codeHintText}>
             Open tracking and share the 6-digit code with the rider to finish delivery.
           </Text>
@@ -345,7 +346,7 @@ function OrderCard({
           <Ionicons
             name={isExpanded ? "chevron-up" : "chevron-down"}
             size={14}
-            color="#B56A45"
+            color={C.primary}
           />
         </TouchableOpacity>
       </View>
@@ -380,13 +381,13 @@ function OrderCard({
             <Text style={styles.sectionLabel}>Price Breakdown</Text>
             <PriceRow label="Subtotal" value={`₹${item.subtotal}`} />
             {item.totalDiscount > 0 && (
-              <PriceRow label="Discount" value={`-₹${item.totalDiscount}`} valueStyle={{ color: "#B56A45", fontWeight: "700" }} />
+              <PriceRow label="Discount" value={`-₹${item.totalDiscount}`} valueStyle={{ color: C.primary, fontWeight: "700" }} />
             )}
             <PriceRow label="Tax" value={`₹${item.taxAmount.toFixed(2)}`} />
             <PriceRow
               label="Delivery"
               value={item.deliveryFee === 0 ? "FREE" : `₹${item.deliveryFee}`}
-              valueStyle={item.deliveryFee === 0 ? { color: "#B56A45", fontWeight: "700" } : {}}
+              valueStyle={item.deliveryFee === 0 ? { color: C.primary, fontWeight: "700" } : {}}
             />
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Grand Total</Text>
@@ -399,7 +400,7 @@ function OrderCard({
             <Text style={styles.sectionLabel}>Delivery Address</Text>
             <View style={styles.addressCard}>
               <View style={styles.addressIconWrap}>
-                <Ionicons name="location" size={16} color="#B56A45" />
+                <Ionicons name="location" size={16} color={C.ink} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.addressName}>{item.address.snapshot.name}</Text>
@@ -422,7 +423,7 @@ function OrderCard({
             <Text style={styles.sectionLabel}>Payment</Text>
             <View style={styles.paymentRow}>
               <View style={styles.paymentMethodBadge}>
-                <Ionicons name={getPaymentIcon(item.payment.method) as any} size={16} color="#B56A45" />
+                <Ionicons name={getPaymentIcon(item.payment.method) as any} size={16} color={C.ink} />
                 <Text style={styles.paymentMethodText}>{item.payment.method.toUpperCase()}</Text>
               </View>
               <View style={[
@@ -552,7 +553,7 @@ export default function OrdersScreen() {
         <AppHeader title="Orders" showCart />
         <View style={styles.centered}>
           <View style={styles.loadingSpinnerWrap}>
-            <ActivityIndicator size="large" color="#B56A45" />
+            <ActivityIndicator size="large" color={C.primary} />
           </View>
           <Text style={styles.loadingTitle}>Fetching orders</Text>
           <Text style={styles.loadingSubtitle}>Just a moment…</Text>
@@ -568,7 +569,7 @@ export default function OrdersScreen() {
         <AppHeader title="Orders" showCart />
         <View style={styles.centered}>
           <View style={styles.emptyIconWrap}>
-            <Ionicons name="bag-outline" size={48} color="#B56A45" />
+            <Ionicons name="bag-outline" size={48} color={C.primary} />
           </View>
           <Text style={styles.emptyTitle}>No orders yet</Text>
           <Text style={styles.emptySubtitle}>Your purchases will appear here</Text>
@@ -613,8 +614,8 @@ export default function OrdersScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#B56A45"]}
-            tintColor="#B56A45"
+            colors={[C.primary]}
+            tintColor={C.primary}
           />
         }
         ListEmptyComponent={
@@ -642,8 +643,8 @@ export default function OrdersScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F7F3EC" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   listContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32 },
 
   // Screen header
@@ -668,14 +669,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 2,
     paddingBottom: 6,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
   },
-  screenHeaderTitle: { fontSize: 22, fontWeight: "700", color: "#171717" },
+  screenHeaderTitle: { fontSize: 22, fontWeight: "700", color: C.ink },
   screenHeaderSub: { fontSize: 12, color: "#78716C", marginTop: 1 },
   iconBtn: {
     position: "relative",
     padding: 6,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     elevation: 2,
     shadowColor: "#000",
@@ -687,7 +688,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     right: 0,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.badge,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -696,7 +697,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
-    color: "#fff",
+    color: C.badgeText,
     fontSize: 10,
     fontWeight: "700",
   },
@@ -706,36 +707,36 @@ const styles = StyleSheet.create({
   filterChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
-  filterChipActive: { backgroundColor: "#B56A45", borderColor: "#B56A45" },
-  filterText: { fontSize: 11, color: "#6B7280", fontWeight: "700" },
+  filterChipActive: { backgroundColor: C.primary, borderColor: C.primary },
+  filterText: { fontSize: 11, color: C.muted, fontWeight: "700" },
   filterTextActive: { color: "#fff" },
   filterBadge: {
     marginLeft: 5,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: C.line,
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
   filterBadgeActive: { backgroundColor: "rgba(255,255,255,0.25)" },
-  filterBadgeText: { fontSize: 10, fontWeight: "700", color: "#6B7280" },
+  filterBadgeText: { fontSize: 10, fontWeight: "700", color: C.muted },
   filterBadgeTextActive: { color: "#fff" },
 
   // Card
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 20,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#E4DDD5",
-    shadowColor: "#171717",
+    borderColor: C.line,
+    shadowColor: C.ink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -749,8 +750,8 @@ const styles = StyleSheet.create({
   },
   cardTopLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  orderNumber: { fontSize: 14, fontWeight: "800", color: "#111827" },
-  orderDate: { fontSize: 11, color: "#9CA3AF", marginTop: 1 },
+  orderNumber: { fontSize: 14, fontWeight: "800", color: C.ink },
+  orderDate: { fontSize: 11, color: C.muted, marginTop: 1 },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -775,19 +776,19 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#fff",
     overflow: "hidden",
-    backgroundColor: "#E7D9C8",
+    backgroundColor: C.soft,
   },
   imageBoxExtra: {
-    backgroundColor: "#E5E7EB",
+    backgroundColor: C.line,
     alignItems: "center",
     justifyContent: "center",
   },
-  extraText: { fontSize: 11, fontWeight: "700", color: "#6B7280" },
+  extraText: { fontSize: 11, fontWeight: "700", color: C.muted },
   itemThumb: { width: "100%", height: "100%" },
-  itemCountText: { marginLeft: 10, fontSize: 12, color: "#9CA3AF", fontWeight: "500" },
+  itemCountText: { marginLeft: 10, fontSize: 12, color: C.muted, fontWeight: "500" },
   amountBlock: { alignItems: "flex-end" },
-  amountLabel: { fontSize: 10, color: "#9CA3AF", fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase" },
-  amountValue: { fontSize: 18, fontWeight: "800", color: "#B56A45", letterSpacing: -0.3 },
+  amountLabel: { fontSize: 10, color: C.muted, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase" },
+  amountValue: { fontSize: 18, fontWeight: "800", color: C.primary, letterSpacing: -0.3 },
   codeHint: {
     flexDirection: "row",
     alignItems: "center",
@@ -797,18 +798,18 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 12,
   },
-  codeHintText: { flex: 1, fontSize: 12, color: "#9A3412", fontWeight: "600", lineHeight: 16 },
+  codeHintText: { flex: 1, fontSize: 12, color: C.ink, fontWeight: "600", lineHeight: 16 },
   paymentPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: C.soft,
     borderRadius: 8,
     paddingHorizontal: 7,
     paddingVertical: 3,
     marginTop: 2,
   },
-  paymentText: { fontSize: 10, color: "#6B7280", fontWeight: "600" },
+  paymentText: { fontSize: 10, color: C.muted, fontWeight: "600" },
 
   // Action row
   actionRow: { flexDirection: "row", gap: 10 },
@@ -818,10 +819,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     borderRadius: 12,
     paddingVertical: 13,
-    shadowColor: "#8F4F32",
+    shadowColor: C.primaryDark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.16,
     shadowRadius: 8,
@@ -834,21 +835,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 4,
     borderWidth: 1.5,
-    borderColor: "#E4DDD5",
+    borderColor: C.line,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 13,
-    backgroundColor: "#F3E4DB",
+    backgroundColor: C.soft,
   },
-  detailsBtnText: { fontSize: 14, fontWeight: "700", color: "#8F4F32" },
+  detailsBtnText: { fontSize: 14, fontWeight: "700", color: C.primaryDark },
 
   // Expanded
   expandedWrap: { marginTop: 4 },
-  expandDivider: { height: 1, backgroundColor: "#F3F4F6", marginVertical: 14 },
+  expandDivider: { height: 1, backgroundColor: C.line, marginVertical: 14 },
   sectionLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#9CA3AF",
+    color: C.muted,
     letterSpacing: 0.8,
     textTransform: "uppercase",
     marginBottom: 10,
@@ -862,13 +863,13 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 8,
   },
-  detailItemImg: { width: 46, height: 46, borderRadius: 10, backgroundColor: "#E5E7EB" },
+  detailItemImg: { width: 46, height: 46, borderRadius: 10, backgroundColor: C.line },
   detailItemInfo: { flex: 1, marginHorizontal: 10 },
-  detailItemName: { fontSize: 13, fontWeight: "600", color: "#111827" },
-  detailItemMeta: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
+  detailItemName: { fontSize: 13, fontWeight: "600", color: C.ink },
+  detailItemMeta: { fontSize: 11, color: C.muted, marginTop: 2 },
   detailItemRight: { alignItems: "flex-end" },
-  detailItemPrice: { fontSize: 13, fontWeight: "800", color: "#111827" },
-  detailItemDiscount: { fontSize: 10, color: "#B56A45", fontWeight: "600", marginTop: 2 },
+  detailItemPrice: { fontSize: 13, fontWeight: "800", color: C.ink },
+  detailItemDiscount: { fontSize: 10, color: C.primary, fontWeight: "600", marginTop: 2 },
 
   detailBlock: {
     backgroundColor: "#F9FAFB",
@@ -877,8 +878,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   priceRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 },
-  priceLabel: { fontSize: 13, color: "#6B7280" },
-  priceValue: { fontSize: 13, fontWeight: "600", color: "#111827" },
+  priceLabel: { fontSize: 13, color: C.muted },
+  priceValue: { fontSize: 13, fontWeight: "600", color: C.ink },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -886,36 +887,36 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     marginTop: 6,
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: C.line,
   },
-  totalLabel: { fontSize: 14, fontWeight: "700", color: "#111827" },
-  totalValue: { fontSize: 16, fontWeight: "800", color: "#111827" },
+  totalLabel: { fontSize: 14, fontWeight: "700", color: C.ink },
+  totalValue: { fontSize: 16, fontWeight: "800", color: C.ink },
 
   addressCard: { flexDirection: "row", gap: 10 },
   addressIconWrap: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#FFEDD5",
+    backgroundColor: C.soft,
     alignItems: "center",
     justifyContent: "center",
   },
-  addressName: { fontSize: 13, fontWeight: "700", color: "#111827", marginBottom: 2 },
-  addressLine: { fontSize: 12, color: "#6B7280", lineHeight: 18 },
+  addressName: { fontSize: 13, fontWeight: "700", color: C.ink, marginBottom: 2 },
+  addressLine: { fontSize: 12, color: C.muted, lineHeight: 18 },
 
   paymentRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   paymentMethodBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#FFEDD5",
+    backgroundColor: C.badge,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  paymentMethodText: { fontSize: 13, fontWeight: "700", color: "#B56A45" },
+  paymentMethodText: { fontSize: 13, fontWeight: "700", color: C.badgeText },
   paymentStatusBadge: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
-  paymentStatusPaid: { backgroundColor: "#FFEDD5" },
+  paymentStatusPaid: { backgroundColor: C.soft },
   paymentStatusPending: { backgroundColor: "#FEF3C7" },
   paymentStatusText: { fontSize: 12, fontWeight: "700" },
   paymentStatusTextPaid: { color: "#166534" },
@@ -925,7 +926,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -938,24 +939,24 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#FFEDD5",
+    backgroundColor: C.soft,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
   },
-  loadingTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
-  loadingSubtitle: { fontSize: 13, color: "#9CA3AF", marginTop: 4 },
+  loadingTitle: { fontSize: 17, fontWeight: "700", color: C.ink },
+  loadingSubtitle: { fontSize: 13, color: C.muted, marginTop: 4 },
   emptyIconWrap: {
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: "#FFEDD5",
+    backgroundColor: C.soft,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
   },
-  emptyTitle: { fontSize: 20, fontWeight: "700", color: "#111827" },
-  emptySubtitle: { fontSize: 14, color: "#9CA3AF", marginTop: 4, textAlign: "center" },
+  emptyTitle: { fontSize: 20, fontWeight: "700", color: C.ink },
+  emptySubtitle: { fontSize: 14, color: C.muted, marginTop: 4, textAlign: "center" },
   emptyFilter: { flex: 1, alignItems: "center", paddingTop: 60, gap: 10 },
-  emptyFilterText: { fontSize: 14, color: "#9CA3AF", fontWeight: "500" },
-});
+  emptyFilterText: { fontSize: 14, color: C.muted, fontWeight: "500" },
+}));

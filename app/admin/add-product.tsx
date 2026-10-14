@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { C, themed } from "@/constants/theme";
 
 type Category = {
   _id: string;
@@ -356,7 +357,7 @@ export default function AddProductScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerIcon}>
-              <Ionicons name="add-circle" size={32} color="#C2410C" />
+              <Ionicons name="add-circle" size={32} color={C.primary} />
             </View>
             <Text style={styles.title}>Add New Product</Text>
             <Text style={styles.subtitle}>Fill in the details below</Text>
@@ -369,14 +370,14 @@ export default function AddProductScreen() {
             {/* Product Name */}
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
-                <Ionicons name="cube-outline" size={16} color="#C2410C" />
+                <Ionicons name="cube-outline" size={16} color={C.primary} />
                 <Text style={styles.label}>Product Name *</Text>
               </View>
               <TextInput
                 value={name}
                 onChangeText={setName}
                 placeholder="e.g., Fresh Organic Apples"
-                placeholderTextColor="#999"
+                placeholderTextColor={C.muted}
                 style={styles.input}
               />
             </View>
@@ -385,7 +386,7 @@ export default function AddProductScreen() {
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <View style={styles.labelRow}>
-                  <Ionicons name="cash-outline" size={16} color="#C2410C" />
+                  <Ionicons name="cash-outline" size={16} color={C.primary} />
                   <Text style={styles.label}>Price *</Text>
                 </View>
                 <View style={styles.priceInput}>
@@ -395,7 +396,7 @@ export default function AddProductScreen() {
                     onChangeText={setPrice}
                     keyboardType="decimal-pad"
                     placeholder="0.00"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={C.muted}
                     style={[styles.input, { flex: 1, paddingLeft: 8 }]}
                   />
                 </View>
@@ -403,14 +404,14 @@ export default function AddProductScreen() {
 
               <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
                 <View style={styles.labelRow}>
-                  <Ionicons name="scale-outline" size={16} color="#C2410C" />
+                  <Ionicons name="scale-outline" size={16} color={C.primary} />
                   <Text style={styles.label}>Unit *</Text>
                 </View>
                 <TextInput
                   value={unit}
                   onChangeText={setUnit}
                   placeholder="kg / pcs"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={C.muted}
                   style={styles.input}
                 />
               </View>
@@ -420,7 +421,7 @@ export default function AddProductScreen() {
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <View style={styles.labelRow}>
-                  <Ionicons name="layers-outline" size={16} color="#C2410C" />
+                  <Ionicons name="layers-outline" size={16} color={C.primary} />
                   <Text style={styles.label}>Stock *</Text>
                 </View>
                 <TextInput
@@ -428,7 +429,7 @@ export default function AddProductScreen() {
                   onChangeText={setStock}
                   keyboardType="number-pad"
                   placeholder="Quantity"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={C.muted}
                   style={styles.input}
                 />
                 {stock && Number(stock) < 10 && Number(stock) >= 0 && (
@@ -438,7 +439,7 @@ export default function AddProductScreen() {
 
               <View style={[styles.inputGroup, { flex: 1, marginLeft: 12 }]}>
                 <View style={styles.labelRow}>
-                  <Ionicons name="pricetag-outline" size={16} color="#C2410C" />
+                  <Ionicons name="pricetag-outline" size={16} color={C.primary} />
                   <Text style={styles.label}>Discount %</Text>
                 </View>
                 <TextInput
@@ -446,7 +447,7 @@ export default function AddProductScreen() {
                   onChangeText={setDiscount}
                   keyboardType="number-pad"
                   placeholder="0-100"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={C.muted}
                   style={styles.input}
                 />
               </View>
@@ -455,13 +456,13 @@ export default function AddProductScreen() {
             {/* Category Dropdown */}
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
-                <Ionicons name="grid-outline" size={16} color="#C2410C" />
+                <Ionicons name="grid-outline" size={16} color={C.primary} />
                 <Text style={styles.label}>Category *</Text>
               </View>
               <View style={styles.pickerWrapper}>
                 {loadingCategories ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator color="#C2410C" size="small" />
+                    <ActivityIndicator color={C.primary} size="small" />
                     <Text style={styles.loadingText}>
                       Loading categories...
                     </Text>
@@ -486,7 +487,7 @@ export default function AddProductScreen() {
                     <Picker.Item
                       label="-- Select a category --"
                       value=""
-                      color="#999"
+                      color={C.muted}
                     />
                     {categories.map((cat) => (
                       <Picker.Item
@@ -501,7 +502,7 @@ export default function AddProductScreen() {
               </View>
               {category && (
                 <View style={styles.selectedBadge}>
-                  <Ionicons name="checkmark-circle" size={16} color="#C2410C" />
+                  <Ionicons name="checkmark-circle" size={16} color={C.primary} />
                   <Text style={styles.selectedText}>
                     {
                       categories.find((c) => (c.slug || c._id) === category)
@@ -517,7 +518,7 @@ export default function AddProductScreen() {
             <View style={styles.divider} />
 
             <View style={styles.sectionHeader}>
-              <Ionicons name="star-outline" size={18} color="#C2410C" />
+              <Ionicons name="star-outline" size={18} color={C.primary} />
               <Text style={styles.sectionTitle}>Feature Options</Text>
             </View>
 
@@ -536,7 +537,7 @@ export default function AddProductScreen() {
                 value={bestDeal}
                 onValueChange={setBestDeal}
                 trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
-                thumbColor={bestDeal ? "#C2410C" : "#f4f3f4"}
+                thumbColor={bestDeal ? C.primary : "#f4f3f4"}
               />
             </View>
 
@@ -555,7 +556,7 @@ export default function AddProductScreen() {
                 value={trending}
                 onValueChange={setTrending}
                 trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
-                thumbColor={trending ? "#C2410C" : "#f4f3f4"}
+                thumbColor={trending ? C.primary : "#f4f3f4"}
               />
             </View>
 
@@ -574,7 +575,7 @@ export default function AddProductScreen() {
                 value={featured}
                 onValueChange={setFeatured}
                 trackColor={{ false: "#D0D0D0", true: "#A5D6A7" }}
-                thumbColor={featured ? "#C2410C" : "#f4f3f4"}
+                thumbColor={featured ? C.primary : "#f4f3f4"}
               />
             </View>
 
@@ -583,7 +584,7 @@ export default function AddProductScreen() {
             {/* Image Upload */}
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
-                <Ionicons name="image-outline" size={16} color="#C2410C" />
+                <Ionicons name="image-outline" size={16} color={C.primary} />
                 <Text style={styles.label}>Product Image</Text>
                 <Text style={styles.optional}>(Optional)</Text>
               </View>
@@ -597,7 +598,7 @@ export default function AddProductScreen() {
                   <Ionicons
                     name="cloud-upload-outline"
                     size={40}
-                    color="#C2410C"
+                    color={C.primary}
                   />
                   <Text style={styles.imageBtnText}>Tap to Upload Image</Text>
                   <Text style={styles.imageBtnSubtext}>JPG, PNG up to 5MB</Text>
@@ -615,7 +616,7 @@ export default function AddProductScreen() {
                     style={styles.changeImageBtn}
                     onPress={pickImage}
                   >
-                    <Ionicons name="refresh" size={16} color="#C2410C" />
+                    <Ionicons name="refresh" size={16} color={C.primary} />
                     <Text style={styles.changeImageText}>Change</Text>
                   </TouchableOpacity>
                 </View>
@@ -710,7 +711,7 @@ export default function AddProductScreen() {
                     );
                   }}
                 >
-                  <Ionicons name="refresh-outline" size={18} color="#666" />
+                  <Ionicons name="refresh-outline" size={18} color={C.muted} />
                   <Text style={styles.resetBtnText}>Clear Form</Text>
                 </TouchableOpacity>
               )}
@@ -724,7 +725,7 @@ export default function AddProductScreen() {
 /* ======================
    STYLES
 ====================== */
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: "#F3F6F4",
@@ -743,16 +744,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: "#666",
+    color: C.muted,
     fontWeight: "500",
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 20,
     padding: 20,
     shadowColor: "#000",
@@ -772,12 +773,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#333",
+    color: C.ink,
     marginLeft: 6,
   },
   optional: {
     fontSize: 12,
-    color: "#999",
+    color: C.muted,
     fontWeight: "400",
     marginLeft: 4,
   },
@@ -786,9 +787,9 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     fontSize: 15,
-    color: "#333",
+    color: C.ink,
     borderWidth: 1,
-    borderColor: "#E8E8E8",
+    borderColor: C.line,
   },
   priceInput: {
     flexDirection: "row",
@@ -796,13 +797,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F9FA",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E8E8E8",
+    borderColor: C.line,
     paddingLeft: 14,
   },
   currencySymbol: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#C2410C",
+    color: C.primary,
   },
   row: {
     flexDirection: "row",
@@ -818,7 +819,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#E8E8E8",
+    borderColor: C.line,
     minHeight: 50,
     justifyContent: "center",
   },
@@ -830,7 +831,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: 8,
-    color: "#666",
+    color: C.muted,
     fontSize: 14,
   },
   emptyState: {
@@ -838,11 +839,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyText: {
-    color: "#666",
+    color: C.muted,
     fontSize: 14,
   },
   retryText: {
-    color: "#C2410C",
+    color: C.primary,
     fontSize: 14,
     fontWeight: "600",
     marginTop: 8,
@@ -850,21 +851,21 @@ const styles = StyleSheet.create({
   selectedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.badge,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     marginTop: 8,
   },
   selectedText: {
-    color: "#C2410C",
+    color: C.badgeText,
     fontSize: 13,
     fontWeight: "600",
     marginLeft: 6,
   },
   divider: {
     height: 1,
-    backgroundColor: "#E8E8E8",
+    backgroundColor: C.line,
     marginVertical: 20,
   },
   sectionHeader: {
@@ -875,7 +876,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#333",
+    color: C.ink,
     marginLeft: 8,
   },
   toggleRow: {
@@ -904,14 +905,14 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#333",
+    color: C.ink,
   },
   toggleDesc: {
     fontSize: 12,
-    color: "#666",
+    color: C.muted,
   },
   summaryCard: {
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     borderRadius: 16,
     padding: 16,
     marginTop: 16,
@@ -919,7 +920,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#C2410C",
+    color: C.primary,
     marginBottom: 8,
   },
   summaryRow: {
@@ -928,7 +929,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   summaryBadge: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -936,7 +937,7 @@ const styles = StyleSheet.create({
   summaryBadgeText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#C2410C",
+    color: C.primary,
   },
   imageBtn: {
     backgroundColor: "#F1F8F4",
@@ -944,17 +945,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#F5D0C0",
+    borderColor: C.line,
     borderStyle: "dashed",
   },
   imageBtnText: {
     marginTop: 12,
     fontWeight: "700",
-    color: "#C2410C",
+    color: C.primary,
     fontSize: 16,
   },
   imageBtnSubtext: {
-    color: "#666",
+    color: C.muted,
     fontSize: 12,
     marginTop: 4,
   },
@@ -978,7 +979,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 12,
     right: 12,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -991,7 +992,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   changeImageText: {
-    color: "#C2410C",
+    color: C.primary,
     fontWeight: "700",
     marginLeft: 4,
     fontSize: 14,
@@ -1002,17 +1003,17 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 6,
-    backgroundColor: "#E8E8E8",
+    backgroundColor: C.line,
     borderRadius: 3,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
   },
   progressText: {
     textAlign: "center",
-    color: "#666",
+    color: C.muted,
     fontSize: 12,
     marginTop: 6,
     fontWeight: "600",
@@ -1021,13 +1022,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   saveBtn: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     paddingVertical: 18,
     borderRadius: 16,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
-    shadowColor: "#C2410C",
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1050,7 +1051,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   resetBtn: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: C.soft,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -1058,12 +1059,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 12,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: C.line,
   },
   resetBtnText: {
-    color: "#666",
+    color: C.muted,
     fontSize: 14,
     fontWeight: "700",
     marginLeft: 6,
   },
-});
+}));

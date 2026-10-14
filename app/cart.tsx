@@ -19,6 +19,7 @@ import {
   quoteDeliveryFee,
   type FeeSettings,
 } from "../utils/deliveryQuote";
+import { C, themed } from "@/constants/theme";
 
 export default function CartScreen() {
   const {
@@ -94,7 +95,7 @@ export default function CartScreen() {
 
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
-            <Ionicons name="cart-outline" size={64} color="#F5D0C0" />
+            <Ionicons name="cart-outline" size={64} color={C.line} />
           </View>
           <Text style={styles.emptyTitle}>Your cart is empty</Text>
           <Text style={styles.emptySubtitle}>
@@ -131,7 +132,7 @@ export default function CartScreen() {
       {/* FREE DELIVERY PROGRESS BANNER */}
       {freeAbove > 0 && total <= freeAbove ? (
         <View style={styles.progressBanner}>
-          <Ionicons name="bicycle-outline" size={18} color="#C2410C" />
+          <Ionicons name="bicycle-outline" size={18} color={C.primary} />
           <View style={styles.progressTextGroup}>
             <Text style={styles.progressLabel}>
               Add{" "}
@@ -152,7 +153,7 @@ export default function CartScreen() {
         </View>
       ) : freeAbove > 0 ? (
         <View style={[styles.progressBanner, styles.progressBannerSuccess]}>
-          <Ionicons name="checkmark-circle" size={18} color="#C2410C" />
+          <Ionicons name="checkmark-circle" size={18} color={C.primary} />
           <Text style={styles.progressLabel}>
             🎉 You've unlocked{" "}
             <Text style={styles.progressHighlight}>free delivery!</Text>
@@ -213,7 +214,7 @@ export default function CartScreen() {
                     <Ionicons
                       name={item.qty === 1 ? "trash-outline" : "remove"}
                       size={15}
-                      color={item.qty === 1 ? "#F44336" : "#C2410C"}
+                      color={item.qty === 1 ? "#F44336" : C.primary}
                     />
                   </TouchableOpacity>
                   <Text style={styles.qtyText}>{item.qty}</Text>
@@ -221,7 +222,7 @@ export default function CartScreen() {
                     style={styles.qtyBtn}
                     onPress={() => incrementQty(item)}
                   >
-                    <Ionicons name="add" size={15} color="#C2410C" />
+                    <Ionicons name="add" size={15} color={C.primary} />
                   </TouchableOpacity>
                 </View>
 
@@ -241,7 +242,7 @@ export default function CartScreen() {
       {/* BILL SUMMARY */}
       <View style={styles.billContainer}>
         <View style={styles.billTitleRow}>
-          <Ionicons name="receipt-outline" size={15} color="#9A3412" />
+          <Ionicons name="receipt-outline" size={15} color={C.ink} />
           <Text style={styles.billTitle}>Bill Summary</Text>
         </View>
 
@@ -284,7 +285,7 @@ export default function CartScreen() {
 
         {discount > 0 && (
           <View style={styles.savingsContainer}>
-            <Ionicons name="gift-outline" size={15} color="#B56A45" />
+            <Ionicons name="gift-outline" size={15} color={C.primary} />
             <Text style={styles.savingsText}>
               You saved ₹{discount.toFixed(2)} on this order!
             </Text>
@@ -318,9 +319,9 @@ export default function CartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   // ── original background preserved ──────────────────────────────────────────
-  safe: { flex: 1, backgroundColor: "#F7F3EC" },
+  safe: { flex: 1, backgroundColor: C.page },
 
   /* HEADER */
   header: {
@@ -329,7 +330,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 13,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
     elevation: 2,
@@ -342,15 +343,15 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     justifyContent: "center",
     alignItems: "center",
   },
   headerCenter: { flex: 1, alignItems: "center" },
-  headerTitle: { fontSize: 17, fontWeight: "800", color: "#9A3412" },
+  headerTitle: { fontSize: 17, fontWeight: "800", color: C.ink },
   headerSubtitle: {
     fontSize: 11,
-    color: "#888",
+    color: C.muted,
     marginTop: 1,
     fontWeight: "500",
   },
@@ -368,26 +369,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#F5D0C0",
+    borderBottomColor: C.line,
   },
   progressBannerSuccess: {
     backgroundColor: "#F1F8E9",
     borderBottomColor: "#DCEDC8",
   },
   progressTextGroup: { flex: 1, gap: 5 },
-  progressLabel: { fontSize: 12, color: "#C2410C", fontWeight: "600" },
-  progressHighlight: { fontWeight: "800", color: "#9A3412" },
+  progressLabel: { fontSize: 12, color: C.primary, fontWeight: "600" },
+  progressHighlight: { fontWeight: "800", color: C.ink },
   progressBarBg: {
     height: 4,
-    backgroundColor: "#F5D0C0",
+    backgroundColor: C.line,
     borderRadius: 4,
     overflow: "hidden",
   },
-  progressBarFill: { height: 4, backgroundColor: "#C2410C", borderRadius: 4 },
+  progressBarFill: { height: 4, backgroundColor: C.primary, borderRadius: 4 },
 
   /* LIST */
   listContent: { padding: 14, paddingBottom: 420 },
@@ -395,7 +396,7 @@ const styles = StyleSheet.create({
   /* CART ITEM */
   cartItem: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 16,
     padding: 13,
     marginBottom: 12,
@@ -410,7 +411,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 12,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
@@ -425,20 +426,20 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: "600",
-    color: "#222",
+    color: C.ink,
     lineHeight: 20,
   },
   removeBtn: { padding: 2 },
 
   variantChip: {
     alignSelf: "flex-start",
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     borderRadius: 7,
     paddingHorizontal: 8,
     paddingVertical: 3,
     marginTop: 4,
   },
-  variantChipText: { fontSize: 11, color: "#C2410C", fontWeight: "600" },
+  variantChipText: { fontSize: 11, color: C.primary, fontWeight: "600" },
 
   itemBottomRow: {
     flexDirection: "row",
@@ -451,25 +452,25 @@ const styles = StyleSheet.create({
   qtyContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: "#F5D0C0",
+    borderColor: C.line,
     overflow: "hidden",
   },
   qtyBtn: { paddingHorizontal: 10, paddingVertical: 7 },
   qtyText: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#C2410C",
+    color: C.primary,
     minWidth: 22,
     textAlign: "center",
   },
 
   /* PRICE */
   priceGroup: { alignItems: "flex-end" },
-  itemUnitPrice: { fontSize: 11, color: "#999", fontWeight: "500" },
-  itemTotal: { fontSize: 16, fontWeight: "800", color: "#C2410C" },
+  itemUnitPrice: { fontSize: 11, color: C.muted, fontWeight: "500" },
+  itemTotal: { fontSize: 16, fontWeight: "800", color: C.primary },
 
   /* BILL */
   billContainer: {
@@ -477,7 +478,7 @@ const styles = StyleSheet.create({
     bottom: 88,
     left: 14,
     right: 14,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 18,
     padding: 16,
     elevation: 6,
@@ -492,44 +493,44 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 12,
   },
-  billTitle: { fontSize: 15, fontWeight: "800", color: "#9A3412" },
+  billTitle: { fontSize: 15, fontWeight: "800", color: C.ink },
   billRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 9,
   },
-  billLabel: { fontSize: 13, color: "#666" },
-  billValue: { fontSize: 13, fontWeight: "600", color: "#222" },
-  discountLabel: { color: "#B56A45" },
-  discountValue: { color: "#B56A45" },
+  billLabel: { fontSize: 13, color: C.muted },
+  billValue: { fontSize: 13, fontWeight: "600", color: C.ink },
+  discountLabel: { color: C.primary },
+  discountValue: { color: C.primary },
   deliveryRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   freeBadge: {
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.badge,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
   },
-  freeText: { fontSize: 10, fontWeight: "700", color: "#B56A45" },
-  freePrice: { color: "#B56A45" },
+  freeText: { fontSize: 10, fontWeight: "700", color: C.badgeText },
+  freePrice: { color: C.primary },
   divider: { height: 1, backgroundColor: "#EEEEEE", marginVertical: 10 },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  totalLabel: { fontSize: 15, fontWeight: "700", color: "#9A3412" },
-  totalValue: { fontSize: 20, fontWeight: "900", color: "#C2410C" },
+  totalLabel: { fontSize: 15, fontWeight: "700", color: C.ink },
+  totalValue: { fontSize: 20, fontWeight: "900", color: C.primary },
   savingsContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.badge,
     padding: 9,
     borderRadius: 9,
     marginTop: 10,
     gap: 6,
   },
-  savingsText: { fontSize: 12, fontWeight: "600", color: "#B56A45" },
+  savingsText: { fontSize: 12, fontWeight: "600", color: C.badgeText },
 
   /* CHECKOUT */
   checkoutContainer: {
@@ -537,7 +538,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     paddingHorizontal: 14,
     paddingVertical: 12,
     paddingBottom: 20,
@@ -548,7 +549,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   checkoutBtn: {
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: 18,
@@ -556,7 +557,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     elevation: 4,
-    shadowColor: "#C2410C",
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
@@ -566,7 +567,7 @@ const styles = StyleSheet.create({
   checkoutTotal: { fontSize: 19, fontWeight: "900", color: "#fff" },
   checkoutSubtext: {
     fontSize: 11,
-    color: "#F5D0C0",
+    color: "#fff",
     marginTop: 1,
     fontWeight: "500",
   },
@@ -584,22 +585,22 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
     borderWidth: 2,
-    borderColor: "#F5D0C0",
+    borderColor: C.line,
   },
   emptyTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: C.muted,
     marginBottom: 32,
     textAlign: "center",
   },
@@ -607,15 +608,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     paddingHorizontal: 28,
     paddingVertical: 14,
     borderRadius: 14,
     elevation: 4,
-    shadowColor: "#C2410C",
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
   shopNowText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-});
+}));

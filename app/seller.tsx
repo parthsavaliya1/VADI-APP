@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { C, themed } from "@/constants/theme";
 
 type Seller = {
   _id: string;
@@ -87,7 +88,7 @@ export default function SellerScreen() {
     <SafeAreaView style={styles.safe}>
       <AppHeader title="Seller" showBack showCart={false} />
       {loading ? (
-        <ActivityIndicator color="#C2410C" style={{ marginTop: 40 }} />
+        <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16 }}>
           {seller ? (
@@ -152,23 +153,23 @@ export default function SellerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FFF8F4" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
   },
   title: { fontSize: 18, fontWeight: "800" },
-  card: { backgroundColor: "#fff", borderRadius: 16, padding: 16 },
+  card: { backgroundColor: C.card, borderRadius: 16, padding: 16 },
   shop: { fontSize: 20, fontWeight: "800" },
-  status: { marginTop: 6, fontWeight: "700", color: "#C2410C", textTransform: "capitalize" },
-  hint: { color: "#555", marginTop: 8, marginBottom: 12, lineHeight: 20 },
+  status: { marginTop: 6, fontWeight: "700", color: C.primary, textTransform: "capitalize" },
+  hint: { color: C.muted, marginTop: 8, marginBottom: 12, lineHeight: 20 },
   input: { backgroundColor: "#F7F7F7", borderRadius: 12, padding: 14, marginBottom: 10 },
-  btn: { backgroundColor: "#C2410C", borderRadius: 14, padding: 14, alignItems: "center", marginTop: 8 },
+  btn: { backgroundColor: C.primary, borderRadius: 14, padding: 14, alignItems: "center", marginTop: 8 },
   btnText: { color: "#fff", fontWeight: "800" },
-  btnOutline: { borderWidth: 1, borderColor: "#C2410C", borderRadius: 14, padding: 14, alignItems: "center", marginTop: 8 },
-  btnOutlineText: { color: "#C2410C", fontWeight: "800" },
-});
+  btnOutline: { borderWidth: 1, borderColor: C.primary, borderRadius: 14, padding: 14, alignItems: "center", marginTop: 8 },
+  btnOutlineText: { color: C.primary, fontWeight: "800" },
+}));

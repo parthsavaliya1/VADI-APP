@@ -7,6 +7,7 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { C, themed } from "@/constants/theme";
 
 type Product = {
   _id: string;
@@ -40,12 +41,12 @@ export default function SellerProductsScreen() {
         showCart={false}
         right={
           <TouchableOpacity onPress={() => router.push("/seller-add-product")}>
-            <Ionicons name="add" size={26} color="#B56A45" />
+            <Ionicons name="add" size={26} color={C.primary} />
           </TouchableOpacity>
         }
       />
       {loading ? (
-        <ActivityIndicator color="#C2410C" style={{ marginTop: 40 }} />
+        <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={products}
@@ -67,6 +68,12 @@ export default function SellerProductsScreen() {
                       ? "Rejected"
                       : "Waiting for admin"}
                 </Text>
+                <TouchableOpacity
+                  style={styles.editBtn}
+                  onPress={() => router.push({ pathname: "/seller-add-product", params: { id: item._id } })}
+                >
+                  <Text style={styles.editText}>Edit</Text>
+                </TouchableOpacity>
               </View>
             );
           }}
@@ -76,19 +83,28 @@ export default function SellerProductsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FFF8F4" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
   },
   title: { fontSize: 18, fontWeight: "800" },
-  empty: { color: "#777" },
-  card: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 10 },
+  empty: { color: C.muted },
+  card: { backgroundColor: C.card, borderRadius: 14, padding: 14, marginBottom: 10 },
   name: { fontWeight: "800", fontSize: 16 },
-  meta: { color: "#555", marginTop: 4 },
-  status: { marginTop: 6, color: "#C2410C", fontWeight: "700" },
-});
+  meta: { color: C.muted, marginTop: 4 },
+  status: { marginTop: 6, color: C.primary, fontWeight: "700" },
+  editBtn: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: C.soft,
+  },
+  editText: { color: C.primary, fontWeight: "700" },
+}));

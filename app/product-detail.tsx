@@ -29,8 +29,32 @@ import {
   parseOfferEndToMs,
   remainingMsToCountdownDHMS,
 } from "@/utils/offerEnd";
+import { C, themed } from "@/constants/theme";
 
-const { width } = Dimensions.get("window");
+const { width: screenWidth } = Dimensions.get("window");
+
+function imageIdentity(url: string) {
+  const trimmed = url.trim();
+  try {
+    return new URL(trimmed).pathname.replace(/\/+$/, "").toLowerCase();
+  } catch {
+    return trimmed.split("?")[0].replace(/\/+$/, "").toLowerCase();
+  }
+}
+
+function uniqueProductPhotos(image?: string, images?: string[]) {
+  const seen = new Set<string>();
+  const photos: string[] = [];
+  for (const item of [image, ...(images || [])]) {
+    const url = item?.trim();
+    if (!url) continue;
+    const key = imageIdentity(url);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    photos.push(url);
+  }
+  return photos;
+}
 
 type ProductVariant = {
   _id: string;
@@ -150,6 +174,10 @@ export default function ProductDetailScreen() {
     null,
   );
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showVariantPhoto, setShowVariantPhoto] = useState(false);
+  const [galleryWidth, setGalleryWidth] = useState(screenWidth);
+  const imageScrollRef = useRef<ScrollView>(null);
+  const galleryWidthRef = useRef(screenWidth);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [similarLoading, setSimilarLoading] = useState(false);
@@ -197,6 +225,28 @@ export default function ProductDetailScreen() {
       setSelectedVariant(defaultVar);
     }
   }, [product]);
+
+  useEffect(() => {
+    setShowVariantPhoto(false);
+    setSelectedImageIndex(0);
+  }, [id]);
+
+  useEffect(() => {
+    if (showVariantPhoto || !product) return;
+    const photos = uniqueProductPhotos(product.image, product.images);
+    if (photos.length < 2) return;
+    const timer = setInterval(() => {
+      setSelectedImageIndex((current) => {
+        const next = (current + 1) % photos.length;
+        imageScrollRef.current?.scrollTo({
+          x: next * galleryWidthRef.current,
+          animated: true,
+        });
+        return next;
+      });
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [product, showVariantPhoto]);
 
   useEffect(() => {
     const listener = scrollY.addListener(({ value }) => {
@@ -331,7 +381,9 @@ export default function ProductDetailScreen() {
 
   const handleVariantSelect = (variant: ProductVariant) => {
     setSelectedVariant(variant);
+    setShowVariantPhoto(Boolean(variant.image?.trim()));
     setSelectedImageIndex(0);
+    imageScrollRef.current?.scrollTo({ x: 0, animated: false });
     Animated.sequence([
       Animated.timing(variantAnimation, {
         toValue: 1,
@@ -543,7 +595,7 @@ export default function ProductDetailScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#B56A45" />
+          <ActivityIndicator size="large" color={C.primary} />
           <Text style={styles.loadingText}>Loading product...</Text>
         </View>
       </SafeAreaView>
@@ -554,7 +606,7 @@ export default function ProductDetailScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#999" />
+          <Ionicons name="alert-circle-outline" size={64} color={C.muted} />
           <Text style={styles.errorText}>Product not found</Text>
           <TouchableOpacity
             style={styles.backButton}
@@ -567,13 +619,14 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const allImages = [product.image, ...(product.images || [])].filter(Boolean);
+  const productPhotos = uniqueProductPhotos(product.image, product.images);
   const variantPhoto = selectedVariant.image?.trim() || "";
-  const displayImages = variantPhoto
-    ? [variantPhoto]
-    : allImages.length > 0
-      ? allImages
-      : ["https://via.placeholder.com/400"];
+  const displayImages =
+    showVariantPhoto && variantPhoto
+      ? [variantPhoto]
+      : productPhotos.length > 0
+        ? productPhotos
+        : ["https://via.placeholder.com/400"];
   const discount =
     selectedVariant.mrp > selectedVariant.price
       ? Math.round(
@@ -610,7 +663,7 @@ export default function ProductDetailScreen() {
           style={styles.headerButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={22} color="#9A3412" />
+          <Ionicons name="arrow-back" size={22} color={C.ink} />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
@@ -632,14 +685,14 @@ export default function ProductDetailScreen() {
             onPress={handleWhatsAppShare}
             activeOpacity={0.8}
           >
-            <Ionicons name="logo-whatsapp" size={20} color="#9A3412" />
+            <Ionicons name="logo-whatsapp" size={20} color={C.ink} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.headerButton}
             onPress={() => router.push("/cart")}
           >
-            <Ionicons name="cart-outline" size={22} color="#9A3412" />
+            <Ionicons name="cart-outline" size={22} color={C.ink} />
             {getCartItemCount() > 0 && (
               <View style={styles.headerCartBadge}>
                 <Text style={styles.headerCartBadgeText}>{getCartItemCount()}</Text>
@@ -659,24 +712,35 @@ export default function ProductDetailScreen() {
         contentContainerStyle={{ paddingTop: insets.top }}
       >
         {/* ─── Image Carousel ─── */}
-        <View style={styles.imageContainer}>
+        <View
+          style={[styles.imageContainer, { height: galleryWidth }]}
+          onLayout={(event) => {
+            const next = Math.round(event.nativeEvent.layout.width);
+            if (next > 0 && next !== galleryWidthRef.current) {
+              galleryWidthRef.current = next;
+              setGalleryWidth(next);
+            }
+          }}
+        >
           <ScrollView
-            key={selectedVariant._id}
+            ref={imageScrollRef}
+            key={showVariantPhoto ? selectedVariant._id : "product-gallery"}
             horizontal
             pagingEnabled
+            scrollEnabled={displayImages.length > 1}
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={(e) =>
               setSelectedImageIndex(
-                Math.round(e.nativeEvent.contentOffset.x / width),
+                Math.round(e.nativeEvent.contentOffset.x / galleryWidthRef.current),
               )
             }
           >
             {displayImages.map((img, index) => (
-              <View key={index} style={styles.imageWrapper}>
+              <View key={`${imageIdentity(img)}-${index}`} style={{ width: galleryWidth, height: galleryWidth }}>
                 <Image
                   source={{ uri: img }}
-                  style={styles.productImage}
-                  resizeMode="contain"
+                  style={{ width: galleryWidth, height: galleryWidth }}
+                  resizeMode="cover"
                 />
               </View>
             ))}
@@ -719,7 +783,7 @@ export default function ProductDetailScreen() {
               </View>
             )}
             <View style={styles.categoryBadge}>
-              <Ionicons name="grid-outline" size={11} color="#777" />
+              <Ionicons name="grid-outline" size={11} color={C.muted} />
               <Text style={styles.categoryText}>{product.category.name}</Text>
             </View>
           </View>
@@ -775,11 +839,11 @@ export default function ProductDetailScreen() {
                   {product.reviewsCount}{" "}
                   {product.reviewsCount === 1 ? "review" : "reviews"}
                 </Text>
-                <Ionicons name="chevron-forward" size={13} color="#bbb" />
+                <Ionicons name="chevron-forward" size={13} color={C.muted} />
               </>
             ) : (
               <View style={styles.noReviewsBadge}>
-                <Ionicons name="chatbubble-outline" size={13} color="#999" />
+                <Ionicons name="chatbubble-outline" size={13} color={C.muted} />
                 <Text style={styles.noReviewsText}>
                   No reviews yet · Be the first!
                 </Text>
@@ -943,7 +1007,7 @@ export default function ProductDetailScreen() {
                   <Ionicons
                     name={showFullDescription ? "chevron-up" : "chevron-down"}
                     size={14}
-                    color="#B56A45"
+                    color={C.primary}
                   />
                 </TouchableOpacity>
               )}
@@ -956,12 +1020,12 @@ export default function ProductDetailScreen() {
             {product.isOrganic && (
               <View style={styles.detailRow}>
                 <View style={styles.detailIconWrap}>
-                  <Ionicons name="leaf" size={17} color="#C2410C" />
+                  <Ionicons name="leaf" size={17} color={C.primary} />
                 </View>
                 <View style={styles.detailContent}>
                   <Text style={styles.detailLabel}>Organic</Text>
                   <View style={styles.organicPill}>
-                    <Ionicons name="leaf" size={14} color="#9A3412" />
+                    <Ionicons name="leaf" size={14} color={C.ink} />
                     <Text style={styles.organicPillText}>Organic product</Text>
                   </View>
                 </View>
@@ -970,7 +1034,7 @@ export default function ProductDetailScreen() {
             {product.shelfLife && (
               <View style={styles.detailRow}>
                 <View style={styles.detailIconWrap}>
-                  <Ionicons name="time-outline" size={17} color="#B56A45" />
+                  <Ionicons name="time-outline" size={17} color={C.primary} />
                 </View>
                 <View style={styles.detailContent}>
                   <Text style={styles.detailLabel}>Shelf Life</Text>
@@ -983,7 +1047,7 @@ export default function ProductDetailScreen() {
             {product.storageInstructions && (
               <View style={styles.detailRow}>
                 <View style={styles.detailIconWrap}>
-                  <Ionicons name="snow-outline" size={17} color="#B56A45" />
+                  <Ionicons name="snow-outline" size={17} color={C.primary} />
                 </View>
                 <View style={styles.detailContent}>
                   <Text style={styles.detailLabel}>Storage</Text>
@@ -995,7 +1059,7 @@ export default function ProductDetailScreen() {
             )}
             <View style={styles.detailRow}>
               <View style={styles.detailIconWrap}>
-                <Ionicons name="business-outline" size={17} color="#B56A45" />
+                <Ionicons name="business-outline" size={17} color={C.primary} />
               </View>
               <View style={styles.detailContent}>
                 <Text style={styles.detailLabel}>Seller</Text>
@@ -1007,7 +1071,7 @@ export default function ProductDetailScreen() {
             {product.seller.location && (
               <View style={[styles.detailRow, { marginBottom: 0 }]}>
                 <View style={styles.detailIconWrap}>
-                  <Ionicons name="location-outline" size={17} color="#B56A45" />
+                  <Ionicons name="location-outline" size={17} color={C.primary} />
                 </View>
                 <View style={styles.detailContent}>
                   <Text style={styles.detailLabel}>Location</Text>
@@ -1053,7 +1117,7 @@ export default function ProductDetailScreen() {
               </View>
 
               {similarLoading ? (
-                <ActivityIndicator color="#B56A45" />
+                <ActivityIndicator color={C.primary} />
               ) : (
                 <ScrollView
                   horizontal
@@ -1258,7 +1322,7 @@ export default function ProductDetailScreen() {
 
                 {reviewsLoading ? (
                   <ActivityIndicator
-                    color="#B56A45"
+                    color={C.primary}
                     style={{ marginTop: 20 }}
                   />
                 ) : (
@@ -1301,7 +1365,7 @@ export default function ProductDetailScreen() {
                                         <Ionicons
                                           name="checkmark-circle"
                                           size={12}
-                                          color="#B56A45"
+                                          color={C.primary}
                                         />
                                       </View>
                                     )}
@@ -1331,7 +1395,7 @@ export default function ProductDetailScreen() {
                                     <Ionicons
                                       name="create-outline"
                                       size={13}
-                                      color="#B56A45"
+                                      color={C.primary}
                                     />
                                     <Text style={styles.editReviewText}>
                                       Edit
@@ -1356,7 +1420,7 @@ export default function ProductDetailScreen() {
                                   <Ionicons
                                     name="thumbs-up-outline"
                                     size={13}
-                                    color="#666"
+                                    color={C.muted}
                                   />
                                   <Text style={styles.helpfulText}>
                                     Helpful ({review.helpful})
@@ -1376,7 +1440,7 @@ export default function ProductDetailScreen() {
                         <Ionicons
                           name="chevron-forward"
                           size={17}
-                          color="#B56A45"
+                          color={C.primary}
                         />
                       </TouchableOpacity>
                     )}
@@ -1391,7 +1455,7 @@ export default function ProductDetailScreen() {
                   <Ionicons
                     name="chatbubble-outline"
                     size={44}
-                    color="#B56A45"
+                    color={C.primary}
                   />
                 </View>
                 <Text style={styles.noReviewsTitle}>No reviews yet</Text>
@@ -1440,7 +1504,7 @@ export default function ProductDetailScreen() {
               <Ionicons
                 name={cartItem.qty === 1 ? "trash-outline" : "remove"}
                 size={20}
-                color={cartItem.qty === 1 ? "#F44336" : "#B56A45"}
+                color={cartItem.qty === 1 ? "#F44336" : C.primary}
               />
             </TouchableOpacity>
             <View style={styles.quantityDisplay}>
@@ -1464,7 +1528,7 @@ export default function ProductDetailScreen() {
                 name="add"
                 size={20}
                 color={
-                  cartItem.qty >= selectedVariant.stock ? "#BDBDBD" : "#B56A45"
+                  cartItem.qty >= selectedVariant.stock ? "#BDBDBD" : C.primary
                 }
               />
             </TouchableOpacity>
@@ -1475,7 +1539,7 @@ export default function ProductDetailScreen() {
           style={styles.cartButton}
           onPress={() => router.push("/cart")}
         >
-          <Ionicons name="cart" size={24} color="#B56A45" />
+          <Ionicons name="cart" size={24} color={C.primary} />
           {items.length > 0 && (
             <View style={styles.cartBadge}>
               <Text style={styles.cartBadgeText}>{getCartItemCount()}</Text>
@@ -1502,7 +1566,7 @@ export default function ProductDetailScreen() {
                 style={styles.modalCloseBtn}
                 onPress={() => setShowReviewModal(false)}
               >
-                <Ionicons name="close" size={20} color="#666" />
+                <Ionicons name="close" size={20} color={C.muted} />
               </TouchableOpacity>
             </View>
 
@@ -1544,7 +1608,7 @@ export default function ProductDetailScreen() {
                 <TextInput
                   style={styles.modalInput}
                   placeholder="Summarize your experience"
-                  placeholderTextColor="#bbb"
+                  placeholderTextColor={C.muted}
                   value={reviewTitle}
                   onChangeText={setReviewTitle}
                   maxLength={100}
@@ -1556,7 +1620,7 @@ export default function ProductDetailScreen() {
                 <TextInput
                   style={[styles.modalInput, styles.modalTextArea]}
                   placeholder="Share your thoughts about this product"
-                  placeholderTextColor="#bbb"
+                  placeholderTextColor={C.muted}
                   value={reviewComment}
                   onChangeText={setReviewComment}
                   multiline
@@ -1599,8 +1663,8 @@ export default function ProductDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F4F4F4" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
 
   loadingContainer: {
     flex: 1,
@@ -1608,19 +1672,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  loadingText: { fontSize: 14, color: "#666", fontWeight: "500" },
+  loadingText: { fontSize: 14, color: C.muted, fontWeight: "500" },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
-  errorText: { fontSize: 18, fontWeight: "600", color: "#666", marginTop: 16 },
+  errorText: { fontSize: 18, fontWeight: "600", color: C.muted, marginTop: 16 },
   backButton: {
     marginTop: 24,
     paddingHorizontal: 32,
     paddingVertical: 12,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     borderRadius: 12,
   },
   backButtonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
@@ -1644,9 +1708,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: "#F7F3EC",
+    backgroundColor: C.page,
     borderWidth: 1,
-    borderColor: "#E4DDD5",
+    borderColor: C.line,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1654,7 +1718,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: "700",
-    color: "#9A3412",
+    color: C.ink,
     marginHorizontal: 8,
   },
   headerCenter: {
@@ -1677,7 +1741,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 1,
     right: 1,
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     borderRadius: 9,
     minWidth: 18,
     height: 18,
@@ -1688,14 +1752,14 @@ const styles = StyleSheet.create({
   headerCartBadgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
 
   // ── Image ──
-  imageContainer: { width, height: width, backgroundColor: "#fff" },
+  imageContainer: { width: "100%", height: screenWidth, backgroundColor: C.card, overflow: "hidden" },
   imageWrapper: {
-    width,
-    height: width,
+    width: screenWidth,
+    height: screenWidth,
     justifyContent: "center",
     alignItems: "center",
   },
-  productImage: { width: width * 0.82, height: width * 0.82 },
+  productImage: { width: "100%", height: "100%" },
   imageIndicators: {
     position: "absolute",
     bottom: 14,
@@ -1711,22 +1775,22 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: "#D9D9D9",
   },
-  activeIndicator: { width: 18, backgroundColor: "#B56A45" },
+  activeIndicator: { width: 18, backgroundColor: C.primary },
   discountBadge: {
     position: "absolute",
     top: 14,
     right: 14,
-    backgroundColor: "#F44336",
+    backgroundColor: C.badge,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
   },
-  discountText: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  discountText: { color: C.badgeText, fontSize: 12, fontWeight: "800" },
   trendingBadge: {
     position: "absolute",
     top: 14,
     left: 14,
-    backgroundColor: "#2196F3",
+    backgroundColor: C.badge,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
@@ -1734,11 +1798,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
-  trendingText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+  trendingText: { color: C.badgeText, fontSize: 11, fontWeight: "700" },
 
   // ── Content wrapper ──
   contentContainer: {
-    backgroundColor: "#F4F4F4",
+    backgroundColor: C.page,
     paddingTop: 12,
     paddingHorizontal: 14,
   },
@@ -1751,14 +1815,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   brandBadge: {
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.badge,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#F5D0C0",
+    borderColor: C.line,
   },
-  brandText: { fontSize: 12, fontWeight: "700", color: "#B56A45" },
+  brandText: { fontSize: 12, fontWeight: "700", color: C.badgeText },
   categoryBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -1768,15 +1832,15 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: C.line,
   },
-  categoryText: { fontSize: 12, color: "#666", fontWeight: "600" },
+  categoryText: { fontSize: 12, color: C.muted, fontWeight: "600" },
 
   // ── productName — EXACT as specified ──
   productName: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#111",
+    color: C.ink,
     lineHeight: 28,
     marginBottom: 8,
   },
@@ -1791,27 +1855,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
-  ratingText: { fontSize: 13, fontWeight: "800", color: "#B56A45" },
-  reviewsText: { fontSize: 13, color: "#888", fontWeight: "500" },
+  ratingText: { fontSize: 13, fontWeight: "800", color: C.ink },
+  reviewsText: { fontSize: 13, color: C.muted, fontWeight: "500" },
   noReviewsBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: C.soft,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
   },
-  noReviewsText: { fontSize: 12, color: "#888", fontWeight: "500" },
+  noReviewsText: { fontSize: 12, color: C.muted, fontWeight: "500" },
 
   // ── Variants ──
   variantSection: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
@@ -1819,7 +1883,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111",
+    color: C.ink,
     marginBottom: 12,
     letterSpacing: -0.2,
   },
@@ -1834,7 +1898,7 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
     position: "relative",
   },
-  variantCardSelected: { backgroundColor: "#FFF1E8", borderColor: "#B56A45" },
+  variantCardSelected: { backgroundColor: C.soft, borderColor: C.primary },
   variantCardDisabled: { opacity: 0.45 },
   variantInfo: { alignItems: "center" },
   variantThumb: {
@@ -1842,20 +1906,20 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 8,
     marginBottom: 6,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
   },
   variantSize: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#333",
+    color: C.ink,
     marginBottom: 3,
   },
-  variantSizeSelected: { color: "#B56A45" },
-  variantPrice: { fontSize: 15, fontWeight: "800", color: "#111" },
-  variantPriceSelected: { color: "#B56A45" },
+  variantSizeSelected: { color: C.primary },
+  variantPrice: { fontSize: 15, fontWeight: "800", color: C.ink },
+  variantPriceSelected: { color: C.primary },
   variantMRP: {
     fontSize: 11,
-    color: "#bbb",
+    color: C.muted,
     textDecorationLine: "line-through",
     marginTop: 2,
   },
@@ -1866,7 +1930,7 @@ const styles = StyleSheet.create({
     width: 17,
     height: 17,
     borderRadius: 9,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1898,7 +1962,7 @@ const styles = StyleSheet.create({
 
   // ── Price ──
   priceSection: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     padding: 14,
     borderRadius: 14,
     marginBottom: 10,
@@ -1913,29 +1977,29 @@ const styles = StyleSheet.create({
   currentPrice: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#B56A45",
+    color: C.primary,
     letterSpacing: -0.5,
   },
   originalPrice: {
     fontSize: 15,
-    color: "#bbb",
+    color: C.muted,
     textDecorationLine: "line-through",
   },
   savingsBadge: {
-    backgroundColor: "#FFF3E0",
+    backgroundColor: C.badge,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
   },
-  savingsText: { fontSize: 12, fontWeight: "700", color: "#E65100" },
+  savingsText: { fontSize: 12, fontWeight: "700", color: C.badgeText },
   stockIndicator: { flexDirection: "row", alignItems: "center", gap: 6 },
   stockDot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
   },
-  stockText: { fontSize: 13, color: "#B56A45", fontWeight: "600" },
+  stockText: { fontSize: 13, color: C.primary, fontWeight: "600" },
   outOfStockIndicator: { flexDirection: "row", alignItems: "center", gap: 6 },
   outOfStockText: { fontSize: 13, color: "#F44336", fontWeight: "600" },
   dealTimerWrap: {
@@ -1953,8 +2017,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
   dealTimerWrapEnded: {
-    backgroundColor: "#F3F4F6",
-    borderColor: "#E5E7EB",
+    backgroundColor: C.soft,
+    borderColor: C.line,
   },
   dealTimerHeader: {
     flexDirection: "row",
@@ -1968,7 +2032,7 @@ const styles = StyleSheet.create({
     color: "#B45309",
   },
   dealTimerTitleEnded: {
-    color: "#6B7280",
+    color: C.muted,
   },
   dealTimerIcon: {
     fontSize: 14,
@@ -1981,7 +2045,7 @@ const styles = StyleSheet.create({
   },
   dealTimeBox: {
     minWidth: 52,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.card,
     borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 8,
@@ -1996,12 +2060,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   dealTimeValueEnded: {
-    color: "#9CA3AF",
+    color: C.muted,
   },
   dealTimeLabel: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#9A3412",
+    color: C.ink,
     marginTop: 2,
   },
   dealTimerSep: {
@@ -2018,23 +2082,23 @@ const styles = StyleSheet.create({
 
   // ── Description ──
   descriptionSection: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
   },
-  description: { fontSize: 14, lineHeight: 22, color: "#555" },
+  description: { fontSize: 14, lineHeight: 22, color: C.muted },
   readMoreBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
     marginTop: 8,
   },
-  readMore: { fontSize: 13, fontWeight: "700", color: "#B56A45" },
+  readMore: { fontSize: 13, fontWeight: "700", color: C.primary },
 
   // ── Details ──
   detailsSection: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
@@ -2049,7 +2113,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -2062,13 +2126,13 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
-  detailValue: { fontSize: 14, color: "#222", fontWeight: "500" },
+  detailValue: { fontSize: 14, color: C.ink, fontWeight: "500" },
   organicPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     alignSelf: "flex-start",
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,
@@ -2079,29 +2143,29 @@ const styles = StyleSheet.create({
   organicPillText: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     letterSpacing: 0.2,
   },
 
   // ── Tags ──
   tagsSection: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
   },
   tagsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   tag: {
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 16,
   },
-  tagText: { fontSize: 12, color: "#B56A45", fontWeight: "600" },
+  tagText: { fontSize: 12, color: C.primary, fontWeight: "600" },
 
   // ── Similar Products (IMPROVED) ──
   similarSection: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
@@ -2112,17 +2176,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  seeAll: { fontSize: 13, fontWeight: "700", color: "#B56A45" },
+  seeAll: { fontSize: 13, fontWeight: "700", color: C.primary },
   similarScrollContent: { paddingRight: 8, paddingBottom: 4 },
 
   similarCard: {
     width: 148,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 10,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: "#EBEBEB",
+    borderColor: C.line,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -2135,12 +2199,12 @@ const styles = StyleSheet.create({
     top: 8,
     left: 8,
     zIndex: 1,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.badge,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
-  similarDiscountText: { fontSize: 9, fontWeight: "800", color: "#fff" },
+  similarDiscountText: { fontSize: 9, fontWeight: "800", color: C.badgeText },
   similarImageWrap: {
     backgroundColor: "#F6F6F6",
     borderRadius: 10,
@@ -2154,7 +2218,7 @@ const styles = StyleSheet.create({
   similarName: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#111",
+    color: C.ink,
     marginBottom: 5,
     lineHeight: 17,
   },
@@ -2166,14 +2230,14 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 5,
   },
-  similarUnit: { fontSize: 11, color: "#666", fontWeight: "600" },
+  similarUnit: { fontSize: 11, color: C.muted, fontWeight: "600" },
   similarRatingRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
     marginBottom: 8,
   },
-  similarRatingText: { fontSize: 11, fontWeight: "800", color: "#333" },
+  similarRatingText: { fontSize: 11, fontWeight: "800", color: C.ink },
   similarReviewCount: { fontSize: 10, color: "#aaa", fontWeight: "500" },
   similarBottom: {
     flexDirection: "row",
@@ -2181,25 +2245,25 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     marginTop: 2,
   },
-  similarPrice: { fontSize: 15, fontWeight: "900", color: "#111" },
+  similarPrice: { fontSize: 15, fontWeight: "900", color: C.ink },
   similarMRP: {
     fontSize: 11,
-    color: "#bbb",
+    color: C.muted,
     textDecorationLine: "line-through",
   },
   simAddBtn: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderWidth: 1.5,
-    borderColor: "#B56A45",
+    borderColor: C.primary,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
-  simAddBtnText: { fontSize: 12, fontWeight: "800", color: "#B56A45" },
+  simAddBtnText: { fontSize: 12, fontWeight: "800", color: C.primary },
   simQtyRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     borderRadius: 8,
     overflow: "hidden",
   },
@@ -2220,7 +2284,7 @@ const styles = StyleSheet.create({
 
   // ── Reviews ──
   reviewsSection: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
@@ -2235,7 +2299,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 9,
@@ -2252,11 +2316,11 @@ const styles = StyleSheet.create({
   ratingNumber: {
     fontSize: 46,
     fontWeight: "800",
-    color: "#111",
+    color: C.ink,
     marginBottom: 6,
     letterSpacing: -1,
   },
-  ratingTotal: { fontSize: 12, color: "#999", marginTop: 6 },
+  ratingTotal: { fontSize: 12, color: C.muted, marginTop: 6 },
   starContainer: { flexDirection: "row", gap: 3 },
 
   distributionContainer: { gap: 8 },
@@ -2264,13 +2328,13 @@ const styles = StyleSheet.create({
   distributionLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#666",
+    color: C.muted,
     width: 26,
   },
   distributionBar: {
     flex: 1,
     height: 7,
-    backgroundColor: "#E8E8E8",
+    backgroundColor: C.line,
     borderRadius: 4,
     overflow: "hidden",
   },
@@ -2281,7 +2345,7 @@ const styles = StyleSheet.create({
   },
   distributionCount: {
     fontSize: 12,
-    color: "#999",
+    color: C.muted,
     fontWeight: "600",
     width: 28,
     textAlign: "right",
@@ -2304,22 +2368,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  userAvatarOwn: { backgroundColor: "#B56A45" },
+  userAvatarOwn: { backgroundColor: C.primary },
   userAvatarText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   reviewUserInfo: { flex: 1 },
   reviewUserRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  reviewUserName: { fontSize: 14, fontWeight: "700", color: "#111" },
+  reviewUserName: { fontSize: 14, fontWeight: "700", color: C.ink },
   youBadge: {
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.badge,
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: "#F5D0C0",
+    borderColor: C.line,
   },
-  youBadgeText: { fontSize: 10, fontWeight: "700", color: "#B56A45" },
+  youBadgeText: { fontSize: 10, fontWeight: "700", color: C.badgeText },
   verifiedBadge: { flexDirection: "row", alignItems: "center" },
-  reviewDate: { fontSize: 11, color: "#bbb", marginTop: 2 },
+  reviewDate: { fontSize: 11, color: C.muted, marginTop: 2 },
 
   // Stars + edit icon stacked on the right
   reviewRightCol: { alignItems: "flex-end", gap: 6 },
@@ -2329,50 +2393,50 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 7,
     borderWidth: 1,
-    borderColor: "#F5D0C0",
+    borderColor: C.line,
   },
-  editReviewText: { fontSize: 11, fontWeight: "700", color: "#B56A45" },
+  editReviewText: { fontSize: 11, fontWeight: "700", color: C.primary },
 
   reviewTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#111",
+    color: C.ink,
     marginBottom: 5,
   },
-  reviewComment: { fontSize: 13, lineHeight: 19, color: "#555" },
+  reviewComment: { fontSize: 13, lineHeight: 19, color: C.muted },
   reviewFooter: {
     flexDirection: "row",
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#EBEBEB",
+    borderTopColor: C.line,
   },
   helpfulBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
-  helpfulText: { fontSize: 12, color: "#888" },
+  helpfulText: { fontSize: 12, color: C.muted },
 
   viewAllReviewsBtn: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     paddingVertical: 13,
     borderRadius: 12,
     marginTop: 6,
   },
-  viewAllReviewsText: { fontSize: 14, fontWeight: "700", color: "#B56A45" },
+  viewAllReviewsText: { fontSize: 14, fontWeight: "700", color: C.primary },
 
   noReviewsContainer: { alignItems: "center", paddingVertical: 36 },
   noReviewsIcon: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 14,
@@ -2380,7 +2444,7 @@ const styles = StyleSheet.create({
   noReviewsTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#666",
+    color: C.muted,
     marginBottom: 5,
   },
   noReviewsSubtext: { fontSize: 13, color: "#aaa" },
@@ -2391,7 +2455,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
@@ -2406,14 +2470,14 @@ const styles = StyleSheet.create({
   },
   addButtonContainer: { flex: 1 },
   addButton: {
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     paddingVertical: 16,
     borderRadius: 13,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
-    shadowColor: "#B56A45",
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -2434,7 +2498,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     borderRadius: 13,
     padding: 6,
     gap: 6,
@@ -2443,7 +2507,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 11,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -2457,12 +2521,12 @@ const styles = StyleSheet.create({
   quantityText: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#B56A45",
+    color: C.primary,
     letterSpacing: -0.5,
   },
   quantityUnit: {
     fontSize: 10,
-    color: "#666",
+    color: C.muted,
     fontWeight: "600",
     marginTop: 2,
   },
@@ -2470,7 +2534,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 13,
-    backgroundColor: "#FFF1E8",
+    backgroundColor: C.soft,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -2483,7 +2547,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 4,
     right: 4,
-    backgroundColor: "#F44336",
+    backgroundColor: C.primary,
     borderRadius: 9,
     minWidth: 18,
     height: 18,
@@ -2500,7 +2564,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingTop: 12,
@@ -2525,7 +2589,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#111",
+    color: C.ink,
     letterSpacing: -0.3,
   },
   modalCloseBtn: {
@@ -2548,25 +2612,25 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 8,
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
   },
   modalProductName: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#111",
+    color: C.ink,
     marginBottom: 3,
   },
-  modalProductVariant: { fontSize: 12, color: "#888" },
+  modalProductVariant: { fontSize: 12, color: C.muted },
   modalSection: { marginBottom: 22 },
   modalLabel: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#111",
+    color: C.ink,
     marginBottom: 10,
   },
   ratingHint: {
     fontSize: 13,
-    color: "#B56A45",
+    color: C.primary,
     fontWeight: "600",
     marginTop: 8,
   },
@@ -2575,14 +2639,14 @@ const styles = StyleSheet.create({
     padding: 13,
     borderRadius: 11,
     fontSize: 14,
-    color: "#333",
+    color: C.ink,
     borderWidth: 1,
-    borderColor: "#E8E8E8",
+    borderColor: C.line,
   },
   modalTextArea: { minHeight: 110, textAlignVertical: "top" },
-  charCount: { fontSize: 11, color: "#bbb", textAlign: "right", marginTop: 5 },
+  charCount: { fontSize: 11, color: C.muted, textAlign: "right", marginTop: 5 },
   submitReviewBtn: {
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
     paddingVertical: 15,
     borderRadius: 13,
     alignItems: "center",
@@ -2590,7 +2654,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     gap: 8,
-    shadowColor: "#B56A45",
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
     shadowRadius: 8,
@@ -2602,4 +2666,4 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   submitReviewText: { color: "#fff", fontSize: 15, fontWeight: "800" },
-});
+}));

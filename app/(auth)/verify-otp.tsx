@@ -28,6 +28,7 @@ import {
   BG_SURFACE,
 } from "../../constants/authScreenTheme";
 import { useAuth } from "../../context/AuthContext";
+import { C, themed } from "@/constants/theme";
 
 /** Countdown until user can tap Resend OTP */
 const RESEND_COOLDOWN_SEC = 120;
@@ -263,7 +264,7 @@ export default function VerifyOtpScreen() {
                     <Ionicons
                       name="checkmark-circle"
                       size={26}
-                      color="#B56A45"
+                      color={C.primary}
                       style={styles.otpCompleteIcon}
                     />
                   )}
@@ -355,7 +356,7 @@ export default function VerifyOtpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: BG_SURFACE,
@@ -501,7 +502,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     ...Platform.select({
       ios: {
-        shadowColor: "#C2410C",
+        shadowColor: C.primary,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.28,
         shadowRadius: 10,
@@ -538,4 +539,4 @@ const styles = StyleSheet.create({
     color: "#3A8A3A",
     textDecorationLine: "underline",
   },
-});
+}));

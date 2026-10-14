@@ -13,6 +13,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { API } from "@/utils/api";
 import { getDriverToken } from "@/utils/driverSession";
+import { C, themed } from "@/constants/theme";
 
 export default function DriverConfirmHandoverScreen() {
   const [orderId, setOrderId] = useState("");
@@ -137,13 +138,13 @@ export default function DriverConfirmHandoverScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F6F7F2" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   container: { flex: 1, padding: 24, paddingTop: 24 },
   title: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#9A3412",
+    color: C.ink,
     marginBottom: 8,
   },
   sub: { fontSize: 14, color: "#4E7C50", marginBottom: 22, lineHeight: 20 },
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 16,
     fontSize: 22,
@@ -164,7 +165,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   inputMono: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 14,
     padding: 14,
     fontSize: 13,
@@ -182,5 +183,5 @@ const styles = StyleSheet.create({
   ok: { color: "#166534", marginTop: 16, textAlign: "center", fontWeight: "600" },
   err: { color: "#B42318", marginTop: 16, textAlign: "center" },
   back: { marginTop: 28, alignSelf: "flex-start" },
-  backText: { color: "#6B7280", fontSize: 15 },
-});
+  backText: { color: C.muted, fontSize: 15 },
+}));

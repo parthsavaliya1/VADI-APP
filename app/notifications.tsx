@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { API } from "@/utils/api";
+import { C, themed } from "@/constants/theme";
 
 type InAppNotification = {
   _id: string;
@@ -87,7 +88,7 @@ export default function NotificationsScreen() {
       <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
         <AppHeader title="Notifications" showBack showCart={false} />
         <View style={styles.centerBox}>
-          <Ionicons name="notifications-off-outline" size={56} color="#9CA3AF" />
+          <Ionicons name="notifications-off-outline" size={56} color={C.muted} />
           <Text style={styles.emptyTitle}>Sign in to see notifications</Text>
           <Text style={styles.emptySub}>
             Messages from Vadi will appear here after you log in.
@@ -115,7 +116,7 @@ export default function NotificationsScreen() {
 
       {loading ? (
         <View style={styles.loaderWrap}>
-          <ActivityIndicator size="large" color="#C2410C" />
+          <ActivityIndicator size="large" color={C.primary} />
         </View>
       ) : (
         <FlatList
@@ -128,13 +129,13 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#C2410C"]}
-              tintColor="#C2410C"
+              colors={[C.primary]}
+              tintColor={C.primary}
             />
           }
           ListEmptyComponent={
             <View style={styles.centerBox}>
-              <Ionicons name="mail-open-outline" size={52} color="#9CA3AF" />
+              <Ionicons name="mail-open-outline" size={52} color={C.muted} />
               <Text style={styles.emptyTitle}>No notifications yet</Text>
               <Text style={styles.emptySub}>
                 When we share offers or updates, they will show up here.
@@ -154,7 +155,7 @@ export default function NotificationsScreen() {
                   <Image source={{ uri: item.imageUrl }} style={styles.thumb} />
                 ) : (
                   <View style={styles.thumbPlaceholder}>
-                    <Ionicons name="megaphone-outline" size={22} color="#C2410C" />
+                    <Ionicons name="megaphone-outline" size={22} color={C.primary} />
                   </View>
                 )}
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -180,20 +181,20 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F8FAF8" },
+const styles = themed(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.page },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,
     paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E5E7EB",
-    backgroundColor: "#fff",
+    borderBottomColor: C.line,
+    backgroundColor: C.card,
   },
   backBtn: { padding: 8 },
-  title: { fontSize: 20, fontWeight: "700", color: "#111827" },
-  subCount: { fontSize: 12, color: "#6B7280", marginTop: 2 },
+  title: { fontSize: 20, fontWeight: "700", color: C.ink },
+  subCount: { fontSize: 12, color: C.muted, marginTop: 2 },
   loaderWrap: { flex: 1, justifyContent: "center", alignItems: "center" },
   listContent: { padding: 16, paddingBottom: 32 },
   emptyList: { flexGrow: 1 },
@@ -214,25 +215,25 @@ const styles = StyleSheet.create({
   emptySub: {
     marginTop: 8,
     fontSize: 14,
-    color: "#6B7280",
+    color: C.muted,
     textAlign: "center",
     lineHeight: 20,
   },
   primaryBtn: {
     marginTop: 24,
-    backgroundColor: "#C2410C",
+    backgroundColor: C.primary,
     paddingHorizontal: 28,
     paddingVertical: 12,
     borderRadius: 10,
   },
   primaryBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: C.line,
   },
   cardUnread: {
     borderColor: "#BBF7D0",
@@ -243,14 +244,14 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 8,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: C.line,
     marginRight: 12,
   },
   thumbPlaceholder: {
     width: 56,
     height: 56,
     borderRadius: 8,
-    backgroundColor: "#F3E4DB",
+    backgroundColor: C.soft,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -259,13 +260,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  cardTitle: { flex: 1, fontSize: 16, fontWeight: "700", color: "#111827", marginRight: 8 },
+  cardTitle: { flex: 1, fontSize: 16, fontWeight: "700", color: C.ink, marginRight: 8 },
   unreadPill: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#B56A45",
+    backgroundColor: C.primary,
   },
-  cardBody: { marginTop: 6, fontSize: 14, color: "#4B5563", lineHeight: 20 },
-  cardDate: { marginTop: 8, fontSize: 12, color: "#9CA3AF" },
-});
+  cardBody: { marginTop: 6, fontSize: 14, color: C.muted, lineHeight: 20 },
+  cardDate: { marginTop: 8, fontSize: 12, color: C.muted },
+}));
