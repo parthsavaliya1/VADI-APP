@@ -13,6 +13,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import Toast from "react-native-toast-message";
+import { RazorpayHost } from "@/components/RazorpayCheckout";
 
 function PushOpenListener() {
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function RootLayout() {
         <AddressProvider>
           <CartProvider>
             <OrderProvider>
+              <RazorpayHost>
               <PushOpenListener />
               {[
                 <Stack key="stack" screenOptions={{ headerShown: false }}>
@@ -85,6 +87,7 @@ export default function RootLayout() {
                 <Toast key="toast" />,
                 <StatusBar key="statusbar" style="auto" />,
               ]}
+              </RazorpayHost>
             </OrderProvider>
           </CartProvider>
         </AddressProvider>

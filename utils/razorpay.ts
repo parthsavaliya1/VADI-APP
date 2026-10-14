@@ -1,6 +1,10 @@
 import { API } from "@/utils/api";
-import Constants from "expo-constants";
-import { C } from "@/constants/theme";
+import { payWithRazorpayCheckout } from "@/components/RazorpayCheckout";
+
+function phoneForRazorpay(phone?: string) {
+  const digits = (phone || "").replace(/\D/g, "");
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
 
 type RazorpayGatewayOrder = {
   key: string;
@@ -35,40 +39,8 @@ type OpenRazorpayOptions = {
   onFailure: (message?: string) => void;
 };
 
-function razorpayMethodRestrictions(
-  restriction: OpenRazorpayOptions["methodRestriction"],
-): Record<string, boolean> | undefined {
-  if (restriction === "card") {
-    return { card: true, upi: false, netbanking: false, wallet: false };
-  }
-  if (restriction === "netbanking") {
-    return { card: false, upi: false, netbanking: true, wallet: false };
-  }
-  return undefined;
-}
-
 export async function openRazorpay(options: OpenRazorpayOptions) {
   try {
-    const isExpoGo =
-      Constants.appOwnership === "expo" ||
-      Constants.executionEnvironment === "storeClient";
-
-    if (isExpoGo) {
-      throw new Error(
-        "Online payment is not supported in Expo Go. Please run a development build.",
-      );
-    }
-
-    let RazorpayCheckout: { open: (config: any) => Promise<any> };
-    try {
-      // Lazy-load to avoid crashing app startup in Expo Go.
-      RazorpayCheckout = require("react-native-razorpay").default;
-    } catch {
-      throw new Error(
-        "Razorpay requires a development build. Expo Go does not support this native module.",
-      );
-    }
-
     const createOrderRes = await API.post("/payments/create-order", {
       userId: options.userId,
       amount: options.amount,
@@ -82,35 +54,14 @@ export async function openRazorpay(options: OpenRazorpayOptions) {
     }
 
     const gatewayOrder: RazorpayGatewayOrder = createOrderRes.data.data;
-
-    const prefill: Record<string, string> = {
-      name: options.customerName || "",
-      contact: (options.customerPhone || "").replace(/\s/g, ""),
-    };
-    const vpa = (options.prefillVpa || "").trim().toLowerCase();
-    if (vpa) {
-      prefill.vpa = vpa;
-    }
-
-    const methodRestriction =
-      options.methodRestriction ??
-      (options.paymentMethod === "card" ? "card" : undefined);
-    const methodOverride = razorpayMethodRestrictions(methodRestriction);
-
-    const paymentResult = await RazorpayCheckout.open({
-      key: gatewayOrder.key,
+    const paymentResult = await payWithRazorpayCheckout({
+      keyId: gatewayOrder.key,
+      orderId: gatewayOrder.razorpayOrderId,
       amount: gatewayOrder.amountInPaise,
       currency: gatewayOrder.currency,
-      name: "VADI",
       description: options.description || "Order payment",
-      order_id: gatewayOrder.razorpayOrderId,
-      ...(methodOverride ? { method: methodOverride } : {}),
-      notes: {
-        userId: options.userId,
-        source: "vadi-app",
-      },
-      prefill,
-      theme: { color: C.primary },
+      name: options.customerName,
+      contact: phoneForRazorpay(options.customerPhone),
     });
 
     const verifyRes = await API.post("/payments/verify-signature", {
@@ -142,24 +93,6 @@ export async function openWalletTopup(options: {
   onFailure: (message?: string) => void;
 }) {
   try {
-    const isExpoGo =
-      Constants.appOwnership === "expo" ||
-      Constants.executionEnvironment === "storeClient";
-    if (isExpoGo) {
-      throw new Error(
-        "Online payment is not supported in Expo Go. Please run a development build.",
-      );
-    }
-
-    let RazorpayCheckout: { open: (config: any) => Promise<any> };
-    try {
-      RazorpayCheckout = require("react-native-razorpay").default;
-    } catch {
-      throw new Error(
-        "Razorpay requires a development build. Expo Go does not support this native module.",
-      );
-    }
-
     const createOrderRes = await API.post("/wallet/topup/order", {
       userId: options.userId,
       amount: options.amount,
@@ -168,18 +101,14 @@ export async function openWalletTopup(options: {
       throw new Error(createOrderRes.data?.message || "Unable to start wallet top-up");
     }
     const gatewayOrder: RazorpayGatewayOrder = createOrderRes.data.data;
-    const paymentResult = await RazorpayCheckout.open({
-      key: gatewayOrder.key,
+    const paymentResult = await payWithRazorpayCheckout({
+      keyId: gatewayOrder.key,
+      orderId: gatewayOrder.razorpayOrderId,
       amount: gatewayOrder.amountInPaise,
       currency: gatewayOrder.currency,
-      name: "VADI",
       description: gatewayOrder.description || `Add ₹${options.amount} to wallet`,
-      order_id: gatewayOrder.razorpayOrderId,
-      prefill: {
-        name: options.customerName || "",
-        contact: (options.customerPhone || "").replace(/\s/g, ""),
-      },
-      theme: { color: C.primary },
+      name: options.customerName,
+      contact: phoneForRazorpay(options.customerPhone),
     });
 
     const verifyRes = await API.post("/wallet/topup/verify", {
