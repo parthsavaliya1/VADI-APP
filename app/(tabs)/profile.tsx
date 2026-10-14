@@ -584,11 +584,33 @@ export default function ProfileScreen() {
           <MenuRow
             icon="information-circle-outline"
             label="About VADI"
-            subtitle="Version 1.0.0"
-            onPress={() => {}}
+            subtitle="Our story, features & contact"
+            onPress={() => router.push("/about")}
             delay={470}
           />
+          <View style={styles.rowDivider} />
+          <MenuRow
+            icon="shield-checkmark-outline"
+            label="Privacy Policy"
+            subtitle="How we collect, use and protect your data"
+            onPress={() => router.push("/privacy-policy")}
+            delay={500}
+          />
         </Section>
+
+        {/* ── ACCOUNT ACTIONS ── */}
+        {user && (
+          <Section title="Account actions">
+            <MenuRow
+              icon="trash-outline"
+              label="Delete account"
+              subtitle="Permanently remove your account and data"
+              onPress={() => router.push({ pathname: "/about", params: { delete: "1" } })}
+              delay={530}
+              accent
+            />
+          </Section>
+        )}
 
         {/* ── LOGOUT ── */}
         <Animated.View

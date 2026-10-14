@@ -317,7 +317,7 @@ export default function AllProductsScreen() {
             )}
             {discount > 0 && (
               <View style={styles.badgeTopRight}>
-                <Text style={[styles.badgeText, { color: C.ink }]}>{discount}% OFF</Text>
+                <Text style={styles.badgeText}>{discount}% OFF</Text>
               </View>
             )}
           </View>

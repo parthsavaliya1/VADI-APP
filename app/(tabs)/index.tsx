@@ -396,7 +396,7 @@ function ProductCard({
             <View style={s.trendBadge}><Text style={s.prodBadgeTxt}>TRENDING</Text></View>
           )}
           {disc > 0 && (
-            <View style={s.offBadge}><Text style={[s.prodBadgeTxt, { color: C.ink }]}>{disc}% OFF</Text></View>
+            <View style={s.offBadge}><Text style={s.prodBadgeTxt}>{disc}% OFF</Text></View>
           )}
         </View>
         <Text numberOfLines={2} style={s.prodName}>{item.name}</Text>
@@ -947,7 +947,7 @@ export default function HomeScreen() {
               data={homeCategories}
               keyExtractor={(c) => c._id}
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingVertical: 8 }}
               renderItem={({ item, index }) => {
                 const qa = QUICK_ACTIONS[index % QUICK_ACTIONS.length];
                 const selected = selectedCatId === item._id;
@@ -1203,8 +1203,8 @@ const s = themed(() => StyleSheet.create({
   // CATEGORY
   catCard: {
     backgroundColor: C.card, width: 82, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 6,
-    alignItems: "center", elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07, shadowRadius: 4, borderWidth: 1.5, borderColor: "transparent",
+    alignItems: "center", elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 5, borderWidth: 1.5, borderColor: "transparent",
   },
   catCardSelected: { borderColor: C.primary, backgroundColor: C.page },
   catIconWrap: { width: 48, height: 48, borderRadius: 24, justifyContent: "center", alignItems: "center", marginBottom: 8, overflow: "hidden" },

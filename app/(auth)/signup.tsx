@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -54,17 +53,6 @@ export default function EnhancedSignupScreen() {
   }, [name, phone, hasAcceptedPrivacy]);
 
   useEffect(() => {
-    const loadPrivacy = async () => {
-      try {
-        const stored = await AsyncStorage.getItem("PRIVACY_ACCEPTED");
-        if (stored === "true") setHasAcceptedPrivacy(true);
-      } catch (e) {
-        console.log("Privacy flag load failed", e);
-      }
-    };
-
-    loadPrivacy();
-
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -86,6 +74,11 @@ export default function EnhancedSignupScreen() {
       }),
     ]).start();
   }, []);
+
+  const togglePrivacy = () => {
+    setHasAcceptedPrivacy((prev) => !prev);
+    setPrivacyTouched(true);
+  };
 
   const handleSignup = async () => {
     setPrivacyTouched(true);
@@ -226,42 +219,39 @@ export default function EnhancedSignupScreen() {
 
                   {/* Privacy Policy Checkbox */}
                   <View style={styles.privacyContainer}>
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      style={styles.privacyRow}
-                      onPress={async () => {
-                        const next = !hasAcceptedPrivacy;
-                        setHasAcceptedPrivacy(next);
-                        setPrivacyTouched(true);
-                        try {
-                          await AsyncStorage.setItem(
-                            "PRIVACY_ACCEPTED",
-                            next ? "true" : "false"
-                          );
-                        } catch (e) {
-                          console.log("Privacy flag save failed", e);
-                        }
-                      }}
-                    >
-                      <View
+                    <View style={styles.privacyRow}>
+                      <Pressable
+                        onPress={togglePrivacy}
+                        hitSlop={10}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: hasAcceptedPrivacy }}
+                        accessibilityLabel="I agree to the Privacy Policy"
                         style={[
                           styles.checkbox,
                           hasAcceptedPrivacy && styles.checkboxChecked,
+                          !hasAcceptedPrivacy && privacyTouched && styles.checkboxError,
                         ]}
                       >
                         {hasAcceptedPrivacy && (
-                          <Ionicons name="checkmark" size={13} color="#fff" />
+                          <Ionicons name="checkmark" size={14} color="#fff" />
                         )}
-                      </View>
+                      </Pressable>
                       <Text style={styles.privacyText}>
-                        By continuing you agree to our{" "}
-                        <Text style={styles.privacyLink}>Privacy Policy</Text>
+                        <Text onPress={togglePrivacy}>I agree to the </Text>
+                        <Text
+                          onPress={() => router.push("/privacy-policy")}
+                          accessibilityRole="link"
+                          style={styles.privacyLink}
+                        >
+                          Privacy Policy
+                        </Text>
+                        <Text onPress={togglePrivacy}> of VADI.</Text>
                       </Text>
-                    </TouchableOpacity>
+                    </View>
 
                     {!hasAcceptedPrivacy && privacyTouched && (
                       <Text style={styles.privacyError}>
-                        Please accept the privacy policy to continue.
+                        Please accept the Privacy Policy to continue.
                       </Text>
                     )}
                   </View>
@@ -481,36 +471,42 @@ const styles = themed(() => StyleSheet.create({
 
   privacyRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 10,
   },
 
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     borderRadius: 6,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "#A5D6A7",
-    backgroundColor: "#F0FAF0",
+    backgroundColor: C.card,
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 1,
   },
 
   checkboxChecked: {
-    borderColor: "#3A8A3A",
+    borderColor: C.primary,
     backgroundColor: C.primary,
+  },
+
+  checkboxError: {
+    borderColor: "#C62828",
   },
 
   privacyText: {
     flex: 1,
     fontSize: 13,
     color: "#5A7A5A",
-    lineHeight: 18,
+    lineHeight: 20,
   },
 
   privacyLink: {
     color: "#3A8A3A",
-    fontWeight: "700",
+    fontWeight: "800",
+    textDecorationLine: "underline",
   },
 
   privacyError: {

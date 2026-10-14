@@ -53,6 +53,8 @@ type AuthContextType = {
   }) => Promise<void>;
 
   logout: () => Promise<void>;
+  /** Permanently deletes the signed-in user's account and clears the local session. */
+  deleteAccount: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -233,6 +235,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  /* ================= DELETE ACCOUNT ================= */
+
+  const deleteAccount = async () => {
+    if (!user) throw new Error("No user logged in");
+
+    try {
+      await API.delete(`/api/users/${user._id}`);
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || "Could not delete your account. Please try again.",
+      );
+    }
+
+    await AsyncStorage.removeItem(STORAGE_KEY);
+    setUser(null);
+  };
+
   /* ================= PROVIDER ================= */
 
   return (
@@ -247,6 +266,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         verifyOtpAndSignup,
         updateProfile,
         logout,
+        deleteAccount,
       }}
     >
       {children}
