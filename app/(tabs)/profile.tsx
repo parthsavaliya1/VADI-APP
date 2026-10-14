@@ -569,7 +569,7 @@ export default function ProfileScreen() {
             icon="chatbubble-ellipses-outline"
             label="Help & Support"
             subtitle="FAQs, chat with us"
-            onPress={() => {}}
+            onPress={() => router.push("/help-support")}
             delay={370}
           />
           <View style={styles.rowDivider} />
@@ -577,7 +577,7 @@ export default function ProfileScreen() {
             icon="star-outline"
             label="Rate the App"
             subtitle="Tell us how we're doing"
-            onPress={() => {}}
+            onPress={() => router.push("/rate-app")}
             delay={420}
           />
           <View style={styles.rowDivider} />
@@ -597,20 +597,6 @@ export default function ProfileScreen() {
             delay={500}
           />
         </Section>
-
-        {/* ── ACCOUNT ACTIONS ── */}
-        {user && (
-          <Section title="Account actions">
-            <MenuRow
-              icon="trash-outline"
-              label="Delete account"
-              subtitle="Permanently remove your account and data"
-              onPress={() => router.push({ pathname: "/about", params: { delete: "1" } })}
-              delay={530}
-              accent
-            />
-          </Section>
-        )}
 
         {/* ── LOGOUT ── */}
         <Animated.View

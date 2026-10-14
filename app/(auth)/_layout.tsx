@@ -5,7 +5,7 @@ export default function AuthLayout() {
   return (
     <>
       <Toast />
-      <Stack screenOptions={{ headerShown: false }} />;
+      <Stack screenOptions={{ headerShown: false }} />
     </>
   );
 }

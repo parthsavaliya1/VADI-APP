@@ -4,13 +4,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AppHeader } from "@/components/AppHeader";
 import { API } from "@/utils/api";
 import { getDriverToken } from "@/utils/driverSession";
 import { C, themed } from "@/constants/theme";
@@ -40,7 +43,7 @@ export default function DriverConfirmHandoverScreen() {
     const ref = orderId.trim().replace(/^#/, "").trim();
     const c = code.replace(/\D/g, "");
     if (!ref) {
-      setError("Enter order number (e.g. ORD…) or the 24-character ID from admin.");
+      setError("Enter the order number, for example ORD…, or the id from admin.");
       return;
     }
     if (c.length !== 6) {
@@ -63,7 +66,7 @@ export default function DriverConfirmHandoverScreen() {
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (data?.success) {
-        setMessage(data.message || "Verified successfully.");
+        setMessage(data.message || "Delivery confirmed.");
         setCode("");
       } else {
         setError(data?.message || "Verification failed");
@@ -83,105 +86,165 @@ export default function DriverConfirmHandoverScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <AppHeader title="Confirm code" showBack showCart={false} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
-        <View style={styles.container}>
-          <Text style={styles.title}>Confirm delivery code</Text>
-          <Text style={styles.sub}>
-            Enter the customer&apos;s 6-digit code from their app. A correct code marks
-            the order delivered immediately.
-          </Text>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.hero}>
+            <View style={styles.heroIcon}>
+              <Ionicons name="keypad" size={24} color={C.primary} />
+            </View>
+            <Text style={styles.title}>Hand the order over</Text>
+            <Text style={styles.sub}>
+              Ask for the code on the customer&apos;s tracking screen. A matching code marks the order delivered.
+            </Text>
+          </View>
 
-          <Text style={styles.label}>Order number or ID</Text>
-          <TextInput
-            placeholder="e.g. ORD23908068615 or ID from admin URL"
-            autoCapitalize="none"
-            value={orderId}
-            onChangeText={setOrderId}
-            style={styles.inputMono}
-          />
+          <View style={styles.card}>
+            <Text style={styles.label}>Order number</Text>
+            <TextInput
+              placeholder="ORD… or admin order id"
+              placeholderTextColor={C.tabInactive}
+              autoCapitalize="characters"
+              value={orderId}
+              onChangeText={setOrderId}
+              style={styles.input}
+            />
 
-          <Text style={styles.label}>Customer code</Text>
-          <TextInput
-            placeholder="6 digits"
-            keyboardType="number-pad"
-            maxLength={6}
-            value={code}
-            onChangeText={(t) => setCode(t.replace(/\D/g, ""))}
-            style={styles.input}
-          />
+            <Text style={styles.label}>Customer code</Text>
+            <TextInput
+              placeholder="6 digits"
+              placeholderTextColor={C.tabInactive}
+              keyboardType="number-pad"
+              maxLength={6}
+              value={code}
+              onChangeText={(t) => setCode(t.replace(/\D/g, ""))}
+              style={styles.codeInput}
+            />
 
-          <Pressable
-            style={[styles.cta, loading && { opacity: 0.6 }]}
-            onPress={() => void submit()}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.ctaText}>Verify code</Text>
-            )}
-          </Pressable>
+            <Pressable
+              style={[styles.cta, loading && { opacity: 0.7 }]}
+              onPress={() => void submit()}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.ctaText}>Verify code</Text>
+              )}
+            </Pressable>
 
-          {message ? <Text style={styles.ok}>{message}</Text> : null}
-          {error ? <Text style={styles.err}>{error}</Text> : null}
-
-          <Pressable onPress={() => router.back()} style={styles.back}>
-            <Text style={styles.backText}>← Back</Text>
-          </Pressable>
-        </View>
+            {message ? (
+              <View style={styles.okBox}>
+                <Ionicons name="checkmark-circle" size={18} color={C.primary} />
+                <Text style={styles.ok}>{message}</Text>
+              </View>
+            ) : null}
+            {error ? (
+              <View style={styles.errBox}>
+                <Ionicons name="alert-circle" size={18} color="#C62828" />
+                <Text style={styles.err}>{error}</Text>
+              </View>
+            ) : null}
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = themed(() => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.page },
-  container: { flex: 1, padding: 24, paddingTop: 24 },
-  title: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: C.ink,
-    marginBottom: 8,
-  },
-  sub: { fontSize: 14, color: "#4E7C50", marginBottom: 22, lineHeight: 20 },
-  label: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#374151",
-    marginBottom: 6,
-    textTransform: "uppercase",
-  },
-  input: {
-    backgroundColor: C.card,
-    borderRadius: 14,
-    padding: 16,
-    fontSize: 22,
-    letterSpacing: 6,
-    marginBottom: 16,
-    fontWeight: "700",
-  },
-  inputMono: {
-    backgroundColor: C.card,
-    borderRadius: 14,
-    padding: 14,
-    fontSize: 13,
-    marginBottom: 16,
-    fontFamily: Platform.select({ ios: "Menlo", android: "monospace" }),
-  },
-  cta: {
-    backgroundColor: "#5B21B6",
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  ctaText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  ok: { color: "#166534", marginTop: 16, textAlign: "center", fontWeight: "600" },
-  err: { color: "#B42318", marginTop: 16, textAlign: "center" },
-  back: { marginTop: 28, alignSelf: "flex-start" },
-  backText: { color: C.muted, fontSize: 15 },
-}));
+const styles = themed(() =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: C.page },
+    content: { padding: 16, paddingBottom: 32 },
+    hero: {
+      backgroundColor: C.soft,
+      borderRadius: 20,
+      padding: 18,
+      borderWidth: 1,
+      borderColor: C.line,
+    },
+    heroIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      backgroundColor: C.card,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    title: { marginTop: 12, fontSize: 22, fontWeight: "800", color: C.ink },
+    sub: { marginTop: 6, fontSize: 14, lineHeight: 21, color: C.muted },
+    card: {
+      marginTop: 14,
+      backgroundColor: C.card,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: C.line,
+      padding: 16,
+    },
+    label: {
+      marginBottom: 8,
+      marginTop: 4,
+      fontSize: 12,
+      fontWeight: "800",
+      letterSpacing: 0.4,
+      textTransform: "uppercase",
+      color: C.muted,
+    },
+    input: {
+      backgroundColor: C.page,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: C.line,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      fontSize: 15,
+      color: C.ink,
+      marginBottom: 12,
+    },
+    codeInput: {
+      backgroundColor: C.page,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: C.line,
+      paddingVertical: 14,
+      textAlign: "center",
+      fontSize: 24,
+      fontWeight: "800",
+      letterSpacing: 8,
+      color: C.ink,
+    },
+    cta: {
+      marginTop: 16,
+      height: 52,
+      borderRadius: 14,
+      backgroundColor: C.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    ctaText: { color: "#fff", fontSize: 16, fontWeight: "800" },
+    okBox: {
+      marginTop: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: C.soft,
+      borderRadius: 12,
+      padding: 12,
+    },
+    ok: { flex: 1, color: C.primary, fontWeight: "700" },
+    errBox: {
+      marginTop: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: "#FDECEC",
+      borderRadius: 12,
+      padding: 12,
+    },
+    err: { flex: 1, color: "#C62828", fontWeight: "600" },
+  }),
+);

@@ -122,7 +122,6 @@ function TrackingStep({
   const slideAnim = useRef(new Animated.Value(20)).current;
   const dotScale = useRef(new Animated.Value(isCompleted ? 1 : 0.6)).current;
   const dotPulse = useRef(new Animated.Value(1)).current;
-  const checkOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -149,15 +148,6 @@ function TrackingStep({
           toValue: 1,
           tension: 100,
           friction: 6,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      Animated.sequence([
-        Animated.delay(delay + 350),
-        Animated.timing(checkOpacity, {
-          toValue: 1,
-          duration: 200,
           useNativeDriver: true,
         }),
       ]).start();
@@ -200,21 +190,18 @@ function TrackingStep({
         <Animated.View
           style={[
             styles.dotOuter,
-            isCompleted && styles.dotOuterCompleted,
+            isCompleted && !isActive && styles.dotOuterCompleted,
             isActive && styles.dotOuterActive,
             { transform: [{ scale: isActive ? dotPulse : dotScale }] },
           ]}
         >
-          <Animated.View style={{ opacity: checkOpacity }}>
-            {isCompleted ? (
-              <Ionicons name="checkmark" size={10} color="#fff" />
-            ) : null}
-          </Animated.View>
-          {!isCompleted && (
-            <View
-              style={[styles.dotInner, isActive && styles.dotInnerActive]}
-            />
-          )}
+          <Ionicons
+            name={step.icon}
+            size={15}
+            color={
+              isCompleted && !isActive ? "#fff" : isActive ? C.primary : C.muted
+            }
+          />
         </Animated.View>
 
         {!isLast && (
@@ -233,21 +220,6 @@ function TrackingStep({
       {/* Right: text */}
       <View style={styles.stepContent}>
         <View style={styles.stepHeader}>
-          <View
-            style={[
-              styles.iconBadge,
-              isCompleted && styles.iconBadgeCompleted,
-              isActive && styles.iconBadgeActive,
-            ]}
-          >
-            <Ionicons
-              name={step.icon}
-              size={14}
-              color={
-                isCompleted ? C.primary : isActive ? "#F59E0B" : C.muted
-              }
-            />
-          </View>
           <Text
             style={[
               styles.stepLabel,
@@ -1106,16 +1078,16 @@ const styles = themed(() => StyleSheet.create({
     minHeight: 62,
   },
   stepMarkerWrap: {
-    width: 28,
+    width: 36,
     alignItems: "center",
   },
   dotOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#F9FAFB",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: C.line,
+    backgroundColor: C.soft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1124,17 +1096,9 @@ const styles = themed(() => StyleSheet.create({
     backgroundColor: C.primary,
   },
   dotOuterActive: {
-    borderColor: "#F59E0B",
-    backgroundColor: "#FEF3C7",
-  },
-  dotInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#D1D5DB",
-  },
-  dotInnerActive: {
-    backgroundColor: "#F59E0B",
+    borderColor: C.primary,
+    backgroundColor: C.card,
+    borderWidth: 2,
   },
   lineTrack: {
     flex: 1,
@@ -1171,20 +1135,6 @@ const styles = themed(() => StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  iconBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: C.line,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconBadgeCompleted: {
-    backgroundColor: C.badge,
-  },
-  iconBadgeActive: {
-    backgroundColor: "#FEF3C7",
-  },
   stepLabel: {
     fontSize: 14,
     fontWeight: "600",
@@ -1196,13 +1146,13 @@ const styles = themed(() => StyleSheet.create({
     fontWeight: "700",
   },
   stepLabelActive: {
-    color: "#B45309",
+    color: C.primary,
     fontWeight: "800",
   },
   liveBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF3C7",
+    backgroundColor: C.soft,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -1212,19 +1162,18 @@ const styles = themed(() => StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#EF4444",
+    backgroundColor: C.primary,
   },
   liveText: {
     fontSize: 9,
     fontWeight: "800",
-    color: "#B45309",
+    color: C.primary,
     letterSpacing: 0.8,
   },
   stepSubLabel: {
     fontSize: 12,
-    color: "#D1D5DB",
+    color: C.tabInactive,
     marginTop: 2,
-    marginLeft: 32,
     fontWeight: "500",
   },
   stepSubLabelVisible: {
