@@ -12,6 +12,7 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   UIManager,
   View,
@@ -23,6 +24,8 @@ import { useOrders } from "../../context/OrderContext";
 import * as Haptics from "expo-haptics";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
+import { showAlert } from "@/context/CustomAlertContext";
+import { API } from "@/utils/api";
 import { downloadOrderInvoicePdf } from "@/utils/orderInvoice";
 import { C, themed } from "@/constants/theme";
 
@@ -75,6 +78,13 @@ interface Order {
     };
   };
   status: string;
+  deliveredAt?: string;
+  returnRequest?: {
+    status?: string;
+    reason?: string;
+    refundedTo?: string;
+    refundAmount?: number;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -211,6 +221,7 @@ function OrderCard({
   setExpandedId,
   onTrack,
   userId,
+  onRefresh,
 }: {
   item: Order;
   index: number;
@@ -218,11 +229,14 @@ function OrderCard({
   setExpandedId: (id: string | null) => void;
   onTrack: (order: Order) => void;
   userId: string;
+  onRefresh: () => void;
 }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const trackBtnScale = useRef(new Animated.Value(1)).current;
   const [invoiceBusy, setInvoiceBusy] = useState(false);
+  const [returnReason, setReturnReason] = useState("");
+  const [returnBusy, setReturnBusy] = useState(false);
   const isExpanded = expandedId === item._id;
   const statusConfig = getStatusConfig(item.status);
   const primaryAction = getOrderPrimaryAction(item.status);
@@ -474,6 +488,62 @@ function OrderCard({
               </TouchableOpacity>
             </View>
           ) : null}
+
+          {getFilterValue(item.status) === "delivered" && userId ? (
+            <View style={styles.detailBlock}>
+              <Text style={styles.sectionLabel}>Return</Text>
+              {item.returnRequest?.status ? (
+                <Text style={styles.addressLine}>
+                  Request {item.returnRequest.status}
+                  {item.returnRequest.refundedTo === "wallet"
+                    ? ` · ₹${item.returnRequest.refundAmount || 0} refunded to wallet`
+                    : ""}
+                </Text>
+              ) : (
+                <>
+                  <TextInput
+                    value={returnReason}
+                    onChangeText={setReturnReason}
+                    placeholder="What went wrong? Returns are accepted within 24 hours."
+                    placeholderTextColor="#9CA3AF"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: "#E5E7EB",
+                      borderRadius: 10,
+                      padding: 10,
+                      marginBottom: 8,
+                      color: "#111",
+                    }}
+                  />
+                  <TouchableOpacity
+                    style={styles.invoiceDownloadBtn}
+                    disabled={returnBusy}
+                    onPress={() => {
+                      void (async () => {
+                        setReturnBusy(true);
+                        try {
+                          await API.post(`/orders/${item._id}/return`, {
+                            userId,
+                            reason: returnReason,
+                          });
+                          showAlert("Return requested", "We will review this within the return window.");
+                          onRefresh();
+                        } catch (error: any) {
+                          showAlert("Return", error?.response?.data?.message || "Could not request a return");
+                        } finally {
+                          setReturnBusy(false);
+                        }
+                      })();
+                    }}
+                  >
+                    <Text style={styles.invoiceDownloadBtnText}>
+                      {returnBusy ? "Sending..." : "Request return"}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          ) : null}
         </View>
       )}
     </Animated.View>
@@ -634,6 +704,7 @@ export default function OrdersScreen() {
             setExpandedId={setExpandedId}
             onTrack={openTrackingPage}
             userId={user?._id ? String(user._id) : ""}
+            onRefresh={fetchOrders}
           />
         )}
       />

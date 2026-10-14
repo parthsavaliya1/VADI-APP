@@ -53,6 +53,10 @@ export default function CheckoutScreen() {
   >("googlepay");
   const [upiId, setUpiId] = useState("");
   const [fees, setFees] = useState<FeeSettings>(DEFAULT_FEE_SETTINGS);
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponBusy, setCouponBusy] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -60,10 +64,11 @@ export default function CheckoutScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const deliveryFee = quoteDeliveryFee(total, fees);
+  const merchandise = Math.max(0, Math.round((total - couponDiscount) * 100) / 100);
+  const deliveryFee = quoteDeliveryFee(merchandise, fees);
   const listedDeliveryFee = fees.deliveryFee;
   const freeAbove = fees.freeDeliveryAbove;
-  const grandTotal = total + deliveryFee;
+  const grandTotal = Math.round((merchandise + deliveryFee) * 100) / 100;
   const activeAddress = selectedAddress || defaultAddress || addresses[0] || null;
 
   useEffect(() => {
@@ -187,6 +192,7 @@ export default function CheckoutScreen() {
           address: buildOrderAddress(),
           paymentMethod,
           deliveryFee,
+          couponCode: appliedCoupon || undefined,
         });
 
         clearCart();
@@ -223,6 +229,7 @@ export default function CheckoutScreen() {
           paymentMethod: "balance",
           deliveryFee,
           notes: "Paid from VADI wallet",
+          couponCode: appliedCoupon || undefined,
         });
         clearCart();
         setIsProcessing(false);
@@ -242,8 +249,12 @@ export default function CheckoutScreen() {
         setIsProcessing(false);
         return;
       }
-      const serverPayTotal =
-        Number(cartSync.grandTotal ?? 0) + Number(deliveryFee || 0);
+      const serverMerchandise = Math.max(
+        0,
+        Math.round((Number(cartSync.grandTotal ?? 0) - couponDiscount) * 100) / 100,
+      );
+      const serverDelivery = quoteDeliveryFee(serverMerchandise, fees);
+      const serverPayTotal = Math.round((serverMerchandise + serverDelivery) * 100) / 100;
       if (Math.abs(serverPayTotal - grandTotal) > 0.02) {
         setIsProcessing(false);
         showAlert(
@@ -271,6 +282,7 @@ export default function CheckoutScreen() {
         customerPhone: user?.phone,
         prefillVpa: upiPrefill,
         description: `Order payment - ₹${serverPayTotal}`,
+        couponCode: appliedCoupon || undefined,
         onSuccess: async ({ paymentId, orderId, signature }) => {
           try {
             await placeOrder({
@@ -282,6 +294,7 @@ export default function CheckoutScreen() {
                 razorpaySignature: signature,
               },
               deliveryFee,
+              couponCode: appliedCoupon || undefined,
               notes: `Preferred payment: ${onlinePaymentType}; Razorpay paymentId: ${paymentId}; Razorpay orderId: ${orderId}; Signature: ${signature}`,
             });
 
@@ -517,6 +530,68 @@ export default function CheckoutScreen() {
                   <Text style={styles.billLabel}>Item Total</Text>
                   <Text style={styles.billValue}>₹{total}</Text>
                 </View>
+                <View style={{ marginBottom: 12 }}>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <TextInput
+                      value={couponInput}
+                      onChangeText={setCouponInput}
+                      autoCapitalize="characters"
+                      placeholder="Coupon code"
+                      placeholderTextColor={C.muted}
+                      style={{
+                        flex: 1,
+                        borderWidth: 1,
+                        borderColor: "#E5E7EB",
+                        borderRadius: 10,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        color: C.ink,
+                      }}
+                    />
+                    <TouchableOpacity
+                      onPress={async () => {
+                        if (appliedCoupon) {
+                          setAppliedCoupon("");
+                          setCouponDiscount(0);
+                          setCouponInput("");
+                          return;
+                        }
+                        if (!user?._id || !couponInput.trim()) return;
+                        setCouponBusy(true);
+                        try {
+                          const res = await API.post("/coupons/preview", {
+                            userId: user._id,
+                            code: couponInput.trim(),
+                          });
+                          setAppliedCoupon(res.data.data.code);
+                          setCouponDiscount(Number(res.data.data.discountAmount) || 0);
+                        } catch (error: any) {
+                          showAlert(
+                            "Coupon",
+                            error?.response?.data?.message || "Could not apply this coupon",
+                          );
+                        } finally {
+                          setCouponBusy(false);
+                        }
+                      }}
+                      style={{
+                        backgroundColor: C.primary,
+                        borderRadius: 10,
+                        paddingHorizontal: 14,
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "700" }}>
+                        {couponBusy ? "..." : appliedCoupon ? "Remove" : "Apply"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  {couponDiscount > 0 && (
+                    <Text style={[styles.billLabel, { marginTop: 8, color: C.primary }]}>
+                      {appliedCoupon} saves ₹{couponDiscount}
+                    </Text>
+                  )}
+                </View>
                 <View style={styles.billRow}>
                   <View style={styles.deliveryLabel}>
                     <Text style={styles.billLabel}>Delivery Fee</Text>
@@ -541,7 +616,7 @@ export default function CheckoutScreen() {
                   </Text>
                 </View>
 
-                {freeAbove > 0 && total <= freeAbove && (
+                {freeAbove > 0 && merchandise <= freeAbove && (
                   <View style={styles.savingTip}>
                     <Ionicons
                       name="information-circle"
@@ -550,13 +625,13 @@ export default function CheckoutScreen() {
                     />
                     <View style={styles.savingTipContent}>
                       <Text style={styles.savingText}>
-                        Add ₹{Math.max(0, freeAbove - total)} more for FREE delivery!
+                        Add ₹{Math.max(0, freeAbove - merchandise)} more for FREE delivery!
                       </Text>
                       <View style={styles.progressBar}>
                         <View
                           style={[
                             styles.progressFill,
-                            { width: `${Math.min((total / freeAbove) * 100, 100)}%` },
+                            { width: `${Math.min((merchandise / freeAbove) * 100, 100)}%` },
                           ]}
                         />
                       </View>

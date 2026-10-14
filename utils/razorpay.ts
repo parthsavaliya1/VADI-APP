@@ -26,6 +26,7 @@ type OpenRazorpayOptions = {
   /** Optional UPI VPA (e.g. user@paytm) — forwarded to Razorpay prefill when supported */
   prefillVpa?: string;
   description?: string;
+  couponCode?: string;
   onSuccess: (payload: {
     paymentId: string;
     orderId: string;
@@ -73,6 +74,7 @@ export async function openRazorpay(options: OpenRazorpayOptions) {
       amount: options.amount,
       deliveryFee: options.deliveryFee,
       paymentMethod: options.paymentMethod,
+      couponCode: options.couponCode || undefined,
     });
 
     if (!createOrderRes.data?.success) {

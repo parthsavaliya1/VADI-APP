@@ -35,6 +35,7 @@ type PlaceOrderPayload = {
   };
   deliveryFee: number;
   notes?: string;
+  couponCode?: string;
 };
 
 type OrderContextType = {
@@ -84,6 +85,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     paymentDetails,
     deliveryFee,
     notes,
+    couponCode,
   }: PlaceOrderPayload) => {
     if (!user?._id) {
       throw new Error("User not authenticated");
@@ -108,6 +110,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       paymentDetails,
       deliveryFee,
       notes,
+      couponCode,
     });
 
     } catch (error: any) {

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// Production default — overridden at startup from Firebase Remote Config (`api_base_url`).
+// Production default — overridden at startup from Firebase Remote Config (`product_api_base_url`).
 // For local dev, uncomment the setBaseUrl line in app/_layout.tsx.
 let BASE_URL = "https://vadi-backend.onrender.com";
 

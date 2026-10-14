@@ -3,12 +3,12 @@ import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyDgvW6n-ynOgqL1K7t_GL9_PixaFN4dVoA",
-  authDomain: "vadi-9b6fb.firebaseapp.com",
-  projectId: "vadi-9b6fb",
-  storageBucket: "vadi-9b6fb.appspot.com",
-  messagingSenderId: "120139932928",
-  appId: "1:120139932928:web:b209ed796deaba53c57fe5",
+  apiKey: "AIzaSyDKFb4dsMNsH7YYvZBKYjwp3mZEu_IucXA",
+  authDomain: "vadi-app-fresh.firebaseapp.com",
+  projectId: "vadi-app-fresh",
+  storageBucket: "vadi-app-fresh.firebasestorage.app",
+  messagingSenderId: "1082226902300",
+  appId: "1:1082226902300:android:3c4d7768e6eb4dcbc926d9",
 };
 
 // Init app safely

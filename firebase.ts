@@ -1,9 +1,13 @@
-// firebase.ts — Firebase Remote Config REST fetch (same pattern as VADI-HISAB)
-
+// Same Firebase project as VADI Hisab and Property Setu (vadi-hisab).
+// Each app has its own Remote Config key:
+//   api_base_url           — Hisab
+//   property_api_base_url  — Property Setu
+//   product_api_base_url   — this app
 const FALLBACK_URL = "https://vadi-backend.onrender.com";
-const PROJECT_ID = "vadi-9b6fb";
-const APP_ID = "1:120139932928:web:b209ed796deaba53c57fe5";
-const API_KEY = "AIzaSyDgvW6n-ynOgqL1K7t_GL9_PixaFN4dVoA";
+const PROJECT_ID = "vadi-hisab";
+const APP_ID = "1:40446481049:web:2e346187ffa466328dde08";
+const API_KEY = "AIzaSyAEqo0dC0fO2cMHyxeI3NOZdGsc4wEsZLE";
+const RC_API_KEY = "product_api_base_url";
 
 let cachedApiUrl: string | null = null;
 
@@ -37,13 +41,13 @@ export const loadRemoteConfig = async (): Promise<void> => {
 
     const json = await res.json();
     const entries = json?.entries ?? {};
-    const apiUrl = readEntryValue(entries?.api_base_url);
+    const apiUrl = readEntryValue(entries?.[RC_API_KEY]);
 
     if (apiUrl && apiUrl.startsWith("http")) {
       cachedApiUrl = apiUrl.replace(/\/+$/, "");
       console.log("🔥 Remote Config loaded:", cachedApiUrl);
     } else {
-      console.log("ℹ️ api_base_url not set in Remote Config, using fallback");
+      console.log("ℹ️ product_api_base_url not set in Remote Config, using fallback");
     }
   } catch (e) {
     console.log("❌ Remote config fetch failed:", e);

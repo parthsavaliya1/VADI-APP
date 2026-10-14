@@ -531,6 +531,14 @@ export default function ProfileScreen() {
           />
           <View style={styles.rowDivider} />
           <MenuRow
+            icon="heart-outline"
+            label="Wishlist"
+            subtitle="Products you saved"
+            onPress={() => requireAuth(() => router.push("/wishlist"))}
+            delay={240}
+          />
+          <View style={styles.rowDivider} />
+          <MenuRow
             icon="receipt-outline"
             label="My Orders"
             subtitle="Track & view your orders"

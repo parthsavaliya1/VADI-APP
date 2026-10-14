@@ -30,6 +30,7 @@ import {
   remainingMsToCountdownDHMS,
 } from "@/utils/offerEnd";
 import { C, themed } from "@/constants/theme";
+import { rememberProduct, readRecentIds } from "@/utils/recentlyViewed";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -180,6 +181,8 @@ export default function ProductDetailScreen() {
   const galleryWidthRef = useRef(screenWidth);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
+  const [recentProducts, setRecentProducts] = useState<Product[]>([]);
+  const [saved, setSaved] = useState(false);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [dealEndTs, setDealEndTs] = useState<number | null>(null);
   const dealEndTsRef = useRef<number | null>(null);
@@ -271,6 +274,52 @@ export default function ProductDetailScreen() {
     if (id) loadSimilarProducts();
   }, [id]);
 
+  useEffect(() => {
+    if (!user?._id || !id) return;
+    API.get("/wishlist/check", { params: { userId: user._id, productId: id } })
+      .then((res) => setSaved(Boolean(res.data?.data?.saved)))
+      .catch(() => setSaved(false));
+  }, [user?._id, id]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const ids = (await readRecentIds()).filter((item) => item !== id).slice(0, 8);
+      if (!ids.length) {
+        if (alive) setRecentProducts([]);
+        return;
+      }
+      try {
+        const rows = await Promise.all(
+          ids.map((productId) =>
+            API.get(`/products/${productId}`)
+              .then((res) => res.data?.data)
+              .catch(() => null),
+          ),
+        );
+        if (alive) setRecentProducts(rows.filter(Boolean));
+      } catch {
+        if (alive) setRecentProducts([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
+  const toggleSaved = async () => {
+    if (!user?._id) {
+      showAlert("Login required", "Sign in to save products.");
+      return;
+    }
+    try {
+      const res = await API.post("/wishlist/toggle", { userId: user._id, productId: id });
+      setSaved(Boolean(res.data?.data?.saved));
+    } catch (error: any) {
+      showAlert("Wishlist", error?.response?.data?.message || "Could not update wishlist");
+    }
+  };
+
   const loadProduct = async () => {
     if (!id) return;
     try {
@@ -289,6 +338,7 @@ export default function ProductDetailScreen() {
         return;
       }
       setProduct(productData as Product);
+      void rememberProduct(String(id));
 
       let globalDeal: DealGlobalSettings | null = null;
       try {
@@ -680,6 +730,9 @@ export default function ProductDetailScreen() {
         </View>
 
         <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerButton} onPress={toggleSaved} activeOpacity={0.8}>
+            <Ionicons name={saved ? "heart" : "heart-outline"} size={20} color={saved ? "#E11D48" : C.ink} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerButton}
             onPress={handleWhatsAppShare}
@@ -1107,6 +1160,26 @@ export default function ProductDetailScreen() {
               • Weight pill
               • ADD / qty control per card
               ════════════════════════════════════════ */}
+          {recentProducts.length > 0 && (
+            <View style={styles.similarSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Recently viewed</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {recentProducts.map((item) => (
+                  <TouchableOpacity
+                    key={item._id}
+                    style={[styles.similarCard, { marginRight: 10 }]}
+                    onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
+                  >
+                    {!!item.image && <Image source={{ uri: item.image }} style={styles.similarImage} />}
+                    <Text numberOfLines={2} style={styles.similarName}>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           {similarProducts.length > 0 && (
             <View style={styles.similarSection}>
               <View style={styles.sectionHeader}>

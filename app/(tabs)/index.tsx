@@ -793,6 +793,10 @@ export default function HomeScreen() {
             onChangeText={(t) => { setSearchQuery(t); setSelectedCatId(null); }}
             onFocus={() => Animated.spring(searchAnim, { toValue: 1, useNativeDriver: true }).start()}
             onBlur={() => Animated.spring(searchAnim, { toValue: 0, useNativeDriver: true }).start()}
+            returnKeyType="search"
+            onSubmitEditing={() =>
+              router.push({ pathname: "/search", params: { q: searchQuery.trim() } })
+            }
           />
           <TouchableOpacity
             style={[s.voicePill, isListening && s.voicePillActive]}
@@ -810,9 +814,6 @@ export default function HomeScreen() {
               <Ionicons name="close-circle" size={18} color={C.muted} />
             </TouchableOpacity>
           )}
-          <View style={s.filterPill}>
-            <Ionicons name="options-outline" size={16} color={C.ink} />
-          </View>
         </Animated.View>
 
         {/* ── ACTIVE FILTER CHIP ──────────────────────────────────────────── */}
@@ -1132,7 +1133,6 @@ const s = themed(() => StyleSheet.create({
     borderWidth: 1, borderColor: C.line, gap: 8,
   },
   searchInput: { flex: 1, fontSize: 13, color: C.ink, paddingVertical: 0, height: 42 },
-  filterPill: { backgroundColor: C.soft, borderRadius: 8, padding: 6 },
   voicePill: {
     backgroundColor: C.soft,
     borderRadius: 8,
