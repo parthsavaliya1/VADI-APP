@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import Toast from "react-native-toast-message";
 import { RazorpayHost } from "@/components/RazorpayCheckout";
+import SeasonalAtmosphere from "@/components/SeasonalAtmosphere";
 
 function PushOpenListener() {
   useEffect(() => {
@@ -71,6 +72,7 @@ export default function RootLayout() {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <AuthProvider>
       <CustomAlertProvider>
         <AddressProvider>
@@ -93,5 +95,7 @@ export default function RootLayout() {
         </AddressProvider>
       </CustomAlertProvider>
     </AuthProvider>
+    <SeasonalAtmosphere />
+    </View>
   );
 }

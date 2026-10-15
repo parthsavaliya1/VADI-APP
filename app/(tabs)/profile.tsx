@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/context/CustomAlertContext";
 import { router } from "expo-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "../../context/AuthContext";
+import { API } from "@/utils/api";
 import { useCart } from "../../context/CartContext";
 import { useOrders } from "../../context/OrderContext";
 import { C, themed } from "@/constants/theme";
@@ -367,9 +368,10 @@ function StatTile({
    MAIN SCREEN
 ══════════════════════════════════════ */
 export default function ProfileScreen() {
-  const { logout, user } = useAuth();
+  const { logout, user, deleteAccount, updateProfile } = useAuth();
   const { clearCart } = useCart();
   const { orders, fetchOrders } = useOrders();
+  const [referralCode, setReferralCode] = useState("");
 
   const headerAnim = useRef(new Animated.Value(-30)).current;
   const headerFade = useRef(new Animated.Value(0)).current;
@@ -387,6 +389,9 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (user) {
       fetchOrders();
+      API.post(`/api/users/${user._id}/referral`)
+        .then((res) => setReferralCode(res.data?.referralCode || ""))
+        .catch(() => setReferralCode(""));
     }
     Animated.parallel([
       Animated.timing(headerFade, {
@@ -560,6 +565,58 @@ export default function ProfileScreen() {
             subtitle="Create a shop and add products"
             onPress={() => requireAuth(() => router.push("/seller"))}
             delay={340}
+          />
+          <View style={styles.rowDivider} />
+          <MenuRow
+            icon="gift-outline"
+            label="Invite friends"
+            subtitle={referralCode ? `Your code ${referralCode} · ₹25 each after their first delivery` : "Share your code"}
+            onPress={() =>
+              showAlert(
+                "Invite friends",
+                referralCode
+                  ? `Share ${referralCode}. You both get ₹25 in the wallet after their first delivered order.`
+                  : "Your code will appear after you are online.",
+              )
+            }
+            delay={330}
+          />
+          <View style={styles.rowDivider} />
+          <MenuRow
+            icon="language-outline"
+            label="Order updates language"
+            subtitle="English, Hindi or Gujarati push messages"
+            onPress={() =>
+              showAlert("Order updates", "Choose the language for status notifications", [
+                { text: "English", onPress: () => updateProfile({ preferredLanguage: "en" }).catch(() => undefined) },
+                { text: "Hindi", onPress: () => updateProfile({ preferredLanguage: "hi" }).catch(() => undefined) },
+                { text: "Gujarati", onPress: () => updateProfile({ preferredLanguage: "gu" }).catch(() => undefined) },
+                { text: "Cancel", style: "cancel" },
+              ])
+            }
+            delay={335}
+          />
+          <View style={styles.rowDivider} />
+          <MenuRow
+            icon="trash-outline"
+            label="Delete account"
+            subtitle="Permanently remove your profile"
+            onPress={() =>
+              showAlert("Delete account", "This removes your profile, addresses, cart and wallet. Orders are kept for accounting.", [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => {
+                    deleteAccount()
+                      .then(() => router.replace("/login"))
+                      .catch((error: any) => showAlert("Delete account", error?.message || "Could not delete account"));
+                  },
+                },
+              ])
+            }
+            delay={345}
+            accent
           />
           <View style={styles.rowDivider} />
           <MenuRow

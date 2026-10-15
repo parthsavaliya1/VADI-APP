@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
   Platform,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -315,6 +316,7 @@ export default function OrderTrackingScreen() {
     grandTotal?: number;
     deliveryHandoverCode?: string;
     deliverySlot?: { date?: string; slot?: string };
+    driverLocation?: { lat?: number; lng?: number; updatedAt?: string };
   } | null>(null);
   const [orderLoading, setOrderLoading] = useState(false);
 
@@ -675,6 +677,20 @@ export default function OrderTrackingScreen() {
             </Text>
             <Text style={styles.handoverCode}>{deliveryHandoverCode}</Text>
           </View>
+        ) : null}
+
+        {liveOrder?.driverLocation?.lat && liveOrder?.driverLocation?.lng ? (
+          <Pressable
+            style={styles.handoverCard}
+            onPress={() =>
+              Linking.openURL(
+                `https://maps.google.com/?q=${liveOrder.driverLocation?.lat},${liveOrder.driverLocation?.lng}`,
+              )
+            }
+          >
+            <Text style={styles.handoverTitle}>Driver location</Text>
+            <Text style={styles.handoverHint}>Tap to open the latest location in Maps</Text>
+          </Pressable>
         ) : null}
 
         {/* ── Timeline ── */}

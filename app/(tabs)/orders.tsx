@@ -84,6 +84,7 @@ interface Order {
     reason?: string;
     refundedTo?: string;
     refundAmount?: number;
+    items?: { productName?: string; quantity?: number; action?: string }[];
   };
   createdAt: string;
   updatedAt: string;
@@ -237,6 +238,8 @@ function OrderCard({
   const [invoiceBusy, setInvoiceBusy] = useState(false);
   const [returnReason, setReturnReason] = useState("");
   const [returnBusy, setReturnBusy] = useState(false);
+  const [reorderBusy, setReorderBusy] = useState(false);
+  const [selectedReturns, setSelectedReturns] = useState<Record<string, "refund" | "replace">>({});
   const isExpanded = expandedId === item._id;
   const statusConfig = getStatusConfig(item.status);
   const primaryAction = getOrderPrimaryAction(item.status);
@@ -458,6 +461,52 @@ function OrderCard({
             </View>
           </View>
 
+          {userId ? (
+            <View style={styles.detailBlock}>
+              <TouchableOpacity
+                style={styles.invoiceDownloadBtn}
+                disabled={reorderBusy}
+                onPress={() => {
+                  void (async () => {
+                    setReorderBusy(true);
+                    try {
+                      const res = await API.post(`/orders/${item._id}/reorder`, { userId });
+                      showAlert("Buy again", res.data?.message || "Items added to your cart", [
+                        { text: "View cart", onPress: () => router.push("/cart") },
+                        { text: "OK" },
+                      ]);
+                    } catch (error: any) {
+                      showAlert("Buy again", error?.response?.data?.message || "Could not add these items");
+                    } finally {
+                      setReorderBusy(false);
+                    }
+                  })();
+                }}
+              >
+                <Text style={styles.invoiceDownloadBtnText}>
+                  {reorderBusy ? "Adding..." : "Buy again"}
+                </Text>
+              </TouchableOpacity>
+              {getFilterValue(item.status) === "delivered" ? (
+                <TouchableOpacity
+                  style={[styles.invoiceDownloadBtn, { marginTop: 8, backgroundColor: "#1F2937" }]}
+                  onPress={() => {
+                    void (async () => {
+                      try {
+                        const res = await API.post(`/orders/${item._id}/repeat`, { userId });
+                        showAlert("Weekly reminder", res.data?.message || "Reminder saved");
+                      } catch (error: any) {
+                        showAlert("Weekly reminder", error?.response?.data?.message || "Could not save the reminder");
+                      }
+                    })();
+                  }}
+                >
+                  <Text style={styles.invoiceDownloadBtnText}>Remind me every week</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : null}
+
           {getFilterValue(item.status) === "delivered" && userId ? (
             <View style={styles.detailBlock}>
               <Text style={styles.sectionLabel}>Invoice</Text>
@@ -501,6 +550,46 @@ function OrderCard({
                 </Text>
               ) : (
                 <>
+                  {item.items.map((line) => {
+                    const selected = selectedReturns[line.variantId];
+                    return (
+                      <View key={line.variantId} style={{ marginBottom: 8 }}>
+                        <Text style={styles.addressLine}>
+                          {line.productName} · {line.quantity}
+                        </Text>
+                        <View style={{ flexDirection: "row", gap: 8 }}>
+                          <TouchableOpacity
+                            onPress={() =>
+                              setSelectedReturns((current) => {
+                                const next = { ...current };
+                                if (selected === "refund") delete next[line.variantId];
+                                else next[line.variantId] = "refund";
+                                return next;
+                              })
+                            }
+                          >
+                            <Text style={{ color: selected === "refund" ? C.primary : "#6B7280", fontWeight: "700" }}>
+                              {selected === "refund" ? "Refund selected" : "Refund"}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() =>
+                              setSelectedReturns((current) => {
+                                const next = { ...current };
+                                if (selected === "replace") delete next[line.variantId];
+                                else next[line.variantId] = "replace";
+                                return next;
+                              })
+                            }
+                          >
+                            <Text style={{ color: selected === "replace" ? C.primary : "#6B7280", fontWeight: "700" }}>
+                              {selected === "replace" ? "Replace selected" : "Replace"}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  })}
                   <TextInput
                     value={returnReason}
                     onChangeText={setReturnReason}
@@ -525,6 +614,11 @@ function OrderCard({
                           await API.post(`/orders/${item._id}/return`, {
                             userId,
                             reason: returnReason,
+                            items: Object.entries(selectedReturns).map(([variantId, action]) => ({
+                              variantId,
+                              quantity: item.items.find((line) => line.variantId === variantId)?.quantity || 1,
+                              action,
+                            })),
                           });
                           showAlert("Return requested", "We will review this within the return window.");
                           onRefresh();

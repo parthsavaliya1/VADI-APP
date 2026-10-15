@@ -3,12 +3,16 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Location from "expo-location";
 import { AppHeader } from "@/components/AppHeader";
 import { getDriverToken } from "@/utils/driverSession";
+import { API } from "@/utils/api";
+import { showAlert } from "@/context/CustomAlertContext";
 import { C, themed } from "@/constants/theme";
 
 export default function DriverHomeScreen() {
   const [checking, setChecking] = useState(true);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -61,6 +65,43 @@ export default function DriverHomeScreen() {
             <Text style={styles.actionHint}>Marks the order as delivered</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={C.tabInactive} />
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.action, pressed && { opacity: 0.9 }]}
+          disabled={sharing}
+          onPress={() => {
+            void (async () => {
+              setSharing(true);
+              try {
+                const permission = await Location.requestForegroundPermissionsAsync();
+                if (permission.status !== "granted") {
+                  showAlert("Location", "Allow location to share where you are.");
+                  return;
+                }
+                const position = await Location.getCurrentPositionAsync({});
+                const token = await getDriverToken();
+                await API.post(
+                  "/api/driver/location",
+                  { lat: position.coords.latitude, lng: position.coords.longitude },
+                  { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+                );
+                showAlert("Location shared", "The customer can open your latest location on the tracking screen.");
+              } catch (error: any) {
+                showAlert("Location", error?.response?.data?.message || "Could not share location");
+              } finally {
+                setSharing(false);
+              }
+            })();
+          }}
+        >
+          <View style={styles.actionIcon}>
+            <Ionicons name="navigate" size={22} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.actionTitle}>{sharing ? "Sharing..." : "Share my location"}</Text>
+            <Text style={styles.actionHint}>Updates orders that are on the way</Text>
+          </View>
         </Pressable>
 
         <Pressable

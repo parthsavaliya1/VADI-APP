@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "VADI",
-    "slug": "vadi-app",
+    "slug": "vadi-product",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/vadi-brand-logo.png",
@@ -13,7 +13,8 @@
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
-        }
+        },
+        "NSLocationWhenInUseUsageDescription": "VADI uses your location while you are delivering so the customer can see where the order is."
       }
     },
     "android": {
@@ -28,7 +29,9 @@
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.WAKE_LOCK"
+        "android.permission.WAKE_LOCK",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -37,6 +40,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "VADI uses your location while you are delivering so the customer can see where the order is."
+        }
+      ],
       "expo-speech-recognition",
       [
         "expo-notifications",
@@ -66,7 +75,15 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "36911d98-1f27-439f-b486-4450f294be12"
+        "projectId": "f388db81-48ff-4df8-a155-1e55f92484c4"
+      },
+      "firebase": {
+        "apiKey": "AIzaSyDKFb4dsMNsH7YYvZBKYjwp3mZEu_IucXA",
+        "authDomain": "vadi-app-fresh.firebaseapp.com",
+        "projectId": "vadi-app-fresh",
+        "storageBucket": "vadi-app-fresh.firebasestorage.app",
+        "messagingSenderId": "1082226902300",
+        "appId": "1:1082226902300:android:3c4d7768e6eb4dcbc926d9"
       }
     },
     "runtimeVersion": {
@@ -74,6 +91,7 @@
     },
     "updates": {
       "url": "https://u.expo.dev/36911d98-1f27-439f-b486-4450f294be12"
-    }
+    },
+    "owner": "vadi-app"
   }
 }

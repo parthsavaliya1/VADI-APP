@@ -51,6 +51,7 @@ export default function VerifyOtpScreen() {
     name?: string | string[];
     role?: string | string[];
     privacyAccepted?: string | string[];
+    referral?: string | string[];
   }>();
 
   const phone = pickParam(params.phone);
@@ -58,6 +59,7 @@ export default function VerifyOtpScreen() {
   const name = pickParam(params.name) ?? "";
   const role = pickParam(params.role) || "user";
   const privacyAccepted = pickParam(params.privacyAccepted);
+  const referral = pickParam(params.referral);
 
   const { verifyOtpAndLogin, verifyOtpAndSignup, sendOtp } = useAuth();
   const insets = useSafeAreaInsets();
@@ -125,7 +127,7 @@ export default function VerifyOtpScreen() {
       setLoading(true);
 
       if (mode === "signup") {
-        await verifyOtpAndSignup(phone, otp, name, role, accepted);
+        await verifyOtpAndSignup(phone, otp, name, role, accepted, referral);
       } else {
         await verifyOtpAndLogin(phone, otp, accepted);
       }

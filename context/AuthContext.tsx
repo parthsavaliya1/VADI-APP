@@ -19,7 +19,8 @@ type User = {
   dob?: string;
   role: "user" | "seller" | "admin";
   status: "active" | "blocked";
-  lastLoginAt?: Date;
+  preferredLanguage?: "en" | "hi" | "gu";
+  referralCode?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -43,6 +44,7 @@ type AuthContextType = {
     name: string,
     role?: string,
     privacyPolicyAccepted?: boolean,
+    referralCode?: string,
   ) => Promise<void>;
 
   // User Updates
@@ -50,6 +52,7 @@ type AuthContextType = {
     name?: string;
     dob?: string;
     profileImage?: string;
+    preferredLanguage?: "en" | "hi" | "gu";
   }) => Promise<void>;
 
   logout: () => Promise<void>;
@@ -173,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     name: string,
     role: string = "user",
     privacyPolicyAccepted?: boolean,
+    referralCode?: string,
   ) => {
     try {
       // Step 1: Verify OTP
@@ -193,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phone,
         role,
         ...(privacyPolicyAccepted === true ? { privacyPolicyAccepted: true } : {}),
+        ...(referralCode ? { referralCode } : {}),
       });
 
       const userData = signupRes.data;
@@ -213,6 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     name?: string;
     dob?: string;
     profileImage?: string;
+    preferredLanguage?: "en" | "hi" | "gu";
   }) => {
     if (!user) throw new Error("No user logged in");
 

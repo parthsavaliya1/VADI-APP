@@ -37,6 +37,7 @@ export default function EnhancedSignupScreen() {
   const farmBandHeight = AUTH_FARM_SECTION_HEIGHT + insets.bottom;
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [referral, setReferral] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasAcceptedPrivacy, setHasAcceptedPrivacy] = useState(false);
   const [privacyTouched, setPrivacyTouched] = useState(false);
@@ -97,6 +98,7 @@ export default function EnhancedSignupScreen() {
           name,
           role: "user",
           privacyAccepted: hasAcceptedPrivacy ? "true" : "false",
+          referral: referral.trim(),
         },
       });
     } catch (err: any) {
@@ -185,6 +187,21 @@ export default function EnhancedSignupScreen() {
                         style={{ marginLeft: 4 }}
                       />
                     )}
+                  </View>
+
+                  <View style={styles.inputCard}>
+                    <View style={styles.inputIconCircle}>
+                      <Ionicons name="gift" size={16} color={C.primary} />
+                    </View>
+                    <View style={styles.inputDivider} />
+                    <TextInput
+                      placeholder="Referral code (optional)"
+                      value={referral}
+                      onChangeText={setReferral}
+                      style={styles.textInput}
+                      placeholderTextColor="#AABBA8"
+                      autoCapitalize="characters"
+                    />
                   </View>
 
                   {/* Phone Input */}

@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Linking,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,6 +14,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/components/AppHeader";
 import { showAlert } from "@/context/CustomAlertContext";
 import { C, themed } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
+import { API } from "@/utils/api";
 
 const SUPPORT_PHONE = "+91 99090 49699";
 const SUPPORT_EMAIL = "vadi.support@gmail.com";
@@ -46,7 +49,10 @@ const FAQ = [
 ] as const;
 
 export default function HelpSupportScreen() {
+  const { user } = useAuth();
   const [open, setOpen] = useState<number | null>(0);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
 
   const openUrl = (url: string) =>
     Linking.openURL(url).catch(() => showAlert("Support", "Could not open that link"));
@@ -86,6 +92,39 @@ export default function HelpSupportScreen() {
             <Text style={styles.contactHint}>vadi.support</Text>
           </Pressable>
         </View>
+
+        {user ? (
+          <View style={styles.faqCard}>
+            <Text style={styles.faqQ}>Message support</Text>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              placeholder="Ask about an order or a refund"
+              placeholderTextColor="#9CA3AF"
+              style={{ borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 10, marginTop: 8, color: "#111" }}
+            />
+            <Pressable
+              style={{ marginTop: 8 }}
+              disabled={sending}
+              onPress={() => {
+                void (async () => {
+                  setSending(true);
+                  try {
+                    await API.post("/support", { userId: user._id, body: draft });
+                    setDraft("");
+                    showAlert("Support", "Message sent. We will reply in the app.");
+                  } catch (error: any) {
+                    showAlert("Support", error?.response?.data?.message || "Could not send");
+                  } finally {
+                    setSending(false);
+                  }
+                })();
+              }}
+            >
+              <Text style={{ color: C.primary, fontWeight: "700" }}>{sending ? "Sending..." : "Send message"}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <Text style={styles.sectionLabel}>Common questions</Text>
         <View style={styles.faqCard}>
