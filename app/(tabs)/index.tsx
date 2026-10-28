@@ -686,7 +686,7 @@ export default function HomeScreen() {
 
   const homeCategories = categories.filter((c) => c.showOnHome && c.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const cartTranslateY = cartAnim.interpolate({ inputRange: [0, 1], outputRange: [100, 0] });
+  const cartTranslateY = cartAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0], extrapolate: "clamp" });
   const headerOpacity = scrollY.interpolate({ inputRange: [0, 80], outputRange: [1, 0.95], extrapolate: "clamp" });
   const searchScale = searchAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.015] });
   const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -1075,8 +1075,9 @@ export default function HomeScreen() {
       </Animated.ScrollView>
 
       {/* ── CART FOOTER ──────────────────────────────────────────────────── */}
+      {items.length > 0 && (
       <Animated.View
-        style={[s.cartFooter, { bottom: Math.max(insets.bottom, 12) + 72, transform: [{ translateY: cartTranslateY }] }]}
+        style={[s.cartFooter, { bottom: Math.max(insets.bottom, 12) + 84, opacity: cartAnim, transform: [{ translateY: cartTranslateY }] }]}
         pointerEvents={items.length > 0 ? "auto" : "none"}
       >
         <TouchableOpacity style={s.cartFooterInner} onPress={() => router.push("/cart")} activeOpacity={0.92}>
@@ -1095,6 +1096,7 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </Animated.View>
+      )}
     </SafeAreaView>
   );
 }

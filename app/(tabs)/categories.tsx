@@ -180,7 +180,7 @@ const tileColors = ["#EAF1E3", "#FFF0D9", "#F5E9E5", "#E7EFF5", "#F1EAF5", "#F5E
 const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.page },
   grid: { flex: 1 },
-  list: { paddingHorizontal: 18, paddingBottom: 32, flexGrow: 1 },
+  list: { paddingHorizontal: 18, paddingBottom: 120, flexGrow: 1 },
   searchBox: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 16, paddingHorizontal: 14, minHeight: 48, marginTop: 4 },
   searchInput: { flex: 1, color: C.ink, fontSize: 13, paddingVertical: 12 },
   sectionHeading: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 26, marginBottom: 20 },

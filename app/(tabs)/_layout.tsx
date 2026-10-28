@@ -16,7 +16,7 @@ function TabIconCircle({ focused, children }: { focused: boolean; children: Reac
       borderRadius: 22,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: focused ? "rgba(0, 0, 0, 0.10)" : "transparent",
+      backgroundColor: focused ? C.primary : "transparent",
     }}>
       {children}
     </View>
@@ -33,7 +33,7 @@ export default function TabLayout() {
       safeAreaInsets={{ bottom: 0 }}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#080a0d",
+        tabBarActiveTintColor: "#ffffff",
         tabBarInactiveTintColor: "#151719",
         tabBarShowLabel: false,
         tabBarHideOnKeyboard: true,
@@ -54,7 +54,6 @@ export default function TabLayout() {
           />
         ),
         tabBarActiveBackgroundColor: "transparent",
-        sceneStyle: { paddingBottom: bottom + 76 },
         tabBarStyle: {
           position: "absolute",
           left: 0,
@@ -66,14 +65,14 @@ export default function TabLayout() {
           paddingBottom: 4,
           paddingHorizontal: 4,
           borderRadius: 32,
-          backgroundColor: "rgba(222, 222, 222, 0.96)",
+          backgroundColor: C.page,
           borderWidth: 1,
           borderTopWidth: 1,
-          borderColor: "rgba(255, 255, 255, 0.9)",
-          elevation: 6,
+          borderColor: C.line,
+          elevation: 0,
           shadowColor: "#000000",
           shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.14,
+          shadowOpacity: 0,
           shadowRadius: 10,
         },
         tabBarItemStyle: {
@@ -147,7 +146,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabIconCircle focused={focused}>
             {user ? (
-              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: C.soft, borderWidth: 1.5, borderColor: color, alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: focused ? C.primary : C.soft, borderWidth: 1.5, borderColor: color, alignItems: "center", justifyContent: "center" }}>
                 <Text style={{ color, fontSize: 12, fontWeight: "800" }} numberOfLines={1}>
                   {getInitials(user.name)}
                 </Text>

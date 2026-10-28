@@ -419,7 +419,7 @@ export default function OrderTrackingScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <StatusBar barStyle="dark-content" backgroundColor={C.page} />
 
       {/* ── Header ── */}
@@ -474,7 +474,7 @@ export default function OrderTrackingScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Hero Progress Card ── */}

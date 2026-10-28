@@ -104,10 +104,10 @@ function GuestProfileView() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <AppHeader title="Profile" />
       <ScrollView
-        contentContainerStyle={styles.guestContainer}
+        contentContainerStyle={[styles.guestContainer, { paddingBottom: 120 }]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View
@@ -445,7 +445,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <AppHeader title="Profile" />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -668,7 +668,7 @@ const styles = themed(() => StyleSheet.create({
     backgroundColor: C.page,
   },
   scroll: {
-    paddingBottom: 20,
+    paddingBottom: 120,
   },
 
   /* ── Hero ── */

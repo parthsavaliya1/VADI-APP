@@ -717,7 +717,7 @@ export default function OrdersScreen() {
   // ── Loading ──
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
         <AppHeader title="Orders" showCart />
         <View style={styles.centered}>
           <View style={styles.loadingSpinnerWrap}>
@@ -733,9 +733,9 @@ export default function OrdersScreen() {
   // ── Empty ──
   if (!orders || orders.length === 0) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
         <AppHeader title="Orders" showCart />
-        <ScrollView alwaysBounceVertical contentContainerStyle={[styles.centered, { flexGrow: 1 }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}>
+        <ScrollView alwaysBounceVertical contentContainerStyle={[styles.centered, { flexGrow: 1, paddingBottom: 120 }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}>
           <View style={styles.emptyIconWrap}>
             <Ionicons name="bag-outline" size={48} color={C.primary} />
           </View>
@@ -747,7 +747,7 @@ export default function OrdersScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <AppHeader title="Orders" subtitle="Track, details, and delivery code" showCart />
 
       <View style={styles.filtersWrap}>
@@ -815,7 +815,7 @@ export default function OrdersScreen() {
 
 const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.page },
-  listContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32 },
+  listContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120 },
 
   // Screen header
   screenHeader: {
