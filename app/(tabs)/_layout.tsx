@@ -8,7 +8,7 @@ import { useAuth } from "../../context/AuthContext";
 import { C } from "@/constants/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-function TabIconCircle({ focused, children }: { focused: boolean; children: ReactNode }) {
+function TabIconCircle({ children }: { focused: boolean; children: ReactNode }) {
   return (
     <View style={{
       width: 44,
@@ -16,7 +16,7 @@ function TabIconCircle({ focused, children }: { focused: boolean; children: Reac
       borderRadius: 22,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: focused ? C.primary : "transparent",
+      backgroundColor: "transparent",
     }}>
       {children}
     </View>
@@ -33,7 +33,7 @@ export default function TabLayout() {
       safeAreaInsets={{ bottom: 0 }}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#ffffff",
+        tabBarActiveTintColor: C.primary,
         tabBarInactiveTintColor: "#151719",
         tabBarShowLabel: false,
         tabBarHideOnKeyboard: true,
@@ -146,8 +146,8 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabIconCircle focused={focused}>
             {user ? (
-              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: focused ? C.primary : C.soft, borderWidth: 1.5, borderColor: color, alignItems: "center", justifyContent: "center" }}>
-                <Text style={{ color, fontSize: 12, fontWeight: "800" }} numberOfLines={1}>
+              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: focused ? C.primary : "transparent", borderWidth: 1.5, borderColor: color, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ color: focused ? "#ffffff" : color, fontSize: 12, fontWeight: "800" }} numberOfLines={1}>
                   {getInitials(user.name)}
                 </Text>
               </View>
