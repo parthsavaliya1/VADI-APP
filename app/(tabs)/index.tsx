@@ -780,7 +780,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl progressViewOffset={insets.top + 70} refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}
-        contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 70 }]}
+        contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 60 }]}
       >
         <GuestBanner />
 
@@ -1076,7 +1076,7 @@ export default function HomeScreen() {
 
       {/* ── CART FOOTER ──────────────────────────────────────────────────── */}
       <Animated.View
-        style={[s.cartFooter, { transform: [{ translateY: cartTranslateY }] }]}
+        style={[s.cartFooter, { bottom: Math.max(insets.bottom, 12) + 72, transform: [{ translateY: cartTranslateY }] }]}
         pointerEvents={items.length > 0 ? "auto" : "none"}
       >
         <TouchableOpacity style={s.cartFooterInner} onPress={() => router.push("/cart")} activeOpacity={0.92}>
