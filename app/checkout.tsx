@@ -1,3 +1,4 @@
+import { deliveryAddressError } from "@/utils/deliveryZone";
 import { AppHeader } from "@/components/AppHeader";
 import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
@@ -157,6 +158,11 @@ export default function CheckoutScreen() {
 
     if (!activeAddress) {
       showAlert("No Address", "Please add a delivery address");
+      return;
+    }
+    const deliveryError = deliveryAddressError(activeAddress);
+    if (deliveryError) {
+      showAlert("Rajkot delivery only", deliveryError, [{ text: "Edit address", onPress: () => router.push({ pathname: "/add-address", params: { id: activeAddress._id } }) }]);
       return;
     }
     if (!user?._id) {

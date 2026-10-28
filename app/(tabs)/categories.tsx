@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   Image,
   StyleSheet,
   Text,
@@ -47,15 +48,19 @@ const categoryIcons: Record<string, { icon: string; color: string }> = themed(()
 export default function CategoriesScreen() {
   const [categories, setCategories] = useState<CategoryUI[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    loadCategories();
+    void loadCategories();
   }, []);
 
-  const loadCategories = async () => {
+  async function loadCategories(refresh = false) {
     try {
-      setLoading(true);
+      if (refresh) setRefreshing(true);
+      else setLoading(true);
+      setError(false);
 
       const [catRes, prodRes] = await Promise.all([
         API.get("/categories"),
@@ -90,9 +95,11 @@ export default function CategoriesScreen() {
 
       setCategories(uiCategories);
     } catch (err) {
+      setError(true);
       console.error("Failed to load categories", err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -112,223 +119,82 @@ export default function CategoriesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* HEADER */}
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <AppHeader title="Categories" showCart />
-
-      {/* SEARCH */}
-      <View style={styles.searchBox}>
-        <Ionicons name="search" size={16} color={C.muted} style={{ marginLeft: 2, marginRight: 4 }} />
-        <TextInput
-          placeholder="Search categories"
-          style={styles.searchInput}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons name="close-circle" size={18} color={C.muted} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* CATEGORIES GRID */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={C.primary} />
-        </View>
-      ) : filteredCategories.length > 0 ? (
+        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={C.primary} /></View>
+      ) : (
         <FlatList
           data={filteredCategories}
-          numColumns={2}
+          numColumns={3}
           keyExtractor={(item) => item._id}
-          columnWrapperStyle={styles.row}
+          style={styles.grid}
           contentContainerStyle={styles.list}
+          columnWrapperStyle={styles.row}
+          alwaysBounceVertical
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.categoryCard}
-              activeOpacity={0.85}
-              onPress={() => handleCategoryPress(item)}
-            >
-              <View style={styles.imageWrap}>
-                {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.categoryImage} />
-                ) : (
-                  <Ionicons
-                    name={item.icon as any}
-                    size={36}
-                    color={C.primary}
-                  />
-                )}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void loadCategories(true)} colors={[C.primary]} tintColor={C.primary} />}
+          ListHeaderComponent={<>
+            <View style={styles.searchBox}>
+              <Ionicons name="search-outline" size={20} color={C.muted} />
+              <TextInput accessibilityLabel="Search categories" placeholder="What are you looking for?" placeholderTextColor={C.muted} style={styles.searchInput} value={searchQuery} onChangeText={setSearchQuery} />
+              {!!searchQuery && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={10} onPress={() => setSearchQuery("")}><Ionicons name="close-circle" size={18} color={C.muted} /></TouchableOpacity>}
+            </View>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionTitle}>{searchQuery ? "Search results" : "All categories"}</Text>
+              <Text style={styles.sectionCount}>{filteredCategories.length}</Text>
+            </View>
+            {error && categories.length > 0 && <Text style={styles.errorNote}>Could not update. Pull down to try again.</Text>}
+          </>}
+          ListEmptyComponent={<View style={styles.emptyState}>
+            <Ionicons name={error ? "cloud-offline-outline" : "search-outline"} size={40} color={C.muted} />
+            <Text style={styles.emptyText}>{error ? "Could not load categories" : "No categories found"}</Text>
+            <Text style={styles.emptySubtext}>{error ? "Pull down to try again." : searchQuery ? "Try a different search." : "New categories will appear here."}</Text>
+          </View>}
+          renderItem={({ item, index }) => (
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={`${item.name}, ${item.count} products`} activeOpacity={0.7} onPress={() => handleCategoryPress(item)} style={styles.categoryTile}>
+              <View style={[styles.imageWrap, { backgroundColor: tileColors[index % tileColors.length] }]}>
+                <CategoryImage item={item} />
               </View>
-              <View style={styles.cardBody}>
-                <Text style={styles.categoryName} numberOfLines={1}>
-                  {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
-                </Text>
-                <Text style={styles.productCount}>
-                  {item.count} product{item.count !== 1 ? "s" : ""}
-                </Text>
-              </View>
+              <Text style={styles.categoryName} numberOfLines={2}>{item.name.charAt(0).toUpperCase() + item.name.slice(1)}</Text>
+              <Text style={styles.productCount}>{item.count} item{item.count !== 1 ? "s" : ""}</Text>
             </TouchableOpacity>
           )}
         />
-      ) : (
-        <View style={styles.emptyState}>
-          <Ionicons name="search-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyText}>No categories found</Text>
-          <Text style={styles.emptySubtext}>Try a different search term</Text>
-        </View>
       )}
     </SafeAreaView>
   );
 }
 
+function CategoryImage({ item }: { item: CategoryUI }) {
+  const [failed, setFailed] = useState(false);
+  return item.image && !failed
+    ? <Image source={{ uri: item.image }} style={styles.categoryImage} onError={() => setFailed(true)} />
+    : <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={38} color={item.color} />;
+}
+
+const tileColors = ["#EAF1E3", "#FFF0D9", "#F5E9E5", "#E7EFF5", "#F1EAF5", "#F5EEDC"];
+
 const styles = themed(() => StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: C.page,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  headerLogo: {
-    width: 30,
-    height: 30,
-    resizeMode: "contain",
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: C.ink,
-  },
-  iconBtn: {
-    position: "relative",
-    padding: 6,
-    backgroundColor: C.card,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-  badge: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    backgroundColor: C.badge,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 4,
-  },
-  badgeText: {
-    color: C.badgeText,
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: C.card,
-    borderRadius: 12,
-    paddingLeft: 14,
-    paddingRight: 10,
-    height: 42,
-    marginHorizontal: 20,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: C.line,
-  },
-  searchInput: {
-    marginLeft: 8,
-    fontSize: 14,
-    flex: 1,
-    paddingVertical: 0,
-    height: 42,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  list: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 24,
-  },
-  row: {
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  categoryCard: {
-    backgroundColor: C.card,
-    borderRadius: 20,
-    flex: 1,
-    marginBottom: 12,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: C.line,
-    shadowColor: C.ink,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  imageWrap: {
-    height: 120,
-    width: "100%",
-    backgroundColor: C.soft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  categoryImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  cardBody: {
-    padding: 10,
-  },
-  categoryName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: C.ink,
-  },
-  productCount: {
-    fontSize: 12,
-    color: C.muted,
-    marginTop: 4,
-    fontWeight: "700",
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: C.muted,
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: C.muted,
-    marginTop: 8,
-    textAlign: "center",
-  },
+  safe: { flex: 1, backgroundColor: C.page },
+  grid: { flex: 1 },
+  list: { paddingHorizontal: 18, paddingBottom: 32, flexGrow: 1 },
+  searchBox: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 16, paddingHorizontal: 14, minHeight: 48, marginTop: 4 },
+  searchInput: { flex: 1, color: C.ink, fontSize: 13, paddingVertical: 12 },
+  sectionHeading: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 26, marginBottom: 20 },
+  sectionTitle: { fontSize: 18, fontWeight: "800", color: C.ink },
+  sectionCount: { fontSize: 12, fontWeight: "600", color: C.muted, backgroundColor: C.soft, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, overflow: "hidden" },
+  row: { gap: 12 },
+  categoryTile: { flex: 1, maxWidth: "31%", alignItems: "center", marginBottom: 24 },
+  imageWrap: { width: "100%", aspectRatio: 1, borderRadius: 24, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  categoryImage: { width: "86%", height: "86%", resizeMode: "contain" },
+  categoryName: { color: C.ink, fontSize: 13, lineHeight: 18, fontWeight: "700", textAlign: "center", marginTop: 10, minHeight: 36 },
+  productCount: { color: C.muted, fontSize: 11, marginTop: 3 },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
+  errorNote: { color: C.muted, fontSize: 12, marginBottom: 16 },
+  emptyState: { alignItems: "center", paddingVertical: 70, paddingHorizontal: 20 },
+  emptyText: { color: C.ink, fontWeight: "700", fontSize: 17, marginTop: 16 },
+  emptySubtext: { color: C.muted, fontSize: 13, marginTop: 8, textAlign: "center" },
 }));

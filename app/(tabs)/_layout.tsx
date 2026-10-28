@@ -1,3 +1,5 @@
+import { Text, View } from "react-native";
+import { getInitials } from "@/utils/getInitials";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
@@ -63,7 +65,13 @@ export default function TabLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+            user ? (
+              <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: C.soft, borderWidth: 1.5, borderColor: color, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ color, fontSize: 12, fontWeight: "800" }} numberOfLines={1}>
+                  {getInitials(user.name)}
+                </Text>
+              </View>
+            ) : <Ionicons name="person" size={size} color={color} />
           ),
         }}
       />

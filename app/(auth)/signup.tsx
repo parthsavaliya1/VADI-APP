@@ -242,7 +242,7 @@ export default function EnhancedSignupScreen() {
                         hitSlop={10}
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: hasAcceptedPrivacy }}
-                        accessibilityLabel="I agree to the Privacy Policy"
+                        accessibilityLabel="I agree to VADI’s Privacy Policy"
                         style={[
                           styles.checkbox,
                           hasAcceptedPrivacy && styles.checkboxChecked,
@@ -254,7 +254,7 @@ export default function EnhancedSignupScreen() {
                         )}
                       </Pressable>
                       <Text style={styles.privacyText}>
-                        <Text onPress={togglePrivacy}>I agree to the </Text>
+                        <Text onPress={togglePrivacy}>I agree to VADI’s </Text>
                         <Text
                           onPress={() => router.push("/privacy-policy")}
                           accessibilityRole="link"
@@ -262,7 +262,6 @@ export default function EnhancedSignupScreen() {
                         >
                           Privacy Policy
                         </Text>
-                        <Text onPress={togglePrivacy}> of VADI.</Text>
                       </Text>
                     </View>
 
@@ -488,7 +487,8 @@ const styles = themed(() => StyleSheet.create({
 
   privacyRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
+    paddingVertical: 6,
     gap: 10,
   },
 
@@ -515,14 +515,14 @@ const styles = themed(() => StyleSheet.create({
 
   privacyText: {
     flex: 1,
-    fontSize: 13,
-    color: "#5A7A5A",
-    lineHeight: 20,
+    fontSize: 14,
+    color: C.muted,
+    lineHeight: 22,
   },
 
   privacyLink: {
-    color: "#3A8A3A",
-    fontWeight: "800",
+    color: C.primary,
+    fontWeight: "600",
     textDecorationLine: "underline",
   },
 

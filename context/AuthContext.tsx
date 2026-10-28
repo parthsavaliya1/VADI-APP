@@ -93,11 +93,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (stored) {
           const userData = JSON.parse(stored);
           setUser(userData);
-          // Update last login on app start
-          await API.patch(`/api/users/${userData._id}`, {
+          // Background sync must not delay restoring the saved login, including offline.
+          void API.patch(`/api/users/${userData._id}`, {
             lastLoginAt: new Date(),
-          });
-          await syncPushToken(userData._id);
+          }).catch((error) => console.log("Last login sync failed", error));
+          void syncPushToken(userData._id);
         }
       } catch (e) {
         console.log("❌ Auth load error", e);

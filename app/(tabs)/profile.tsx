@@ -1,3 +1,4 @@
+import { getInitials } from "@/utils/getInitials";
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/context/CustomAlertContext";
 import { router } from "expo-router";
@@ -20,13 +21,7 @@ import { useOrders } from "../../context/OrderContext";
 import { C, themed } from "@/constants/theme";
 
 /* ── Avatar initials helper ── */
-function getInitials(name?: string) {
-  if (!name) return "U";
-  const parts = name.trim().split(" ");
-  return parts.length >= 2
-    ? (parts[0][0] + parts[1][0]).toUpperCase()
-    : parts[0].slice(0, 2).toUpperCase();
-}
+
 
 /* ── Avatar colour from name ── */
 const getAvatarColors = () => [
@@ -368,7 +363,7 @@ function StatTile({
    MAIN SCREEN
 ══════════════════════════════════════ */
 export default function ProfileScreen() {
-  const { logout, user, deleteAccount, updateProfile } = useAuth();
+  const { logout, user, updateProfile } = useAuth();
   const { clearCart } = useCart();
   const { orders, fetchOrders } = useOrders();
   const [referralCode, setReferralCode] = useState("");
@@ -378,7 +373,7 @@ export default function ProfileScreen() {
   const avatarScale = useRef(new Animated.Value(0)).current;
 
   const [avatarFg, avatarBg] = avatarColor(user?.name || user?.phone);
-  const initials = getInitials(user?.name || user?.phone);
+  const initials = getInitials(user?.name);
 
   const totalOrders = orders.length;
   const deliveredOrders = orders.filter((o) => o.status === "delivered").length;
@@ -598,28 +593,6 @@ export default function ProfileScreen() {
           />
           <View style={styles.rowDivider} />
           <MenuRow
-            icon="trash-outline"
-            label="Delete account"
-            subtitle="Permanently remove your profile"
-            onPress={() =>
-              showAlert("Delete account", "This removes your profile, addresses, cart and wallet. Orders are kept for accounting.", [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: () => {
-                    deleteAccount()
-                      .then(() => router.replace("/login"))
-                      .catch((error: any) => showAlert("Delete account", error?.message || "Could not delete account"));
-                  },
-                },
-              ])
-            }
-            delay={345}
-            accent
-          />
-          <View style={styles.rowDivider} />
-          <MenuRow
             icon="car-outline"
             label="Delivery staff"
             subtitle="Driver login — confirm customer codes"
@@ -670,14 +643,14 @@ export default function ProfileScreen() {
             transform: [{ translateY: headerAnim }],
           }}
         >
-          <TouchableOpacity
-            style={styles.logoutBtn}
+          <Pressable
+            style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutBtnPressed]}
             onPress={confirmLogout}
-            activeOpacity={0.85}
+            accessibilityRole="button"
           >
-            <Ionicons name="log-out-outline" size={20} color="#fff" />
+            <Ionicons name="log-out-outline" size={20} color="#64748B" />
             <Text style={styles.logoutText}>Log Out</Text>
-          </TouchableOpacity>
+          </Pressable>
         </Animated.View>
 
         <View style={{ height: 32 }} />
@@ -909,26 +882,36 @@ const styles = themed(() => StyleSheet.create({
 
   /* ── Logout ── */
   logoutBtn: {
+    alignSelf: "stretch",
+    minHeight: 54,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "#D32F2F",
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
     marginTop: 24,
-    paddingVertical: 16,
+    paddingVertical: 15,
     borderRadius: 16,
-    shadowColor: "#D32F2F",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 14,
+  },
+  logoutBtnPressed: {
+    backgroundColor: "#F8FAFC",
+    borderColor: "#CBD5E1",
+    transform: [{ scale: 0.99 }],
   },
   logoutText: {
-    color: "#fff",
+    color: "#475569",
     fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
 
   /* ── Guest View ── */

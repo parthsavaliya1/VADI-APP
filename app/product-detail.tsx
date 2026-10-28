@@ -67,6 +67,7 @@ type ProductVariant = {
   lowStockThreshold: number;
   sku?: string;
   image?: string;
+  images?: string[];
   isDefault: boolean;
   isActive: boolean;
 };
@@ -226,6 +227,7 @@ export default function ProductDetailScreen() {
       const defaultVar =
         product.variants.find((v) => v.isDefault) || product.variants[0];
       setSelectedVariant(defaultVar);
+      setShowVariantPhoto(Boolean(defaultVar.images?.length));
     }
   }, [product]);
 
@@ -431,7 +433,7 @@ export default function ProductDetailScreen() {
 
   const handleVariantSelect = (variant: ProductVariant) => {
     setSelectedVariant(variant);
-    setShowVariantPhoto(Boolean(variant.image?.trim()));
+    setShowVariantPhoto(Boolean(variant.image?.trim() || variant.images?.length));
     setSelectedImageIndex(0);
     imageScrollRef.current?.scrollTo({ x: 0, animated: false });
     Animated.sequence([
@@ -670,10 +672,10 @@ export default function ProductDetailScreen() {
   }
 
   const productPhotos = uniqueProductPhotos(product.image, product.images);
-  const variantPhoto = selectedVariant.image?.trim() || "";
+  const variantPhotos = uniqueProductPhotos(selectedVariant.image, selectedVariant.images);
   const displayImages =
-    showVariantPhoto && variantPhoto
-      ? [variantPhoto]
+    showVariantPhoto && variantPhotos.length > 0
+      ? variantPhotos
       : productPhotos.length > 0
         ? productPhotos
         : ["https://via.placeholder.com/400"];

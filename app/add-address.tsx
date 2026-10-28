@@ -3,14 +3,14 @@ import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
-import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Keyboard,
   Modal,
   Platform,
   ScrollView,
@@ -24,73 +24,9 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { C, themed } from "@/constants/theme";
 
-/** Rough Rajkot bounding box — pins are clamped & validated here only */
-const RAJKOT_BOUNDS = {
-  north: 22.42,
-  south: 22.22,
-  east: 70.92,
-  west: 70.68,
-} as const;
+import { DELIVERY_CITY, DELIVERY_STATE, DELIVERY_PIN_HELP_MESSAGE, RAJKOT_CENTER, clampToRajkot, isInRajkotBounds, isDeliveryAllowedPin, isGujaratState, normalizeCity } from "@/utils/deliveryZone";
 
-const RAJKOT_CENTER = {
-  latitude: 22.3039,
-  longitude: 70.8022,
-} as const;
-
-const DELIVERY_CITY = "Rajkot";
-
-/** Only these PIN codes are eligible for delivery (areas per India Post numbering) */
-const DELIVERY_ALLOWED_PINS = [
-  "360001", // Rajkot HO, Jairaj Plot, Mandvi Chowk, Kalavad Road
-  "360002", // Bhaktinagar Industrial Estate
-  "360003", // Aji Industrial Estate, Bedi, Anandpar
-  "360004", // Sadar Bazar, Race Course
-  "360005", // Nana Mava, Panchayat Nagar, Mavdi
-  "360006", // Gandhigram
-  "360007", // Amarjeet Nagar, Railnagar
-] as const;
-
-const DELIVERY_ALLOWED_PIN_SET = new Set<string>(DELIVERY_ALLOWED_PINS);
-
-const DELIVERY_PIN_HELP_MESSAGE =
-  "We only deliver to PIN codes " +
-  DELIVERY_ALLOWED_PINS.slice(0, -1).join(", ") +
-  ", and " +
-  DELIVERY_ALLOWED_PINS[DELIVERY_ALLOWED_PINS.length - 1] +
-  " (Rajkot HO & listed localities). Correct your PIN or pin the spot on the map again.";
-
-function isDeliveryAllowedPin(pin: string) {
-  return DELIVERY_ALLOWED_PIN_SET.has(pin.trim());
-}
-
-function clampToRajkot(lat: number, lng: number) {
-  return {
-    latitude: Math.min(
-      RAJKOT_BOUNDS.north,
-      Math.max(RAJKOT_BOUNDS.south, lat),
-    ),
-    longitude: Math.min(
-      RAJKOT_BOUNDS.east,
-      Math.max(RAJKOT_BOUNDS.west, lng),
-    ),
-  };
-}
-
-function isInRajkotBounds(lat: number, lng: number) {
-  return (
-    lat <= RAJKOT_BOUNDS.north &&
-    lat >= RAJKOT_BOUNDS.south &&
-    lng <= RAJKOT_BOUNDS.east &&
-    lng >= RAJKOT_BOUNDS.west
-  );
-}
-
-/** Rajkot is in Gujarat — block obvious wrong states */
-function isGujaratState(value: string) {
-  const t = value.trim().toLowerCase().replace(/\s+/g, " ");
-  if (!t.length) return false;
-  return t.includes("gujarat") || t === "gj" || t.endsWith(", gj");
-}
+import { currentRajkotLocation, searchRajkotAddresses, type AddressMapResult } from "@/utils/addressLocation";
 
 type AddressPayload = {
   user?: string;
@@ -111,8 +47,6 @@ function applyGeocodeToForm(
   g: Location.LocationGeocodedAddress,
   setAddressLine1: (v: string) => void,
   setAddressLine2: (v: string) => void,
-  setCity: (v: string) => void,
-  setState: (v: string) => void,
   setPincode: (v: string) => void,
 ) {
   const num = g.streetNumber?.trim();
@@ -138,14 +72,6 @@ function applyGeocodeToForm(
     setAddressLine2(area);
   }
 
-  if (g.city?.trim()) {
-    setCity(g.city.trim());
-  } else {
-    setCity(DELIVERY_CITY);
-  }
-  if (g.region?.trim()) {
-    setState(g.region.trim());
-  }
   if (g.postalCode?.trim()) {
     setPincode(g.postalCode.trim().slice(0, 6));
   }
@@ -157,9 +83,8 @@ export default function AddAddressScreen() {
   const isEditing = !!params.id;
 
   const mapsSupported = Platform.OS !== "web";
-  const useGoogleMapTiles =
-    Platform.OS === "android" ||
-    Boolean(Constants.expoConfig?.ios?.config?.googleMapsApiKey);
+  // Use the platform map provider: Apple Maps on iOS, Google Maps on Android.
+  const useGoogleMapTiles = Platform.OS === "android";
 
   const [type, setType] = useState<"home" | "work" | "other">("home");
   const [name, setName] = useState("");
@@ -167,8 +92,8 @@ export default function AddAddressScreen() {
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [landmark, setLandmark] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+  const city = DELIVERY_CITY;
+  const state = DELIVERY_STATE;
   const [pincode, setPincode] = useState("");
   const [isDefault, setIsDefault] = useState(false);
 
@@ -178,6 +103,15 @@ export default function AddAddressScreen() {
   );
 
   const [mapModalVisible, setMapModalVisible] = useState(false);
+  const [mapPresented, setMapPresented] = useState(false);
+  const [mapError, setMapError] = useState("");
+  const [mapQuery, setMapQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<AddressMapResult[]>([]);
+  const [locating, setLocating] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const mapRef = useRef<MapView | null>(null);
+  const mapOperation = useRef(0);
+  useEffect(() => () => { mapOperation.current += 1; }, []);
   const [mapPin, setMapPin] = useState<{ latitude: number; longitude: number }>(
     () => ({
       latitude: RAJKOT_CENTER.latitude,
@@ -189,11 +123,14 @@ export default function AddAddressScreen() {
     (lat: number, lng: number) => {
       const c = clampToRajkot(lat, lng);
       setMapPin(c);
+      setMapError("");
+      setSearchResults([]);
     },
     [],
   );
   const [mapReady, setMapReady] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
+  const mapBusy = geoLoading || locating || searching;
 
   const [loading, setLoading] = useState(false);
 
@@ -211,8 +148,6 @@ export default function AddAddressScreen() {
         setAddressLine1(addr.addressLine1 || "");
         setAddressLine2(addr.addressLine2 || "");
         setLandmark(addr.landmark || "");
-        setCity(addr.city || "");
-        setState(addr.state || "");
         setPincode(addr.pincode || "");
         setIsDefault(!!addr.isDefault);
 
@@ -247,122 +182,135 @@ export default function AddAddressScreen() {
   useEffect(() => {
     if (!mapModalVisible) {
       setMapReady(false);
+      setMapPresented(false);
     }
   }, [mapModalVisible]);
 
-  const openMapPicker = useCallback(async () => {
+  const openMapPicker = useCallback(() => {
     if (!mapsSupported) {
-      showAlert(
-        "Maps",
-        "The map picker runs in the iOS/Android app. Please open VADI on your phone or use Expo Go.",
-      );
+      showAlert("Maps", "Choose your delivery location in the iOS or Android app.");
+      return;
+    }
+    // Opening a map does not require GPS permission or a location lookup.
+    setMapPin(mapCoords && isInRajkotBounds(mapCoords.latitude, mapCoords.longitude) ? mapCoords : { ...RAJKOT_CENTER });
+    setMapPresented(false);
+    setMapError("");
+    setMapReady(false);
+    setMapModalVisible(true);
+  }, [mapsSupported, mapCoords]);
+
+  const closeMapPicker = () => {
+    mapOperation.current += 1;
+    setLocating(false);
+    setSearching(false);
+    setGeoLoading(false);
+    setMapModalVisible(false);
+  };
+
+  const selectSearchResult = (result: AddressMapResult) => {
+    Keyboard.dismiss();
+    setMapPin({ latitude: result.latitude, longitude: result.longitude });
+    setMapQuery(result.label);
+    setSearchResults([]);
+    setMapError("");
+    if (mapModalVisible && mapReady) {
+      mapRef.current?.animateToRegion({ latitude: result.latitude, longitude: result.longitude, latitudeDelta: 0.008, longitudeDelta: 0.008 }, 350);
+    } else if (!mapModalVisible) {
+      setMapPresented(false);
+      setMapReady(false);
+      setMapModalVisible(true);
+    }
+  };
+
+  const useCurrentLocation = async () => {
+    if (mapBusy) return;
+    const operation = ++mapOperation.current;
+    setLocating(true);
+    setMapError("");
+    try {
+      const result = await currentRajkotLocation();
+      if (operation === mapOperation.current) selectSearchResult(result);
+    } catch (error) {
+      if (operation !== mapOperation.current) return;
+      const message = error instanceof Error ? error.message : "Could not get your current location. Search for your address instead.";
+      if (mapModalVisible) setMapError(message);
+      else showAlert("Current location", message);
+    } finally {
+      if (operation === mapOperation.current) setLocating(false);
+    }
+  };
+
+  const searchMapAddress = async () => {
+    if (mapBusy || !mapReady) return;
+    Keyboard.dismiss();
+    const operation = ++mapOperation.current;
+    setSearching(true);
+    setMapError("");
+    setSearchResults([]);
+    try {
+      const results = await searchRajkotAddresses(mapQuery);
+      if (operation === mapOperation.current) setSearchResults(results);
+    } catch (error) {
+      if (operation === mapOperation.current) setMapError(error instanceof Error ? error.message : "Search failed. Try another street or landmark.");
+    } finally {
+      if (operation === mapOperation.current) setSearching(false);
+    }
+  };
+
+  const confirmMapLocation = useCallback(async () => {
+    const operation = ++mapOperation.current;
+    setMapError("");
+    const pinned = mapPin;
+    if (!isInRajkotBounds(pinned.latitude, pinned.longitude)) {
+      setMapError(DELIVERY_PIN_HELP_MESSAGE);
       return;
     }
 
     setGeoLoading(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        showAlert(
-          "Permission needed",
-          "Location permission centres the map when you are in Rajkot. You can still move the pin within the city.",
-        );
-        if (mapCoords && isInRajkotBounds(mapCoords.latitude, mapCoords.longitude)) {
-          setMapPin(clampToRajkot(mapCoords.latitude, mapCoords.longitude));
-        } else {
-          setMapPin({
-            latitude: RAJKOT_CENTER.latitude,
-            longitude: RAJKOT_CENTER.longitude,
-          });
+      if (Platform.OS === "android") {
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (operation !== mapOperation.current) return;
+        if (permission.status !== "granted") {
+          setMapError("Allow location access to verify the PIN code for your chosen delivery address.");
+          return;
         }
-        setMapModalVisible(true);
-        return;
       }
-
-      let next = mapCoords;
-      if (!next) {
-        const pos = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        next = {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        };
-      }
-      if (!isInRajkotBounds(next.latitude, next.longitude)) {
-        showAlert(
-          "Rajkot only",
-          "Delivery is available in Rajkot only. The map is centred on Rajkot — place your pin there.",
-        );
-        next = {
-          latitude: RAJKOT_CENTER.latitude,
-          longitude: RAJKOT_CENTER.longitude,
-        };
-      }
-      setMapPin(clampToRajkot(next.latitude, next.longitude));
-      setMapModalVisible(true);
-    } catch {
-      setMapPin(
-        mapCoords && isInRajkotBounds(mapCoords.latitude, mapCoords.longitude)
-          ? clampToRajkot(mapCoords.latitude, mapCoords.longitude)
-          : {
-              latitude: RAJKOT_CENTER.latitude,
-              longitude: RAJKOT_CENTER.longitude,
-            },
-      );
-      setMapModalVisible(true);
-    } finally {
-      setGeoLoading(false);
-    }
-  }, [mapsSupported, mapCoords]);
-
-  const confirmMapLocation = useCallback(async () => {
-    const pinned = clampToRajkot(mapPin.latitude, mapPin.longitude);
-
-    setGeoLoading(true);
-    try {
       const rows = await Location.reverseGeocodeAsync({
         latitude: pinned.latitude,
         longitude: pinned.longitude,
       });
+      if (operation !== mapOperation.current) return;
       const g = rows[0];
       if (!g) {
-        showAlert("Address", "Could not resolve this pin to an address. Try moving it slightly.");
+        setMapError("Could not resolve this pin to an address. Try moving it slightly.");
         return;
       }
 
-      applyGeocodeToForm(
-        g,
-        setAddressLine1,
-        setAddressLine2,
-        setCity,
-        setState,
-        setPincode,
-      );
-      setCity(DELIVERY_CITY);
-
-      const resolvedPin = g.postalCode?.trim().slice(0, 6) ?? "";
-      if (
-        resolvedPin.length === 6 &&
-        !isDeliveryAllowedPin(resolvedPin)
-      ) {
-        showAlert("Outside delivery area", DELIVERY_PIN_HELP_MESSAGE);
+      const resolvedPin = g.postalCode?.replace(/\D/g, "") || "";
+      if (!isDeliveryAllowedPin(resolvedPin)) {
+        setMapError(resolvedPin ? DELIVERY_PIN_HELP_MESSAGE : "Could not verify the PIN code for this spot. Move the pin to a nearby street in Rajkot and try again.");
         return;
       }
+      if (g.region && !isGujaratState(g.region)) {
+        setMapError(DELIVERY_PIN_HELP_MESSAGE);
+        return;
+      }
+      applyGeocodeToForm(g, setAddressLine1, setAddressLine2, setPincode);
+      setPincode(resolvedPin);
 
       setMapCoords(pinned);
       setMapPin(pinned);
       setMapModalVisible(false);
     } catch {
-      showAlert("Address", "Failed to fetch address details for this location.");
+      if (operation === mapOperation.current) setMapError("Failed to fetch address details for this location. Please try again.");
     } finally {
-      setGeoLoading(false);
+      if (operation === mapOperation.current) setGeoLoading(false);
     }
   }, [mapPin]);
 
   const ADDRESS_TYPES = ["home", "work", "other"] as const;
 
-  const normalizeCity = (c: string) => c.trim().toLowerCase().replace(/\s+/g, "");
 
   /** Same rules for Add and Edit — used by handleSubmit for both flows */
   const validateForm = () => {
@@ -450,7 +398,7 @@ export default function AddAddressScreen() {
         phone: cleanPhone,
         addressLine1,
         city: DELIVERY_CITY,
-        state: state.trim(),
+        state: DELIVERY_STATE,
         pincode: pinClean,
         isDefault,
       };
@@ -604,7 +552,7 @@ export default function AddAddressScreen() {
           {mapsSupported && (
             <TouchableOpacity
               onPress={openMapPicker}
-              disabled={geoLoading}
+              disabled={mapBusy}
               activeOpacity={0.92}
               style={styles.mapCardTouch}
             >
@@ -628,7 +576,7 @@ export default function AddAddressScreen() {
                       <Text style={styles.mapCityPillText}>{DELIVERY_CITY}</Text>
                     </View>
                     <View style={styles.mapGooglePill}>
-                      <Text style={styles.mapGooglePillText}>Google Maps</Text>
+                      <Text style={styles.mapGooglePillText}>{Platform.OS === "ios" ? "Apple Maps" : "Google Maps"}</Text>
                     </View>
                   </View>
                   <Text style={styles.mapCardTitle}>Choose location on map</Text>
@@ -644,6 +592,13 @@ export default function AddAddressScreen() {
             </TouchableOpacity>
           )}
 
+          {mapsSupported && (
+            <TouchableOpacity style={styles.currentLocationButton} onPress={useCurrentLocation} disabled={mapBusy} accessibilityRole="button">
+              {locating ? <ActivityIndicator size="small" color={C.primary} /> : <Ionicons name="locate-outline" size={20} color={C.primary} />}
+              <Text style={styles.currentLocationText}>{locating ? "Finding your location..." : "Use current location"}</Text>
+            </TouchableOpacity>
+          )}
+
           {/* ADDRESS LINE 1 */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
@@ -653,7 +608,7 @@ export default function AddAddressScreen() {
               {mapsSupported && (
                 <TouchableOpacity
                   onPress={openMapPicker}
-                  disabled={geoLoading}
+                  disabled={mapBusy}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <View style={styles.mapLinkPill}>
@@ -691,7 +646,7 @@ export default function AddAddressScreen() {
               {mapsSupported && (
                 <TouchableOpacity
                   onPress={openMapPicker}
-                  disabled={geoLoading}
+                  disabled={mapBusy}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <View style={styles.mapLinkPill}>
@@ -737,7 +692,8 @@ export default function AddAddressScreen() {
                 style={styles.input}
                 placeholder={DELIVERY_CITY}
                 value={city}
-                onChangeText={setCity}
+                editable={false}
+                selectTextOnFocus={false}
               />
             </View>
           </View>
@@ -754,7 +710,8 @@ export default function AddAddressScreen() {
                   style={styles.input}
                   placeholder="State"
                   value={state}
-                  onChangeText={setState}
+                  editable={false}
+                  selectTextOnFocus={false}
                 />
               </View>
             </View>
@@ -769,7 +726,7 @@ export default function AddAddressScreen() {
                   style={styles.input}
                   placeholder="360001–360007"
                   value={pincode}
-                  onChangeText={setPincode}
+                  onChangeText={(value) => { setPincode(value.replace(/\D/g, "")); setMapCoords(null); }}
                   keyboardType="number-pad"
                   maxLength={6}
                 />
@@ -826,13 +783,15 @@ export default function AddAddressScreen() {
         visible={mapModalVisible}
         animationType="slide"
         presentationStyle="fullScreen"
-        onRequestClose={() => setMapModalVisible(false)}
+        onRequestClose={closeMapPicker}
+        onShow={() => setMapPresented(true)}
+        onDismiss={() => setMapPresented(false)}
       >
-        <View style={styles.mapModalRoot}>
-          <SafeAreaView style={styles.mapModalSafe} edges={["top"]}>
+        <KeyboardAvoidingView style={styles.mapModalRoot} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <SafeAreaView style={styles.mapModalSafe} edges={["top", "bottom"]}>
             <View style={styles.mapModalHeader}>
               <TouchableOpacity
-                onPress={() => setMapModalVisible(false)}
+                onPress={closeMapPicker}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
                 <Text style={styles.mapModalCancel}>Cancel</Text>
@@ -847,12 +806,31 @@ export default function AddAddressScreen() {
             </View>
 
             <Text style={styles.mapHint}>
-              The map stays within Rajkot city limits. Drag the pin or tap the map, then use
-              the button below to fill your address.
+              Search a street or landmark, use your current location, or move the pin. Confirm your Rajkot delivery address below.
             </Text>
 
+            <View style={styles.mapSearchBar}>
+              <Ionicons name="search-outline" size={20} color={C.muted} />
+              <TextInput style={styles.mapSearchInput} placeholder="Search area or street in Rajkot" placeholderTextColor={C.muted} value={mapQuery} onChangeText={(query) => { setMapQuery(query); setSearchResults([]); setMapError(""); }} onSubmitEditing={searchMapAddress} returnKeyType="search" editable={!mapBusy} accessibilityLabel="Search address in Rajkot" />
+              <TouchableOpacity style={styles.mapSearchButton} onPress={searchMapAddress} disabled={!mapReady || mapBusy || mapQuery.trim().length < 3} accessibilityRole="button">
+                {searching ? <ActivityIndicator size="small" color={C.primary} /> : <Text style={styles.currentLocationText}>Search</Text>}
+              </TouchableOpacity>
+            </View>
+            {searchResults.length > 0 && <View style={styles.mapSearchResults}>
+              {searchResults.map((result) => <TouchableOpacity key={String(result.latitude) + "," + result.longitude} style={styles.mapSearchResult} onPress={() => selectSearchResult(result)} accessibilityRole="button">
+                <Ionicons name="location-outline" size={20} color={C.primary} />
+                <Text style={styles.mapResultLabel} numberOfLines={2}>{result.label}</Text>
+                <Ionicons name="chevron-forward" size={16} color={C.muted} />
+              </TouchableOpacity>)}
+            </View>}
+            <TouchableOpacity style={styles.mapLocateButton} onPress={useCurrentLocation} disabled={mapBusy} accessibilityRole="button">
+              {locating ? <ActivityIndicator size="small" color={C.primary} /> : <Ionicons name="locate-outline" size={20} color={C.primary} />}
+              <Text style={styles.currentLocationText}>{locating ? "Finding your location..." : "Use current location"}</Text>
+            </TouchableOpacity>
+            {!!mapError && <Text accessibilityRole="alert" style={{ color: "#B42318", paddingHorizontal: 20, paddingBottom: 12, lineHeight: 20 }}>{mapError}</Text>}
             <View style={styles.mapWrap}>
-              <MapView
+              {mapPresented && mapsSupported && <MapView
+                ref={mapRef}
                 provider={useGoogleMapTiles ? PROVIDER_GOOGLE : undefined}
                 style={StyleSheet.absoluteFill}
                 initialRegion={{
@@ -861,8 +839,7 @@ export default function AddAddressScreen() {
                   latitudeDelta: 0.015,
                   longitudeDelta: 0.015,
                 }}
-                onMapReady={() => setMapReady(true)}
-                showsUserLocation
+                onMapReady={() => { setMapReady(true); mapRef.current?.animateToRegion({ ...mapPin, latitudeDelta: 0.015, longitudeDelta: 0.015 }, 0); }}
                 showsMyLocationButton={false}
                 onPress={(e) => {
                   const c = e.nativeEvent.coordinate;
@@ -879,7 +856,7 @@ export default function AddAddressScreen() {
                     )
                   }
                 />
-              </MapView>
+              </MapView>}
               {!mapReady && (
                 <View style={styles.mapLoadingOverlay}>
                   <ActivityIndicator size="large" color={C.primary} />
@@ -891,10 +868,10 @@ export default function AddAddressScreen() {
               <TouchableOpacity
                 style={[
                   styles.mapConfirmBtn,
-                  geoLoading && styles.mapConfirmBtnDisabled,
+                  (!mapReady || mapBusy) && styles.mapConfirmBtnDisabled,
                 ]}
                 onPress={confirmMapLocation}
-                disabled={geoLoading}
+                disabled={!mapReady || mapBusy}
               >
                 {geoLoading ? (
                   <ActivityIndicator color="#fff" />
@@ -907,7 +884,7 @@ export default function AddAddressScreen() {
               </TouchableOpacity>
             </View>
           </SafeAreaView>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -1240,6 +1217,15 @@ const styles = themed(() => StyleSheet.create({
     fontWeight: "700",
     color: C.primary,
   },
+  currentLocationButton: { marginTop: -4, marginBottom: 20, padding: 14, minHeight: 48, borderWidth: 1, borderColor: C.line, borderRadius: 12, backgroundColor: C.soft, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  currentLocationText: { color: C.primary, fontSize: 14, fontWeight: "700" },
+  mapSearchBar: { marginHorizontal: 14, paddingLeft: 12, paddingRight: 4, minHeight: 48, borderWidth: 1, borderColor: C.line, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.card },
+  mapSearchInput: { flex: 1, minWidth: 0, paddingVertical: 12, fontSize: 14, color: C.ink },
+  mapSearchButton: { paddingHorizontal: 12, paddingVertical: 12, minWidth: 66, alignItems: "center" },
+  mapSearchResults: { marginHorizontal: 14, marginTop: 6, borderWidth: 1, borderColor: C.line, borderRadius: 12, backgroundColor: C.card, overflow: "hidden" },
+  mapSearchResult: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, minHeight: 52 },
+  mapResultLabel: { flex: 1, fontSize: 13, lineHeight: 18, color: C.ink },
+  mapLocateButton: { marginHorizontal: 14, paddingVertical: 12, flexDirection: "row", alignItems: "center", gap: 8 },
   mapHint: {
     fontSize: 13,
     color: C.muted,
@@ -1255,7 +1241,7 @@ const styles = themed(() => StyleSheet.create({
     backgroundColor: "#ddd",
   },
   mapLoadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.65)",

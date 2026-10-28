@@ -10,6 +10,7 @@ import {
   Platform,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -676,10 +677,13 @@ export default function OrdersScreen() {
   }, []);
 
   const onRefresh = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (refreshing) return;
     setRefreshing(true);
-    await fetchOrders();
-    setRefreshing(false);
+    try {
+      await fetchOrders();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const filteredOrders =
@@ -731,13 +735,13 @@ export default function OrdersScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <AppHeader title="Orders" showCart />
-        <View style={styles.centered}>
+        <ScrollView alwaysBounceVertical contentContainerStyle={[styles.centered, { flexGrow: 1 }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}>
           <View style={styles.emptyIconWrap}>
             <Ionicons name="bag-outline" size={48} color={C.primary} />
           </View>
           <Text style={styles.emptyTitle}>No orders yet</Text>
           <Text style={styles.emptySubtitle}>Your purchases will appear here</Text>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -765,6 +769,7 @@ export default function OrdersScreen() {
       </View>
 
       <FlatList
+        alwaysBounceVertical
         ref={listRef}
         key={selectedFilter}
         data={filteredOrders}

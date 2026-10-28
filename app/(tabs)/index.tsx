@@ -616,7 +616,7 @@ export default function HomeScreen() {
 
   useEffect(() => { if (!authLoading) loadAll(); }, [authLoading]);
 
-  const onRefresh = () => { setRefreshing(true); setSelectedCatId(null); setSearchQuery(""); loadAll(); };
+  const onRefresh = () => { if (refreshing) return; setRefreshing(true); void loadAll(); };
 
   const handleAddToCart = (product: Product) => {
     if (!product.variants?.length) return;
@@ -774,8 +774,9 @@ export default function HomeScreen() {
       </Animated.View>
 
       <Animated.ScrollView
+        alwaysBounceVertical
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}
+        refreshControl={<RefreshControl progressViewOffset={insets.top + 70} refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}
         contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 70 }]}
@@ -1152,7 +1153,7 @@ const s = themed(() => StyleSheet.create({
   bannerSection: { marginBottom: 16, marginHorizontal: 0, paddingHorizontal: 0, marginTop: 0 },
   bannerList: { marginBottom: 10, paddingHorizontal: 0 },
   bannerSlide: { borderRadius: 16, overflow: "hidden", width: "100%", marginHorizontal: 16 },
-  bannerImg: { width: "100%", height: 128, resizeMode: "cover", borderRadius: 16 },
+  bannerImg: { width: "100%", aspectRatio: 1080 / 352, resizeMode: "cover", borderRadius: 16 },
   bannerDots: { flexDirection: "row", justifyContent: "center", gap: 5, marginTop: 8 },
   dot: { height: 5, width: 5, borderRadius: 3, backgroundColor: C.line },
   dotActive: { width: 18, backgroundColor: C.primary },

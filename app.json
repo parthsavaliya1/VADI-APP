@@ -18,10 +18,9 @@
       }
     },
     "android": {
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/images/favicon.png"
+        "foregroundImage": "./assets/images/vadi-brand-logo.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.vadi.app",
@@ -58,12 +57,20 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/favicon.png",
+          "image": "./assets/images/vadi-brand-logo.png",
           "imageWidth": 140,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#FFFFFF"
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
           }
         }
       ]

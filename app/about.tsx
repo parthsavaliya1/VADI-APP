@@ -216,7 +216,6 @@ export default function AboutScreen() {
             activeOpacity={0.7}
             style={[styles.deleteBtn, busy && { opacity: 0.6 }]}
           >
-            <Ionicons name="trash-outline" size={16} color="#C62828" />
             <Text style={styles.deleteText}>{busy ? "Deleting…" : "Delete account"}</Text>
           </TouchableOpacity>
         </View>
@@ -369,29 +368,27 @@ const styles = themed(() =>
       marginTop: 28,
       paddingTop: 20,
       borderTopWidth: 1,
-      borderTopColor: C.line,
+      borderTopColor: "#E5E7EB",
       alignItems: "center",
     },
     dangerHint: {
-      fontSize: 12,
-      lineHeight: 18,
-      color: C.tabInactive,
+      fontSize: 13,
+      lineHeight: 19,
+      color: "#9CA3AF",
       textAlign: "center",
-      paddingHorizontal: 8,
-      marginBottom: 12,
+      paddingHorizontal: 12,
+      marginBottom: 10,
     },
     deleteBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      paddingVertical: 10,
-      paddingHorizontal: 18,
-      borderRadius: 12,
-      borderWidth: 1.5,
-      borderColor: "#F3C4C4",
-      backgroundColor: "#FFF5F5",
+      paddingVertical: 6,
+      paddingHorizontal: 8,
     },
-    deleteText: { fontSize: 14, fontWeight: "700", color: "#C62828" },
+    deleteText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: "#9CA3AF",
+      textDecorationLine: "underline",
+    },
 
     backdrop: {
       flex: 1,

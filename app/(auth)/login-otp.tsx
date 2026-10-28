@@ -1,3 +1,4 @@
+import { showLoginError } from "../../utils/loginError";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -46,7 +47,7 @@ export default function LoginOtpScreen() {
         },
       });
     } catch (err) {
-      console.log("❌ OTP send failed", err);
+      showLoginError(err);
     } finally {
       setLoading(false);
     }

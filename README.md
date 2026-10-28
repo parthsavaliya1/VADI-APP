@@ -1,3 +1,13 @@
+# Local testing (Expo SDK 58)
+
+Use Expo Go for SDK 58. After updating dependencies, stop the existing Metro server
+and run `npx expo start --go --clear`, then scan the new QR code. The legacy
+`assets/vadi-icon.png` path is restored alongside the configured brand icon.
+
+This upgrade updates React Native and native dependencies. Existing Android
+builds must be regenerated/rebuilt before testing a native development build.
+The ignored generated native folders have been preserved.
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).

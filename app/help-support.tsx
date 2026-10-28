@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Linking,
   Pressable,
@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppHeader } from "@/components/AppHeader";
 import { showAlert } from "@/context/CustomAlertContext";
@@ -21,10 +21,16 @@ const SUPPORT_PHONE = "+91 99090 49699";
 const SUPPORT_EMAIL = "vadi.support@gmail.com";
 const WHATSAPP_URL = `https://wa.me/${SUPPORT_PHONE.replace(/\D/g, "")}`;
 
+const CONTACT_OPTIONS = [
+  { title: "WhatsApp", hint: "Usually replies in minutes", icon: "logo-whatsapp", url: WHATSAPP_URL },
+  { title: "Call", hint: SUPPORT_PHONE, icon: "call-outline", url: `tel:${SUPPORT_PHONE.replace(/\s/g, "")}` },
+  { title: "Email", hint: SUPPORT_EMAIL, icon: "mail-outline", url: `mailto:${SUPPORT_EMAIL}` },
+] as const;
+
 const FAQ = [
   {
     q: "Where does VADI deliver?",
-    a: "We deliver across Ahmedabad, Rajkot, Surat and Vadodara. Enter your pincode at checkout to confirm your area.",
+    a: "We currently deliver only in Rajkot, Gujarat, for PIN codes 360001–360007. Confirm your address pin on the map before saving.",
   },
   {
     q: "How fresh is the produce?",
@@ -50,6 +56,7 @@ const FAQ = [
 
 export default function HelpSupportScreen() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState<number | null>(0);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -60,7 +67,12 @@ export default function HelpSupportScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <AppHeader title="Help & Support" showBack showCart={false} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.hero}>
           <View style={styles.heroIcon}>
             <Ionicons name="chatbubbles" size={26} color={C.primary} />
@@ -73,38 +85,34 @@ export default function HelpSupportScreen() {
 
         <Text style={styles.sectionLabel}>Talk to us</Text>
         <View style={styles.contactRow}>
-          <Pressable style={styles.contactCard} onPress={() => openUrl(WHATSAPP_URL)}>
-            <Ionicons name="logo-whatsapp" size={22} color={C.primary} />
-            <Text style={styles.contactTitle}>WhatsApp</Text>
-            <Text style={styles.contactHint}>Usually replies in minutes</Text>
-          </Pressable>
-          <Pressable
-            style={styles.contactCard}
-            onPress={() => openUrl(`tel:${SUPPORT_PHONE.replace(/\s/g, "")}`)}
-          >
-            <Ionicons name="call-outline" size={22} color={C.primary} />
-            <Text style={styles.contactTitle}>Call</Text>
-            <Text style={styles.contactHint}>{SUPPORT_PHONE}</Text>
-          </Pressable>
-          <Pressable style={styles.contactCard} onPress={() => openUrl(`mailto:${SUPPORT_EMAIL}`)}>
-            <Ionicons name="mail-outline" size={22} color={C.primary} />
-            <Text style={styles.contactTitle}>Email</Text>
-            <Text style={styles.contactHint}>vadi.support</Text>
-          </Pressable>
+          {CONTACT_OPTIONS.map((option) => (
+            <Pressable key={option.title} style={styles.contactCard} onPress={() => openUrl(option.url)} accessibilityRole="link">
+              <View style={styles.contactIcon}>
+                <Ionicons name={option.icon} size={22} color={C.primary} />
+              </View>
+              <View style={styles.contactCopy}>
+                <Text style={styles.contactTitle}>{option.title}</Text>
+                <Text style={styles.contactHint}>{option.hint}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.muted} />
+            </Pressable>
+          ))}
         </View>
 
         {user ? (
-          <View style={styles.faqCard}>
-            <Text style={styles.faqQ}>Message support</Text>
+          <View style={styles.messageCard}>
+            <Text style={styles.messageTitle}>Message support</Text>
             <TextInput
               value={draft}
               onChangeText={setDraft}
               placeholder="Ask about an order or a refund"
               placeholderTextColor="#9CA3AF"
-              style={{ borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 10, marginTop: 8, color: "#111" }}
+              multiline
+              textAlignVertical="top"
+              style={styles.messageInput}
             />
             <Pressable
-              style={{ marginTop: 8 }}
+              style={[styles.sendButton, sending && { opacity: 0.6 }]}
               disabled={sending}
               onPress={() => {
                 void (async () => {
@@ -121,7 +129,7 @@ export default function HelpSupportScreen() {
                 })();
               }}
             >
-              <Text style={{ color: C.primary, fontWeight: "700" }}>{sending ? "Sending..." : "Send message"}</Text>
+              <Text style={styles.sendButtonText}>{sending ? "Sending..." : "Send message"}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -157,7 +165,7 @@ export default function HelpSupportScreen() {
 const styles = themed(() =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: C.page },
-    content: { padding: 16, paddingBottom: 36 },
+    content: { paddingHorizontal: 16, paddingTop: 4 },
     hero: {
       backgroundColor: C.soft,
       borderRadius: 20,
@@ -174,39 +182,48 @@ const styles = themed(() =>
       alignItems: "center",
       justifyContent: "center",
     },
-    heroTitle: { marginTop: 12, fontSize: 20, fontWeight: "800", color: C.ink },
+    heroTitle: { marginTop: 12, fontSize: 20, lineHeight: 27, fontWeight: "800", color: C.ink },
     heroBody: { marginTop: 6, fontSize: 14, lineHeight: 21, color: C.muted },
     sectionLabel: {
-      marginTop: 22,
-      marginBottom: 10,
+      marginTop: 24,
+      marginBottom: 12,
       fontSize: 13,
       fontWeight: "800",
       letterSpacing: 0.6,
       textTransform: "uppercase",
       color: C.muted,
     },
-    contactRow: { flexDirection: "row", gap: 10 },
+    contactRow: { gap: 10 },
     contactCard: {
-      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
       backgroundColor: C.card,
       borderRadius: 16,
       borderWidth: 1,
       borderColor: C.line,
-      padding: 12,
-      minHeight: 108,
+      padding: 16,
+      minHeight: 80,
     },
-    contactTitle: { marginTop: 10, fontSize: 13, fontWeight: "800", color: C.ink },
-    contactHint: { marginTop: 2, fontSize: 11, color: C.muted },
+    contactIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.soft, alignItems: "center", justifyContent: "center" },
+    contactCopy: { flex: 1, minWidth: 0, gap: 3 },
+    contactTitle: { fontSize: 14, lineHeight: 20, fontWeight: "800", color: C.ink },
+    contactHint: { fontSize: 12, lineHeight: 18, color: C.muted },
+    messageCard: { marginTop: 24, padding: 16, backgroundColor: C.card, borderRadius: 18, borderWidth: 1, borderColor: C.line },
+    messageTitle: { fontSize: 15, lineHeight: 22, fontWeight: "700", color: C.ink },
+    messageInput: { minHeight: 112, marginTop: 12, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12, borderWidth: 1, borderColor: C.line, borderRadius: 12, color: C.ink, fontSize: 14, lineHeight: 21 },
+    sendButton: { marginTop: 12, paddingHorizontal: 16, paddingVertical: 12, minHeight: 46, borderRadius: 12, backgroundColor: C.soft, alignItems: "center", justifyContent: "center" },
+    sendButtonText: { color: C.primary, fontSize: 14, lineHeight: 20, fontWeight: "700" },
     faqCard: {
       backgroundColor: C.card,
       borderRadius: 18,
       borderWidth: 1,
       borderColor: C.line,
-      paddingHorizontal: 14,
+      paddingHorizontal: 16,
     },
-    faqItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.line },
+    faqItem: { paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: C.line },
     faqHead: { flexDirection: "row", alignItems: "center", gap: 12 },
-    faqQ: { flex: 1, fontSize: 15, fontWeight: "700", color: C.ink },
+    faqQ: { flex: 1, minWidth: 0, fontSize: 15, lineHeight: 22, fontWeight: "700", color: C.ink },
     faqA: { marginTop: 8, fontSize: 14, lineHeight: 21, color: C.muted },
   }),
 );
