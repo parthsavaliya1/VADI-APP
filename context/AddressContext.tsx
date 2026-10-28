@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 /* ================= TYPES ================= */
 
-type Address = {
+export type Address = {
   _id: string;
   user: string;
   type: "home" | "work" | "other";
@@ -119,10 +119,11 @@ export const AddressProvider = ({
       const defaultAddr = res.data.find((a: Address) => a.isDefault);
       setDefaultAddressState(defaultAddr || null);
 
-      // If no address is selected, use default or fallback to first address
-      if (!selectedAddress) {
-        setSelectedAddress(defaultAddr || res.data[0] || null);
-      }
+      // Keep the selected ID only while it exists in this user's saved list.
+      setSelectedAddress((current) =>
+        res.data.find((address: Address) => address._id === current?._id) ||
+        defaultAddr || res.data[0] || null,
+      );
     } catch (error) {
       console.error("Failed to load addresses:", error);
     } finally {

@@ -55,7 +55,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="order-tracking"
         options={{
-          href: null,
+          // Hide the tab button while keeping this route navigable.
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
           title: "Track Order",
         }}
       />

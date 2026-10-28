@@ -1,4 +1,5 @@
 import { AppHeader } from "@/components/AppHeader";
+import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
@@ -21,7 +22,7 @@ import {
   View,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { C, themed } from "@/constants/theme";
 
 import { DELIVERY_CITY, DELIVERY_STATE, DELIVERY_PIN_HELP_MESSAGE, RAJKOT_CENTER, clampToRajkot, isInRajkotBounds, isDeliveryAllowedPin, isGujaratState, normalizeCity } from "@/utils/deliveryZone";
@@ -79,6 +80,7 @@ function applyGeocodeToForm(
 
 export default function AddAddressScreen() {
   const { user } = useAuth();
+  const { refreshAddresses } = useAddress();
   const params = useLocalSearchParams();
   const isEditing = !!params.id;
 
@@ -191,6 +193,7 @@ export default function AddAddressScreen() {
       showAlert("Maps", "Choose your delivery location in the iOS or Android app.");
       return;
     }
+    Keyboard.dismiss();
     // Opening a map does not require GPS permission or a location lookup.
     setMapPin(mapCoords && isInRajkotBounds(mapCoords.latitude, mapCoords.longitude) ? mapCoords : { ...RAJKOT_CENTER });
     setMapPresented(false);
@@ -224,6 +227,7 @@ export default function AddAddressScreen() {
 
   const useCurrentLocation = async () => {
     if (mapBusy) return;
+    Keyboard.dismiss();
     const operation = ++mapOperation.current;
     setLocating(true);
     setMapError("");
@@ -425,12 +429,14 @@ export default function AddAddressScreen() {
 
       if (isEditing) {
         await API.put(`/addresses/${params.id}`, addressData);
-        showAlert("Success", "Address updated successfully");
+
       } else {
         await API.post("/addresses", addressData);
-        showAlert("Success", "Address added successfully");
+
       }
 
+      await refreshAddresses();
+      showAlert("Success", isEditing ? "Address updated successfully" : "Address added successfully");
       router.back();
     } catch (error: any) {
       console.error("Address save error:", error);
@@ -783,15 +789,21 @@ export default function AddAddressScreen() {
         visible={mapModalVisible}
         animationType="slide"
         presentationStyle="fullScreen"
+        statusBarTranslucent
+        navigationBarTranslucent
         onRequestClose={closeMapPicker}
         onShow={() => setMapPresented(true)}
         onDismiss={() => setMapPresented(false)}
       >
+        <SafeAreaProvider>
         <KeyboardAvoidingView style={styles.mapModalRoot} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <SafeAreaView style={styles.mapModalSafe} edges={["top", "bottom"]}>
             <View style={styles.mapModalHeader}>
               <TouchableOpacity
                 onPress={closeMapPicker}
+                style={styles.mapCancelButton}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel location selection"
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
                 <Text style={styles.mapModalCancel}>Cancel</Text>
@@ -885,6 +897,7 @@ export default function AddAddressScreen() {
             </View>
           </SafeAreaView>
         </KeyboardAvoidingView>
+        </SafeAreaProvider>
       </Modal>
     </SafeAreaView>
   );
@@ -1188,6 +1201,7 @@ const styles = themed(() => StyleSheet.create({
     borderBottomColor: "#e8ece9",
     backgroundColor: C.card,
   },
+  mapCancelButton: { minHeight: 44, minWidth: 64, justifyContent: "center" },
   mapModalCancel: {
     fontSize: 16,
     fontWeight: "600",

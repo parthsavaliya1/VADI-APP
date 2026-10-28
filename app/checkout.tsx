@@ -41,7 +41,7 @@ export default function CheckoutScreen() {
   const { items, clearCart, refreshCart } = useCart();
   const { user } = useAuth();
   const { placeOrder } = useOrders();
-  const { selectedAddress, defaultAddress, addresses, setSelectedAddress } =
+  const { selectedAddress, defaultAddress, addresses, setSelectedAddress, refreshAddresses } =
     useAddress();
   const [isProcessing, setIsProcessing] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -70,7 +70,10 @@ export default function CheckoutScreen() {
   const listedDeliveryFee = fees.deliveryFee;
   const freeAbove = fees.freeDeliveryAbove;
   const grandTotal = Math.round((merchandise + deliveryFee) * 100) / 100;
-  const activeAddress = selectedAddress || defaultAddress || addresses[0] || null;
+  const activeAddress =
+    addresses.find((address) => address._id === selectedAddress?._id) ||
+    addresses.find((address) => address._id === defaultAddress?._id) ||
+    addresses[0] || null;
 
   useEffect(() => {
     if (!user?._id) return;
@@ -136,21 +139,22 @@ export default function CheckoutScreen() {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const buildOrderAddress = () => ({
-    _id: activeAddress!._id,
-    name: activeAddress!.name!,
-    phone: activeAddress!.phone!,
-    addressLine1: activeAddress!.addressLine1!,
-    addressLine2: activeAddress!.addressLine2,
-    city: activeAddress!.city!,
-    state: activeAddress!.state!,
-    pincode: activeAddress!.pincode!,
-    landmark: activeAddress!.landmark,
+  const buildOrderAddress = (address = activeAddress!) => ({
+    _id: address._id,
+    name: address.name!,
+    phone: address.phone!,
+    addressLine1: address.addressLine1!,
+    addressLine2: address.addressLine2,
+    city: address.city!,
+    state: address.state!,
+    pincode: address.pincode!,
+    landmark: address.landmark,
   });
 
   const upiRegex = /^[a-zA-Z0-9._-]{2,}@[a-zA-Z]{2,}$/;
 
   const handlePlaceOrder = async () => {
+    if (isProcessing) return;
     if (items.length === 0) {
       showAlert("Empty Cart", "Your cart is empty");
       return;
@@ -185,6 +189,27 @@ export default function CheckoutScreen() {
     setIsProcessing(true);
 
     try {
+      // Revalidate before creating an order or opening an online payment.
+      const addressResponse = await API.get(`/addresses/${user._id}`);
+      const savedAddress = addressResponse.data.find(
+        (address: { _id: string }) => address._id === activeAddress._id,
+      );
+      if (!savedAddress) {
+        await refreshAddresses();
+        setIsProcessing(false);
+        showAlert("Choose delivery address", "Your selected address is no longer available. Please select a saved delivery address.", [
+          { text: "Select address", onPress: handleChangeAddress },
+        ]);
+        return;
+      }
+      const savedDeliveryError = deliveryAddressError(savedAddress);
+      if (savedDeliveryError) {
+        setIsProcessing(false);
+        showAlert("Check delivery address", savedDeliveryError);
+        return;
+      }
+      setSelectedAddress(savedAddress);
+      const orderAddress = buildOrderAddress(savedAddress);
       const resolvedOnlineMethod: "upi" | "card" | "wallet" =
         onlinePaymentType === "card"
           ? "card"
@@ -195,7 +220,7 @@ export default function CheckoutScreen() {
       // ✅ CASH ON DELIVERY — place order directly
       if (paymentMethod === "cod") {
         await placeOrder({
-          address: buildOrderAddress(),
+          address: orderAddress,
           paymentMethod,
           deliveryFee,
           couponCode: appliedCoupon || undefined,
@@ -231,7 +256,7 @@ export default function CheckoutScreen() {
           return;
         }
         await placeOrder({
-          address: buildOrderAddress(),
+          address: orderAddress,
           paymentMethod: "balance",
           deliveryFee,
           notes: "Paid from VADI wallet",
@@ -292,7 +317,7 @@ export default function CheckoutScreen() {
         onSuccess: async ({ paymentId, orderId, signature }) => {
           try {
             await placeOrder({
-              address: buildOrderAddress(),
+              address: orderAddress,
               paymentMethod: resolvedOnlineMethod,
               paymentDetails: {
                 razorpayPaymentId: paymentId,

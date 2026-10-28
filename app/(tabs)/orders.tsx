@@ -701,7 +701,7 @@ export default function OrdersScreen() {
 
   const openTrackingPage = (order: Order) => {
     router.push({
-      pathname: "/order-tracking",
+      pathname: "/(tabs)/order-tracking",
       params: {
         orderId: order._id,
         orderNumber: order.orderNumber,

@@ -1,11 +1,11 @@
 import { AppHeader } from "@/components/AppHeader";
-import { useAddress } from "@/context/AddressContext";
+import { useAddress, type Address } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -17,19 +17,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { C, themed } from "@/constants/theme";
 
-type Address = {
-  _id: string;
-  name: string;
-  addressLine: string;
-  city: string;
-  state: string;
-  pincode: string;
-  isDefault: boolean;
-};
-
 export default function MyAddressesScreen() {
   const { user } = useAuth();
-  const { selectedAddress, setSelectedAddress } = useAddress();
+  const { selectedAddress, setSelectedAddress, refreshAddresses, deleteAddress, setDefaultAddress } = useAddress();
   const params = useLocalSearchParams();
   const fromCheckout = params.fromCheckout === "true";
 
@@ -37,16 +27,36 @@ export default function MyAddressesScreen() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user?._id) {
-      loadAddresses();
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    if (!user?._id) {
+      setAddresses([]);
+      setLoading(false);
+      return;
     }
-  }, [user]);
+    setLoading(true);
+    const refresh = async () => {
+      try {
+        const res = await API.get<Address[]>(`/addresses/${user._id}`);
+        if (active) setAddresses(res.data);
+      } catch (error) {
+        if (active) {
+          console.error("Failed to load addresses:", error);
+          showAlert("Error", "Failed to load addresses");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    void refresh();
+    return () => { active = false; };
+  }, [user?._id]));
 
   const loadAddresses = async () => {
     try {
       const res = await API.get(`/addresses/${user?._id}`);
       setAddresses(res.data);
+      await refreshAddresses();
     } catch (error) {
       console.error("Failed to load addresses:", error);
       showAlert("Error", "Failed to load addresses");
@@ -64,7 +74,7 @@ export default function MyAddressesScreen() {
 
   const handleSetDefault = async (addressId: string) => {
     try {
-      await API.put(`/addresses/${addressId}/default`);
+      await setDefaultAddress(addressId);
       loadAddresses();
     } catch (error) {
       showAlert("Error", "Failed to set default address");
@@ -83,7 +93,7 @@ export default function MyAddressesScreen() {
           onPress: async () => {
             try {
               setDeleting(addressId);
-              await API.delete(`/addresses/${addressId}`);
+              await deleteAddress(addressId);
               loadAddresses();
             } catch (error) {
               showAlert("Error", "Failed to delete address");
@@ -113,7 +123,7 @@ export default function MyAddressesScreen() {
       params: {
         id: address._id,
         name: address.name,
-        addressLine: address.addressLine,
+        addressLine1: address.addressLine1,
         city: address.city,
         state: address.state,
         pincode: address.pincode,
@@ -221,7 +231,7 @@ export default function MyAddressesScreen() {
                 </View>
                 <View style={styles.addressInfo}>
                   <Text style={styles.addressName}>{address.name}</Text>
-                  <Text style={styles.addressLine}>{address.addressLine}</Text>
+                  <Text style={styles.addressLine}>{[address.addressLine1, address.addressLine2].filter(Boolean).join(", ")}</Text>
                   <Text style={styles.addressDetails}>
                     {address.city}, {address.state} - {address.pincode}
                   </Text>
