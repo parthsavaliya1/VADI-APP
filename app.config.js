@@ -1,3 +1,4 @@
+/* global __dirname */
 const fs = require("fs");
 const path = require("path");
 
@@ -117,19 +118,21 @@ module.exports = ({ config }) => {
   // Android: google-services.json  |  iOS: GoogleService-Info.plist
   // Then build a dev/production client (`eas build` or `expo run:android`); Expo Go will not return FCM tokens.
   const appRoot = path.resolve(__dirname);
-  const androidGoogleServices = path.join(appRoot, "google-services.json");
+  const androidGoogleServices = process.env.GOOGLE_SERVICES_JSON || path.join(appRoot, "google-services.json");
   const iosGoogleServices = path.join(appRoot, "GoogleService-Info.plist");
   const hasAndroidFirebase = fs.existsSync(androidGoogleServices);
   const hasIosFirebase = fs.existsSync(iosGoogleServices);
 
   const firebaseExtra = resolveFirebaseExtra(config, appRoot);
+  const resolvedMapsKey = mapsKey || config.android?.config?.googleMaps?.apiKey || "";
+  if (process.env.EAS_BUILD_PROFILE === "production" && !resolvedMapsKey) throw new Error("Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY in the EAS production environment before building");
 
   return {
     ...config,
     android: {
       ...config.android,
       ...(hasAndroidFirebase
-        ? { googleServicesFile: "./google-services.json" }
+        ? { googleServicesFile: androidGoogleServices }
         : {}),
       config: {
         ...config.android?.config,
@@ -151,19 +154,12 @@ module.exports = ({ config }) => {
       },
     },
     plugins: [
-      ...(config.plugins || []),
-      [
-        "expo-location",
-        {
-          locationWhenInUsePermission:
-            "VADI uses your location to show the map when you pick a delivery address.",
-          locationAlwaysAndWhenInUsePermission:
-            "VADI uses your location to show the map when you pick a delivery address.",
-        },
-      ],
+      ...(config.plugins || []).filter(p => (Array.isArray(p) ? p[0] : p) !== 'react-native-maps'),
+      ['react-native-maps', { androidGoogleMapsApiKey: resolvedMapsKey }],
     ],
     extra: {
       ...config.extra,
+      androidMapsConfigured: Boolean(resolvedMapsKey),
       ...(firebaseExtra ? { firebase: firebaseExtra } : {}),
     },
   };

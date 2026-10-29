@@ -1,10 +1,10 @@
+import { startTransition , useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
 import { openWalletTopup } from "@/utils/razorpay";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -45,16 +45,16 @@ export default function WalletScreen() {
     ]);
     setBalance(Number(walletRes.data?.data?.balance || 0));
     setHistory(historyRes.data?.data || []);
-  }, [user?._id]);
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
       router.replace("/(auth)/login");
       return;
     }
-    load()
+    startTransition(() => { load()
       .catch(() => showAlert("Wallet", "Could not load wallet"))
-      .finally(() => setLoading(false));
+      .finally(() => setLoading(false)); });
   }, [user, load]);
 
   const addMoney = async () => {

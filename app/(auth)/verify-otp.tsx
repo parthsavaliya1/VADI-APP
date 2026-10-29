@@ -72,11 +72,11 @@ export default function VerifyOtpScreen() {
     useState(RESEND_COOLDOWN_SEC);
   const [resendBusy, setResendBusy] = useState(false);
 
-  const otpInputRef = useRef<TextInput>(null);
+  const otpInputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const logoScaleAnim = useRef(new Animated.Value(0.8)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [slideAnim] = useState(() => new Animated.Value(30));
+  const [logoScaleAnim] = useState(() => new Animated.Value(0.8));
 
   const isFormValid = useMemo(() => otp.length === 6, [otp]);
 
@@ -491,7 +491,7 @@ const styles = themed(() => StyleSheet.create({
     color: "#1E3A1E",
   },
   otpHiddenInput: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute", top: 0, right: 0, bottom: 0, left: 0,
     color: Platform.select({ ios: "rgba(0,0,0,0.01)", default: "transparent" }),
     fontSize: Platform.select({ ios: 16, android: 1 }),
     zIndex: 2,

@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Linking, Modal, Platform, Pressable, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
@@ -168,23 +169,23 @@ export function RazorpayHost({ children }: { children: ReactNode }) {
     else if (value) current.resolve(value);
   }
 
-  function pay(next: RazorpayOrder) {
+  const pay = useCallback((next: RazorpayOrder) => {
     if (Platform.OS === "web") return openWebCheckout(next);
     return new Promise<RazorpaySuccess>((resolve, reject) => {
+      if (pending.current) { reject(new Error("A payment is already in progress")); return; }
       pending.current = { resolve, reject };
       setOrder(next);
     });
-  }
-
-  const payRef = useRef(pay);
-  payRef.current = pay;
+  }, []);
 
   useEffect(() => {
-    currentPay = (next) => payRef.current(next);
+    currentPay = pay;
     return () => {
       currentPay = null;
+      pending.current?.reject(new Error("Payment screen closed"));
+      pending.current = null;
     };
-  }, []);
+  }, [pay]);
 
   return (
     <CheckoutContext.Provider value={pay}>

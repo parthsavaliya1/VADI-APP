@@ -1,7 +1,7 @@
+import { startTransition , useCallback, useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/context/CustomAlertContext";
 import { router, useFocusEffect, useGlobalSearchParams, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -178,11 +178,12 @@ export default function ProductDetailScreen() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showVariantPhoto, setShowVariantPhoto] = useState(false);
   const [galleryWidth, setGalleryWidth] = useState(screenWidth);
-  const imageScrollRef = useRef<ScrollView>(null);
+  const imageScrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const galleryWidthRef = useRef(screenWidth);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [recentProducts, setRecentProducts] = useState<Product[]>([]);
+  const [recentLoading, setRecentLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [dealEndTs, setDealEndTs] = useState<number | null>(null);
@@ -217,23 +218,21 @@ export default function ProductDetailScreen() {
   const [submittingReview, setSubmittingReview] = useState(false);
 
   // Animations
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const headerOpacity = useRef(new Animated.Value(0)).current;
-  const addButtonScale = useRef(new Animated.Value(1)).current;
-  const variantAnimation = useRef(new Animated.Value(0)).current;
+  const [scrollY] = useState(() => new Animated.Value(0));
+  const [headerOpacity] = useState(() => new Animated.Value(0));
+  const [addButtonScale] = useState(() => new Animated.Value(1));
+  const [variantAnimation] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (product && product.variants.length > 0 && !selectedVariant) {
       const defaultVar =
         product.variants.find((v) => v.isDefault) || product.variants[0];
-      setSelectedVariant(defaultVar);
-      setShowVariantPhoto(Boolean(defaultVar.images?.length));
+      startTransition(() => { setSelectedVariant(defaultVar); setShowVariantPhoto(Boolean(defaultVar.images?.length)); });
     }
   }, [product]);
 
   useEffect(() => {
-    setShowVariantPhoto(false);
-    setSelectedImageIndex(0);
+    startTransition(() => { setShowVariantPhoto(false); setSelectedImageIndex(0); });
   }, [id]);
 
   useEffect(() => {
@@ -273,7 +272,7 @@ export default function ProductDetailScreen() {
   };
 
   useEffect(() => {
-    if (id) loadSimilarProducts();
+    if (id) startTransition(() => { loadSimilarProducts(); });
   }, [id]);
 
   useEffect(() => {
@@ -285,10 +284,15 @@ export default function ProductDetailScreen() {
 
   useEffect(() => {
     let alive = true;
+    setRecentLoading(true);
+    setRecentProducts([]);
     (async () => {
       const ids = (await readRecentIds()).filter((item) => item !== id).slice(0, 8);
       if (!ids.length) {
-        if (alive) setRecentProducts([]);
+        if (alive) {
+          setRecentProducts([]);
+          setRecentLoading(false);
+        }
         return;
       }
       try {
@@ -299,9 +303,11 @@ export default function ProductDetailScreen() {
               .catch(() => null),
           ),
         );
-        if (alive) setRecentProducts(rows.filter(Boolean));
+        if (alive) setRecentProducts(rows.filter((item): item is Product => Boolean(item && item.isActive !== false)));
       } catch {
         if (alive) setRecentProducts([]);
+      } finally {
+        if (alive) setRecentLoading(false);
       }
     })();
     return () => {
@@ -369,7 +375,7 @@ export default function ProductDetailScreen() {
 
   useEffect(() => {
     if (dealEndTs == null || !Number.isFinite(dealEndTs)) {
-      setDealTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+      startTransition(() => { setDealTimeLeft({ d: 0, h: 0, m: 0, s: 0 }); });
       return;
     }
 
@@ -694,6 +700,17 @@ export default function ProductDetailScreen() {
       ? "This offer ends in"
       : "Sale ends in";
   const pad2 = (n: number) => String(n).padStart(2, "0");
+  const categoryProducts = similarProducts.filter((item) =>
+    item._id !== product._id &&
+    item.isActive !== false &&
+    item.category?._id === product.category?._id,
+  );
+  const hasRecentProducts = recentProducts.length > 0;
+  const discoveryProducts = recentLoading ? [] : hasRecentProducts ? recentProducts : categoryProducts;
+  const discoveryIds = new Set(discoveryProducts.map((item) => item._id));
+  const recommendations = categoryProducts.filter((item) =>
+    !discoveryIds.has(item._id) && item.variants?.some((variant) => variant.isActive !== false),
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -1140,49 +1157,73 @@ export default function ProductDetailScreen() {
             )}
           </View>
 
-          {/* ── Tags ── */}
-          {product.tags && product.tags.length > 0 && (
-            <View style={styles.tagsSection}>
-              <Text style={styles.sectionTitle}>Tags</Text>
-              <View style={styles.tagsContainer}>
-                {product.tags.map((tag, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>#{tag}</Text>
-                  </View>
-                ))}
+          {discoveryProducts.length > 0 && (
+            <View style={styles.recentSection}>
+              <View style={styles.recentHeader}>
+                <Text style={styles.sectionTitle}>{hasRecentProducts ? "Recently viewed" : "More from this category"}</Text>
+                <Text style={styles.recentSubtitle}>{hasRecentProducts ? "Pick up where you left off" : "Explore more options"}</Text>
               </View>
-            </View>
-          )}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.recentScrollContent}
+              >
+                {discoveryProducts.map((item) => {
+                  const activeVariants = (item.variants || []).filter((variant) => variant.isActive !== false);
+                  const variant =
+                    activeVariants.find((variant) => variant.isDefault && variant.stock > 0) ||
+                    activeVariants.find((variant) => variant.stock > 0) ||
+                    activeVariants.find((variant) => variant.isDefault) ||
+                    activeVariants[0];
+                  const photo = item.image || item.images?.[0] || variant?.image || variant?.images?.[0];
+                  const hasDiscount = variant && variant.mrp > variant.price;
+                  const inStock = variant && variant.stock > 0;
 
-          {/* ════════════════════════════════════════
-              SIMILAR PRODUCTS — IMPROVED
-              • Light bg image area
-              • Discount badge
-              • Rating row
-              • Weight pill
-              • ADD / qty control per card
-              ════════════════════════════════════════ */}
-          {recentProducts.length > 0 && (
-            <View style={styles.similarSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Recently viewed</Text>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {recentProducts.map((item) => (
-                  <TouchableOpacity
-                    key={item._id}
-                    style={[styles.similarCard, { marginRight: 10 }]}
-                    onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
-                  >
-                    {!!item.image && <Image source={{ uri: item.image }} style={styles.similarImage} />}
-                    <Text numberOfLines={2} style={styles.similarName}>{item.name}</Text>
-                  </TouchableOpacity>
-                ))}
+                  return (
+                    <TouchableOpacity
+                      key={item._id}
+                      style={styles.recentCard}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel={`View ${item.name}${variant ? `, ${variant.packSize} ${variant.packUnit}, ₹${variant.price}` : ""}${inStock ? "" : ", out of stock"}`}
+                      onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
+                    >
+                      <View style={styles.recentImageWrap}>
+                        {photo ? (
+                          <Image source={{ uri: photo }} style={styles.recentImage} resizeMode="contain" />
+                        ) : (
+                          <Ionicons name="image-outline" size={32} color={C.muted} />
+                        )}
+                        {hasDiscount && (
+                          <View style={styles.recentDiscount}>
+                            <Text style={styles.recentDiscountText}>
+                              {Math.round(((variant.mrp - variant.price) / variant.mrp) * 100)}% OFF
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.recentCardBody}>
+                        <Text numberOfLines={2} style={styles.recentName}>{item.name}</Text>
+                        <Text numberOfLines={1} style={styles.recentPack}>
+                          {variant ? `${variant.packSize} ${variant.packUnit}` : "Currently unavailable"}
+                        </Text>
+                        <View style={styles.recentFooter}>
+                          <View style={styles.recentPriceGroup}>
+                            {variant && <Text style={styles.recentPrice}>₹{variant.price}</Text>}
+                            {hasDiscount && <Text style={styles.recentMrp}>₹{variant.mrp}</Text>}
+                          </View>
+                          <Ionicons name="chevron-forward" size={16} color={C.primary} />
+                        </View>
+                        {!inStock && variant && <Text style={styles.recentStock}>Out of stock</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             </View>
           )}
 
-          {similarProducts.length > 0 && (
+          {recommendations.length > 0 && (
             <View style={styles.similarSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>You may also like</Text>
@@ -1199,7 +1240,7 @@ export default function ProductDetailScreen() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.similarScrollContent}
                 >
-                  {similarProducts.map((item) => {
+                  {recommendations.map((item) => {
                     const variant =
                       item.variants.find((v) => v.isDefault) ||
                       item.variants[0];
@@ -2222,21 +2263,51 @@ const styles = themed(() => StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // ── Tags ──
-  tagsSection: {
+  // ── Recently viewed ──
+  recentSection: {
     backgroundColor: C.card,
     borderRadius: 14,
-    padding: 14,
+    paddingVertical: 16,
     marginBottom: 10,
+    overflow: "hidden",
   },
-  tagsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  tag: {
+  recentHeader: { paddingHorizontal: 14, marginBottom: 14 },
+  recentSubtitle: { fontSize: 12, lineHeight: 18, color: C.muted, marginTop: 2 },
+  recentScrollContent: { paddingHorizontal: 14, paddingBottom: 2, gap: 12, alignItems: "flex-start" },
+  recentCard: {
+    width: 152,
+    borderWidth: 1,
+    borderColor: C.line,
+    borderRadius: 14,
+    overflow: "hidden",
+    backgroundColor: C.card,
+  },
+  recentImageWrap: {
+    height: 112,
+    padding: 10,
     backgroundColor: C.soft,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  tagText: { fontSize: 12, color: C.primary, fontWeight: "600" },
+  recentImage: { width: "100%", height: "100%" },
+  recentDiscount: {
+    position: "absolute",
+    top: 7,
+    left: 7,
+    backgroundColor: C.badge,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 5,
+  },
+  recentDiscountText: { fontSize: 10, fontWeight: "800", color: C.badgeText },
+  recentCardBody: { padding: 10, minHeight: 116 },
+  recentName: { fontSize: 13, lineHeight: 18, minHeight: 36, fontWeight: "700", color: C.ink },
+  recentPack: { fontSize: 11, lineHeight: 16, color: C.muted, marginTop: 4 },
+  recentFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10, gap: 4 },
+  recentPriceGroup: { flex: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "baseline", gap: 5 },
+  recentPrice: { fontSize: 15, fontWeight: "800", color: C.ink },
+  recentMrp: { fontSize: 11, color: C.muted, textDecorationLine: "line-through" },
+  recentStock: { fontSize: 11, color: C.muted, marginTop: 6 },
 
   // ── Similar Products (IMPROVED) ──
   similarSection: {

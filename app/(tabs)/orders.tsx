@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { startTransition , useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -175,7 +175,7 @@ function FilterChip({
   onPress: () => void;
   count?: number;
 }) {
-  const scale = useRef(new Animated.Value(1)).current;
+  const [scale] = useState(() => new Animated.Value(1));
 
   const handlePress = () => {
     Haptics.selectionAsync();
@@ -233,9 +233,9 @@ function OrderCard({
   userId: string;
   onRefresh: () => void;
 }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const trackBtnScale = useRef(new Animated.Value(1)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [slideAnim] = useState(() => new Animated.Value(30));
+  const [trackBtnScale] = useState(() => new Animated.Value(1));
   const [invoiceBusy, setInvoiceBusy] = useState(false);
   const [returnReason, setReturnReason] = useState("");
   const [returnBusy, setReturnBusy] = useState(false);
@@ -542,6 +542,9 @@ function OrderCard({
           {getFilterValue(item.status) === "delivered" && userId ? (
             <View style={styles.detailBlock}>
               <Text style={styles.sectionLabel}>Return</Text>
+              <Text style={styles.addressLine}>
+                Returns are accepted within 24 hours of delivery only in the original, unopened packaging with all seals intact. Items cannot be returned once the packaging is opened or a seal is broken.
+              </Text>
               {item.returnRequest?.status ? (
                 <Text style={styles.addressLine}>
                   Request {item.returnRequest.status}
@@ -695,7 +698,7 @@ export default function OrdersScreen() {
     key === "all" ? orders.length : orders.filter((o) => getFilterValue(o.status) === key).length;
 
   useEffect(() => {
-    setExpandedId(null);
+    startTransition(() => { setExpandedId(null); });
     requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: 0, animated: false }));
   }, [selectedFilter]);
 

@@ -1,6 +1,6 @@
+import { startTransition , useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -82,10 +82,6 @@ export default function CategoryScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    loadProducts();
-  }, [categoryId]);
-
   const loadProducts = async () => {
     try {
       setLoading(true);
@@ -107,6 +103,12 @@ export default function CategoryScreen() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    startTransition(() => { void loadProducts(); });
+  }, [categoryId]);
+
+  
 
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()),

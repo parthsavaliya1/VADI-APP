@@ -8,7 +8,7 @@ import { API } from "@/utils/api";
 import { openRazorpay } from "@/utils/razorpay";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Animated,
   LayoutAnimation,
@@ -59,10 +59,10 @@ export default function CheckoutScreen() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponBusy, setCouponBusy] = useState(false);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [slideAnim] = useState(() => new Animated.Value(50));
+  const [scaleAnim] = useState(() => new Animated.Value(1));
+  const [pulseAnim] = useState(() => new Animated.Value(1));
 
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const merchandise = Math.max(0, Math.round((total - couponDiscount) * 100) / 100);

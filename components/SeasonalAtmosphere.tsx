@@ -1,5 +1,5 @@
 import { getThemeKey, type ThemeKey } from "@/constants/theme";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo , useState } from "react";
 import { Animated, Easing, StyleSheet, useWindowDimensions, View } from "react-native";
 
 const SEASONS = ["winter", "summer", "monsoon"] as const;
@@ -18,7 +18,7 @@ function Particle({
   index: number;
   height: number;
 }) {
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
   const left = (index * 37) % 100;
   const delay = (index * 220) % 1800;
   const duration =

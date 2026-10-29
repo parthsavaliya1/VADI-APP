@@ -1,3 +1,4 @@
+import { loadCustomerToken, setCustomerToken, subscribeCustomerSession } from "@/utils/customerSession";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Platform } from "react-native";
@@ -8,6 +9,7 @@ import { getPushToken } from "../utils/pushNotifications";
 
 type User = {
   _id: string;
+  isDemo?: boolean;
   name: string;
   phone: string;
   profileImage?: string;
@@ -36,7 +38,7 @@ type AuthContextType = {
     mode: "login" | "signup",
     options?: { forceResend?: boolean },
   ) => Promise<{ demoLoggedIn?: boolean }>;
-  demoLogin: (phone: string) => Promise<void>;
+  acceptSession: (user: User, token: string) => Promise<void>;
   verifyOtpAndLogin: (phone: string, otp: string, privacyPolicyAccepted?: boolean) => Promise<void>;
   verifyOtpAndSignup: (
     phone: string,
@@ -62,13 +64,16 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 const STORAGE_KEY = "AUTH_USER";
-const DEMO_PHONE = process.env.EXPO_PUBLIC_DEMO_PHONE ?? "+919999999999";
 
 /* ================= PROVIDER ================= */
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => subscribeCustomerSession(value => {
+    if (!value) setUser(null);
+  }), []);
 
   const syncPushToken = async (userId: string) => {
     try {
@@ -89,7 +94,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadAuth = async () => {
       try {
-        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        const token = await loadCustomerToken();
+        const stored = token ? await AsyncStorage.getItem(STORAGE_KEY) : null;
+        if (!token) await AsyncStorage.removeItem(STORAGE_KEY);
         if (stored) {
           const userData = JSON.parse(stored);
           setUser(userData);
@@ -97,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           void API.patch(`/api/users/${userData._id}`, {
             lastLoginAt: new Date(),
           }).catch((error) => console.log("Last login sync failed", error));
-          void syncPushToken(userData._id);
+          if (!userData.isDemo) void syncPushToken(userData._id);
         }
       } catch (e) {
         console.log("❌ Auth load error", e);
@@ -110,19 +117,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /* ================= OTP AUTHENTICATION ================= */
 
-  // ⭐ DEMO LOGIN (no OTP)
-  const demoLogin = async (phone: string) => {
-    try {
-      const res = await API.post("/api/auth/demo-login", { phone });
-      const userData = res.data?.user;
-      if (!userData?._id) throw new Error("Demo login failed");
-
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
-      setUser(userData);
-      await syncPushToken(userData._id);
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || "Demo login failed");
-    }
+  const acceptSession = async (userData: User, token: string) => {
+    if (!userData?._id || !token) throw new Error("Sign-in failed: no secure session returned");
+    await setCustomerToken(token);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+    setUser(userData);
+    if (!userData.isDemo) void syncPushToken(userData._id);
   };
 
   // 📤 SEND OTP
@@ -132,12 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     options?: { forceResend?: boolean },
   ) => {
     try {
-      // If demo number, frontend can directly login without OTP
-      if (String(phone) === String(DEMO_PHONE)) {
-        await demoLogin(phone);
-        return { demoLoggedIn: true };
-      }
-
       await API.post("/api/auth/send-otp", {
         phone,
         mode,
@@ -159,10 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       const { user: userData } = verifyRes.data;
 
-      // Save to storage and update state
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
-      setUser(userData);
-      await syncPushToken(userData._id);
+      await acceptSession(userData, verifyRes.data.token);
       console.log("✅ User logged in:", userData.name);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || "Invalid OTP");
@@ -186,6 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...(privacyPolicyAccepted === true ? { privacyPolicyAccepted: true } : {}),
       });
       const { isNewUser } = verifyRes.data;
+      await setCustomerToken(verifyRes.data.token);
 
       if (!isNewUser) {
         throw new Error("User already exists. Please login instead.");
@@ -202,10 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userData = signupRes.data;
 
-      // Save to storage and update state
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
-      setUser(userData);
-      await syncPushToken(userData._id);
+      await acceptSession(userData, signupRes.data.token);
       console.log("✅ User signed up:", userData.name);
     } catch (error: any) {
       throw new Error(error.response?.data?.error || "Signup failed");
@@ -237,6 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /* ================= LOGOUT ================= */
 
   const logout = async () => {
+    await setCustomerToken(null);
     await AsyncStorage.removeItem(STORAGE_KEY);
     setUser(null);
   };
@@ -254,6 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
     }
 
+    await setCustomerToken(null);
     await AsyncStorage.removeItem(STORAGE_KEY);
     setUser(null);
   };
@@ -267,7 +258,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoggedIn: !!user,
         loading,
         sendOtp,
-        demoLogin,
+        acceptSession,
         verifyOtpAndLogin,
         verifyOtpAndSignup,
         updateProfile,

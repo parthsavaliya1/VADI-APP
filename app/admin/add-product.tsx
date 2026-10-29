@@ -56,7 +56,7 @@ export default function AddProductScreen() {
     loadCategories();
   }, []);
 
-  const loadCategories = async () => {
+  async function loadCategories() {
     try {
       console.log("📂 Loading categories...");
       const res = await API.get("/categories");
@@ -71,25 +71,14 @@ export default function AddProductScreen() {
     } finally {
       setLoadingCategories(false);
     }
-  };
+  }
 
   /* ======================
      IMAGE PICKER
   ====================== */
   const pickImage = async () => {
     try {
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permission.granted) {
-        showAlert(
-          "Permission Required",
-          "Please allow gallery access to upload product images",
-          [{ text: "OK" }],
-        );
-        return;
-      }
-
+      // The system photo picker grants access only to the selected image.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.7,
@@ -530,7 +519,7 @@ export default function AddProductScreen() {
                   <Text style={styles.toggleLabel}>Best Deal</Text>
                 </View>
                 <Text style={styles.toggleDesc}>
-                  Show in "Best Deals Today" section
+                  Show in &quot;Best Deals Today&quot; section
                 </Text>
               </View>
               <Switch
@@ -549,7 +538,7 @@ export default function AddProductScreen() {
                   <Text style={styles.toggleLabel}>Trending</Text>
                 </View>
                 <Text style={styles.toggleDesc}>
-                  Show in "Trending Now" section
+                  Show in &quot;Trending Now&quot; section
                 </Text>
               </View>
               <Switch
@@ -568,7 +557,7 @@ export default function AddProductScreen() {
                   <Text style={styles.toggleLabel}>Featured</Text>
                 </View>
                 <Text style={styles.toggleDesc}>
-                  Show in "Featured Products" section
+                  Show in &quot;Featured Products&quot; section
                 </Text>
               </View>
               <Switch

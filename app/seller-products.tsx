@@ -1,10 +1,10 @@
+import { startTransition , useCallback, useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { C, themed } from "@/constants/theme";
@@ -28,9 +28,9 @@ export default function SellerProductsScreen() {
   }, [user?._id]);
 
   useEffect(() => {
-    load()
+    startTransition(() => { load()
       .catch(() => showAlert("Products", "Could not load your products"))
-      .finally(() => setLoading(false));
+      .finally(() => setLoading(false)); });
   }, [load]);
 
   return (

@@ -1,10 +1,10 @@
+import { startTransition , useCallback, useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -57,16 +57,16 @@ export default function SellerScreen() {
       }
       throw error;
     }
-  }, [user?._id]);
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
       router.replace("/(auth)/login");
       return;
     }
-    load()
+    startTransition(() => { load()
       .catch(() => showAlert("Seller", "Could not load seller profile"))
-      .finally(() => setLoading(false));
+      .finally(() => setLoading(false)); });
   }, [user, load]);
 
   const register = async () => {

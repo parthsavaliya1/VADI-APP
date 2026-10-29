@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -43,9 +43,9 @@ export default function EnhancedSignupScreen() {
   const [privacyTouched, setPrivacyTouched] = useState(false);
 
   // Animation refs
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const logoScaleAnim = useRef(new Animated.Value(0.8)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [slideAnim] = useState(() => new Animated.Value(30));
+  const [logoScaleAnim] = useState(() => new Animated.Value(0.8));
 
   const normalizedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
 

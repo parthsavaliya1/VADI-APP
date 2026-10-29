@@ -1,13 +1,13 @@
-import { cartApi } from "@/lib/cartAPI";
-import { showAlert } from "@/context/CustomAlertContext";
-import { router } from "expo-router";
-import {
+import { startTransition ,
   createContext,
   ReactNode,
   useContext,
   useEffect,
   useState,
 } from "react";
+import { cartApi } from "@/lib/cartAPI";
+import { showAlert } from "@/context/CustomAlertContext";
+import { router } from "expo-router";
 import { useAuth } from "./AuthContext";
 
 /* ================= TYPES ================= */
@@ -118,7 +118,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (res.data?.success) {
         const data = res.data.data;
         const dbItems = data?.items || [];
-        setItems(dbItems.map(mapDbItemToCartItem));
+        setItems(dbItems.filter((item: any) => item?.product && item?.variantId).map(mapDbItemToCartItem));
         return {
           ok: true,
           itemCount: dbItems.length,
@@ -138,7 +138,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    refreshCart();
+    startTransition(() => { refreshCart(); });
   }, [userId]);
 
   /* ─── add to cart ─── */

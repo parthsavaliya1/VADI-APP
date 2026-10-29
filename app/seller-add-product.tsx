@@ -101,18 +101,10 @@ export default function SellerAddProductScreen() {
   };
 
   const pickImage = async (index: number) => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showAlert("Photos", "Allow photo access to add a variant image");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]?.uri) {
-      updateVariant(index, "imageUri", result.assets[0].uri);
-    }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+      if (!result.canceled && result.assets[0]?.uri) updateVariant(index, "imageUri", result.assets[0].uri);
+    } catch { showAlert("Photos", "Could not open the photo picker. Please try again."); }
   };
 
   const submit = async () => {
@@ -134,7 +126,7 @@ export default function SellerAddProductScreen() {
       const uploaded = [];
       for (const variant of variants) {
         const image =
-          variant.imageUri && !variant.imageUri.startsWith("http")
+          variant.imageUri && !variant.imageUri.startsWith("http") && !user?.isDemo
             ? await uploadProductImage(variant.imageUri)
             : variant.imageUri || "";
         uploaded.push({

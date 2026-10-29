@@ -98,7 +98,7 @@ export default function TabLayout() {
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
             <TabIconCircle focused={focused}>
-              <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
+              <Ionicons name={focused ? "home" : "home-outline"} size={24} color={typeof color === "string" ? color : C.primary} />
             </TabIconCircle>
           ),
         }}
@@ -110,7 +110,7 @@ export default function TabLayout() {
           title: "Categories",
           tabBarIcon: ({ color, focused }) => (
             <TabIconCircle focused={focused}>
-              <Ionicons name={focused ? "grid" : "grid-outline"} size={24} color={color} />
+              <Ionicons name={focused ? "grid" : "grid-outline"} size={24} color={typeof color === "string" ? color : C.primary} />
             </TabIconCircle>
           ),
         }}
@@ -122,7 +122,7 @@ export default function TabLayout() {
           title: "Orders",
           tabBarIcon: ({ color, focused }) => (
             <TabIconCircle focused={focused}>
-              <Ionicons name={focused ? "receipt" : "receipt-outline"} size={24} color={color} />
+              <Ionicons name={focused ? "receipt" : "receipt-outline"} size={24} color={typeof color === "string" ? color : C.primary} />
             </TabIconCircle>
           ),
           href: user ? "/(tabs)/orders" : null,
@@ -151,7 +151,7 @@ export default function TabLayout() {
                   {getInitials(user.name)}
                 </Text>
               </View>
-            ) : <Ionicons name={focused ? "person-circle" : "person-circle-outline"} size={28} color={color} />}
+            ) : <Ionicons name={focused ? "person-circle" : "person-circle-outline"} size={28} color={typeof color === "string" ? color : C.primary} />}
             </TabIconCircle>
           ),
         }}

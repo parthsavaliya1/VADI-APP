@@ -1,3 +1,4 @@
+import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
 import { payWithRazorpayCheckout } from "@/components/RazorpayCheckout";
 
@@ -8,6 +9,7 @@ function phoneForRazorpay(phone?: string) {
 
 type RazorpayGatewayOrder = {
   key: string;
+  demo?: boolean;
   amount: number;
   amountInPaise: number;
   currency: string;
@@ -54,7 +56,7 @@ export async function openRazorpay(options: OpenRazorpayOptions) {
     }
 
     const gatewayOrder: RazorpayGatewayOrder = createOrderRes.data.data;
-    const paymentResult = await payWithRazorpayCheckout({
+    const paymentResult = gatewayOrder.demo ? await simulateReviewPayment(gatewayOrder) : await payWithRazorpayCheckout({
       keyId: gatewayOrder.key,
       orderId: gatewayOrder.razorpayOrderId,
       amount: gatewayOrder.amountInPaise,
@@ -101,7 +103,7 @@ export async function openWalletTopup(options: {
       throw new Error(createOrderRes.data?.message || "Unable to start wallet top-up");
     }
     const gatewayOrder: RazorpayGatewayOrder = createOrderRes.data.data;
-    const paymentResult = await payWithRazorpayCheckout({
+    const paymentResult = gatewayOrder.demo ? await simulateReviewPayment(gatewayOrder) : await payWithRazorpayCheckout({
       keyId: gatewayOrder.key,
       orderId: gatewayOrder.razorpayOrderId,
       amount: gatewayOrder.amountInPaise,
@@ -124,4 +126,13 @@ export async function openWalletTopup(options: {
   } catch (error: any) {
     options.onFailure(error?.description || error?.message || "Payment failed");
   }
+}
+
+function simulateReviewPayment(order: RazorpayGatewayOrder) {
+  return new Promise<{ razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }>((resolve, reject) => {
+    showAlert("Demo payment", "This is a simulated payment. No money will be charged and no real delivery will be created.", [
+      { text: "Cancel", style: "cancel", onPress: () => reject(new Error("Demo payment cancelled")) },
+      { text: "Simulate success", onPress: () => resolve({ razorpay_order_id: order.razorpayOrderId, razorpay_payment_id: "demo_payment", razorpay_signature: "demo_signature" }) },
+    ]);
+  });
 }

@@ -2,7 +2,7 @@
   "expo": {
     "name": "VADI",
     "slug": "vadi-product",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/vadi-brand-logo.png",
     "scheme": "vadiapp",
@@ -14,7 +14,7 @@
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         },
-        "NSLocationWhenInUseUsageDescription": "VADI uses your location while you are delivering so the customer can see where the order is."
+        "NSLocationWhenInUseUsageDescription": "VADI uses your location to pick a delivery address or share a delivery staff location when requested."
       }
     },
     "android": {
@@ -31,7 +31,17 @@
         "android.permission.WAKE_LOCK",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "blockedPermissions": [
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
+      "allowBackup": false
     },
     "web": {
       "output": "static",
@@ -42,10 +52,18 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "VADI uses your location while you are delivering so the customer can see where the order is."
+          "locationWhenInUsePermission": "VADI uses your location to pick a delivery address or, when delivery staff choose Share my location, share their position with the customer.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
         }
       ],
-      "expo-speech-recognition",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "VADI uses the microphone only when you choose voice search. Your device speech provider may process audio to turn it into search text.",
+          "speechRecognitionPermission": "VADI uses speech recognition to turn your voice into product search text."
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -70,10 +88,14 @@
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true
+            "usesCleartextTraffic": false,
+            "targetSdkVersion": 36,
+            "compileSdkVersion": 37
           }
         }
-      ]
+      ],
+      "expo-image",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -91,13 +113,15 @@
         "storageBucket": "vadi-app-fresh.firebasestorage.app",
         "messagingSenderId": "1082226902300",
         "appId": "1:1082226902300:android:3c4d7768e6eb4dcbc926d9"
-      }
+      },
+      "privacyPolicyUrl": "https://vadi-backend.onrender.com/privacy-policy",
+      "accountDeletionUrl": "https://vadi-backend.onrender.com/account-deletion"
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/36911d98-1f27-439f-b486-4450f294be12"
+      "url": "https://u.expo.dev/f388db81-48ff-4df8-a155-1e55f92484c4"
     },
     "owner": "vadi-app"
   }

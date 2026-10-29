@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import {
@@ -119,10 +119,10 @@ function TrackingStep({
   delay,
   lineProgress,
 }: StepProps) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
-  const dotScale = useRef(new Animated.Value(isCompleted ? 1 : 0.6)).current;
-  const dotPulse = useRef(new Animated.Value(1)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [slideAnim] = useState(() => new Animated.Value(20));
+  const [dotScale] = useState(() => new Animated.Value(isCompleted ? 1 : 0.6));
+  const [dotPulse] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     Animated.parallel([
@@ -263,7 +263,7 @@ function StatCard({
   value: string;
   delay: number;
 }) {
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.spring(anim, {
@@ -355,10 +355,11 @@ export default function OrderTrackingScreen() {
     liveOrder?.status || params.status || "placed";
   const orderNumber =
     liveOrder?.orderNumber || params.orderNumber || "ORD-20094";
+  const [fallbackCreatedAt] = useState(() => new Date(Date.now() - 2 * 86400000).toISOString());
   const createdAt =
     liveOrder?.createdAt ||
     params.createdAt ||
-    new Date(Date.now() - 2 * 86400000).toISOString();
+    fallbackCreatedAt;
   const totalItems = String(
     liveOrder?.totalItems ?? params.totalItems ?? "3",
   );
@@ -380,10 +381,10 @@ export default function OrderTrackingScreen() {
     ((currentStepIndex + 1) / TRACKING_STEPS.length) * 100;
 
   // Header animation
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const heroAnim = useRef(new Animated.Value(0)).current;
-  const lineProgressRef = useRef(new Animated.Value(0)).current;
-  const progressFillAnim = useRef(new Animated.Value(0)).current;
+  const [headerAnim] = useState(() => new Animated.Value(0));
+  const [heroAnim] = useState(() => new Animated.Value(0));
+  const [lineProgressRef] = useState(() => new Animated.Value(0));
+  const [progressFillAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.stagger(100, [
@@ -420,7 +421,7 @@ export default function OrderTrackingScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.page} />
+      <StatusBar barStyle="dark-content" />
 
       {/* ── Header ── */}
       <Animated.View

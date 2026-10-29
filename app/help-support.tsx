@@ -46,7 +46,7 @@ const FAQ = [
   },
   {
     q: "Something arrived damaged. What now?",
-    a: "Open the order, report the item within 24 hours, and we refund or replace it.",
+    a: "Go to My Orders and report the item within 24 hours of delivery. Returns are accepted only in the original, unopened packaging with all seals intact. Items cannot be returned after the packaging is opened or a seal is broken. Requests are subject to review.",
   },
   {
     q: "How do I track my order?",

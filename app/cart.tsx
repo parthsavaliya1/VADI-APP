@@ -155,7 +155,7 @@ export default function CartScreen() {
         <View style={[styles.progressBanner, styles.progressBannerSuccess]}>
           <Ionicons name="checkmark-circle" size={18} color={C.primary} />
           <Text style={styles.progressLabel}>
-            🎉 You've unlocked{" "}
+            🎉 You&apos;ve unlocked{" "}
             <Text style={styles.progressHighlight}>free delivery!</Text>
           </Text>
         </View>

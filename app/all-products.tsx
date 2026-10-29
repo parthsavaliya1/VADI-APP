@@ -1,6 +1,6 @@
+import { startTransition , useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -79,10 +79,49 @@ export default function AllProductsScreen() {
   const [showSortModal, setShowSortModal] = useState(false);
 
   // Animation refs
-  const searchFocusAnim = useRef(new Animated.Value(0)).current;
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const logoRotate = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(1)).current;
+  const [searchFocusAnim] = useState(() => new Animated.Value(0));
+  const [headerAnim] = useState(() => new Animated.Value(0));
+  const [logoRotate] = useState(() => new Animated.Value(0));
+  const [logoScale] = useState(() => new Animated.Value(1));
+
+  async function loadProducts() {
+    try {
+      setLoading(true);
+      const res = await API.get("/products");
+      const allProducts = res.data.data || res.data || [];
+      let filtered = [...allProducts];
+
+      if (type === "deals" || type === "bestDeal") {
+        const markedDeals = filtered.filter((p) => p.bestDeal === true);
+        if (markedDeals.length > 0) {
+          filtered = markedDeals;
+        } else {
+          filtered = filtered.filter((p) => p.discount && p.discount >= 15);
+        }
+      } else if (type === "trending") {
+        filtered = filtered.filter((p) => p.trending === true);
+      } else if (type === "featured") {
+        filtered = filtered.filter((p) => p.featured === true);
+      } else if (categoryId) {
+        const category = String(Array.isArray(categoryId) ? categoryId[0] : categoryId).toLowerCase();
+        filtered = filtered.filter((p) =>
+          [p.category?._id, p.category?.slug, p.category?.name]
+            .some((value) => String(value ?? "").toLowerCase() === category),
+        );
+      }
+
+      if (filtered.length === 0 && type !== "category" && !categoryId) {
+        filtered = allProducts;
+      }
+
+      setProducts(filtered);
+    } catch (error) {
+      console.error("Failed to load products:", error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     // Header entrance animation
@@ -93,7 +132,7 @@ export default function AllProductsScreen() {
       useNativeDriver: true,
     }).start();
 
-    loadProducts();
+    startTransition(() => { void loadProducts(); });
   }, [type, categoryId]);
 
   useEffect(() => {
@@ -133,40 +172,7 @@ export default function AllProductsScreen() {
     }
   }, [loading]);
 
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-      const res = await API.get("/products");
-      const allProducts = res.data.data || res.data || [];
-      let filtered = [...allProducts];
-
-      if (type === "deals" || type === "bestDeal") {
-        const markedDeals = filtered.filter((p) => p.bestDeal === true);
-        if (markedDeals.length > 0) {
-          filtered = markedDeals;
-        } else {
-          filtered = filtered.filter((p) => p.discount && p.discount >= 15);
-        }
-      } else if (type === "trending") {
-        filtered = filtered.filter((p) => p.trending === true);
-      } else if (type === "featured") {
-        filtered = filtered.filter((p) => p.featured === true);
-      } else if (categoryId) {
-        filtered = filtered.filter((p) => p.category._id === categoryId);
-      }
-
-      if (filtered.length === 0 && type !== "category") {
-        filtered = allProducts;
-      }
-
-      setProducts(filtered);
-    } catch (error) {
-      console.error("Failed to load products:", error);
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  
 
   const handleAddToCart = (product: Product) => {
     if (!product.variants || product.variants.length === 0) return;
@@ -231,8 +237,8 @@ export default function AllProductsScreen() {
   ];
 
   const ProductCard = ({ item, index }: { item: Product; index: number }) => {
-    const scaleAnim = useRef(new Animated.Value(0)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const [scaleAnim] = useState(() => new Animated.Value(0));
+    const [fadeAnim] = useState(() => new Animated.Value(0));
     const [isAdding, setIsAdding] = useState(false);
 
     useEffect(() => {
@@ -392,7 +398,7 @@ export default function AllProductsScreen() {
     <SafeAreaView style={styles.safe}>
       {/* HEADER */}
       <AppHeader
-        title={title || "Products"}
+        title={(Array.isArray(title) ? title[0] : title) || "Products"}
         subtitle={
           type === "deals"
             ? "Best Deals"

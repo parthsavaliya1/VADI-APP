@@ -2,7 +2,7 @@ import { getInitials } from "@/utils/getInitials";
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/context/CustomAlertContext";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -50,8 +50,8 @@ function BenefitRow({
   text: string;
   delay: number;
 }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateX = useRef(new Animated.Value(-20)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [translateX] = useState(() => new Animated.Value(-20));
 
   useEffect(() => {
     Animated.parallel([
@@ -84,8 +84,8 @@ function BenefitRow({
    GUEST PROFILE VIEW
 ══════════════════════════════════════ */
 function GuestProfileView() {
-  const fadeIn = useRef(new Animated.Value(0)).current;
-  const slideUp = useRef(new Animated.Value(30)).current;
+  const [fadeIn] = useState(() => new Animated.Value(0));
+  const [slideUp] = useState(() => new Animated.Value(30));
 
   useEffect(() => {
     Animated.parallel([
@@ -204,9 +204,9 @@ function MenuRow({
   accent?: boolean;
   rightBadge?: string;
 }) {
-  const scale = useRef(new Animated.Value(0.92)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const pressScale = useRef(new Animated.Value(1)).current;
+  const [scale] = useState(() => new Animated.Value(0.92));
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [pressScale] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     Animated.parallel([
@@ -325,8 +325,8 @@ function StatTile({
   color: string;
   delay: number;
 }) {
-  const scale = useRef(new Animated.Value(0.7)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const [scale] = useState(() => new Animated.Value(0.7));
+  const [opacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.parallel([
@@ -368,9 +368,9 @@ export default function ProfileScreen() {
   const { orders, fetchOrders } = useOrders();
   const [referralCode, setReferralCode] = useState("");
 
-  const headerAnim = useRef(new Animated.Value(-30)).current;
-  const headerFade = useRef(new Animated.Value(0)).current;
-  const avatarScale = useRef(new Animated.Value(0)).current;
+  const [headerAnim] = useState(() => new Animated.Value(-30));
+  const [headerFade] = useState(() => new Animated.Value(0));
+  const [avatarScale] = useState(() => new Animated.Value(0));
 
   const [avatarFg, avatarBg] = avatarColor(user?.name || user?.phone);
   const initials = getInitials(user?.name);

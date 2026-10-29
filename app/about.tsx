@@ -1,7 +1,7 @@
+import { startTransition , useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -64,7 +64,7 @@ export default function AboutScreen() {
 
   // Profile → "Delete account" deep-links here and opens the dialog straight away.
   useEffect(() => {
-    if (wantsDelete && user) setAsk(true);
+    if (wantsDelete && user) startTransition(() => { setAsk(true); });
   }, [wantsDelete, user]);
 
   const openUrl = (url: string) =>
@@ -93,11 +93,10 @@ export default function AboutScreen() {
     setError("");
     try {
       await deleteAccount();
-      clearCart();
       setAsk(false);
       showAlert(
         "Account deleted",
-        "Your VADI account and personal data have been removed. We're sorry to see you go.",
+        "Your account was deleted. Existing order, payment and accounting records may be retained as explained in the privacy policy.",
         [{ text: "OK", onPress: () => router.replace("/(auth)/login") }],
       );
     } catch (err: any) {

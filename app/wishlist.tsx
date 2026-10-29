@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router , useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "expo-router";
 import { AppHeader } from "@/components/AppHeader";
 import { C } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
@@ -36,7 +35,7 @@ export default function WishlistScreen() {
     } finally {
       setLoading(false);
     }
-  }, [user?._id]);
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {

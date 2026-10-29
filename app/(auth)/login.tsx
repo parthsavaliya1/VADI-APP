@@ -2,7 +2,7 @@ import { showLoginError } from "../../utils/loginError";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -44,9 +44,9 @@ export default function EnhancedLoginScreen() {
   const [privacyTouched, setPrivacyTouched] = useState(false);
 
   // Animation refs
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const logoScaleAnim = useRef(new Animated.Value(0.8)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [slideAnim] = useState(() => new Animated.Value(30));
+  const [logoScaleAnim] = useState(() => new Animated.Value(0.8));
 
   const normalizedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
 
@@ -113,6 +113,7 @@ export default function EnhancedLoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <Pressable onPress={() => router.push("/review-login")} style={{ padding: 10, alignSelf: "center" }}><Text style={{ color: C.primary }}>Test account sign-in (no OTP)</Text></Pressable>
       {/* Background gradient + farm illustration area */}
       <LinearGradient
         colors={[BG_SURFACE, BG_GRADIENT_MID, BG_SURFACE]}

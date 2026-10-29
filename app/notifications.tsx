@@ -43,7 +43,7 @@ export default function NotificationsScreen() {
     } finally {
       if (version === request.current) { setLoading(false); setRefreshing(false); }
     }
-  }, [user?._id]);
+  }, [user]);
 
   useFocusEffect(useCallback(() => {
     setItems([]); setLoading(true); setError(""); void load();

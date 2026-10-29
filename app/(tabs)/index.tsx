@@ -1,7 +1,7 @@
+import { startTransition , useCallback, useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/context/CustomAlertContext";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -181,8 +181,8 @@ const getDefaultVariant = (p: Product): ProductVariant =>
 function GuestBanner() {
   const { user } = useAuth();
   const [visible, setVisible] = useState(true);
-  const slide = useRef(new Animated.Value(-70)).current;
-  const fade = useRef(new Animated.Value(0)).current;
+  const [slide] = useState(() => new Animated.Value(-70));
+  const [fade] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!user && visible) {
@@ -227,7 +227,7 @@ function GuestBanner() {
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function ProductSkeleton() {
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -267,7 +267,7 @@ function OfferEndsCountdown({ endMs }: { endMs: number }) {
   );
 
   useEffect(() => {
-    setVisible(Number.isFinite(endMs) && endMs > Date.now());
+    startTransition(() => { setVisible(Number.isFinite(endMs) && endMs > Date.now()); });
   }, [endMs]);
 
   useEffect(() => {
@@ -373,7 +373,7 @@ function ProductCard({
 }: {
   item: Product; onAdd: () => void; inCart: boolean; onPress: () => void; showTrendingBadge?: boolean; compact?: boolean;
 }) {
-  const scale = useRef(new Animated.Value(1)).current;
+  const [scale] = useState(() => new Animated.Value(1));
   const [isAdding, setIsAdding] = useState(false);
   const v = getDefaultVariant(item);
   const disc = v.mrp > 0 ? Math.round(((v.mrp - v.price) / v.mrp) * 100) : item.discount || 0;
@@ -493,9 +493,9 @@ export default function HomeScreen() {
 
   const [notifUnread, setNotifUnread] = useState(0);
 
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const cartAnim = useRef(new Animated.Value(0)).current;
-  const searchAnim = useRef(new Animated.Value(0)).current;
+  const [scrollY] = useState(() => new Animated.Value(0));
+  const [cartAnim] = useState(() => new Animated.Value(0));
+  const [searchAnim] = useState(() => new Animated.Value(0));
   const bannerRef = useRef<FlatList>(null);
 
   const total = items.reduce((acc, i) => acc + i.price * i.qty, 0);
@@ -545,7 +545,7 @@ export default function HomeScreen() {
       return () => {
         cancelled = true;
       };
-    }, [user?._id]),
+    }, [user]),
   );
 
   // Banner slides — use dynamic banners if available, else fallback banners
@@ -615,7 +615,7 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => { if (!authLoading) loadAll(); }, [authLoading]);
+  useEffect(() => { if (!authLoading) startTransition(() => { loadAll(); }); }, [authLoading]);
 
   const onRefresh = () => { if (refreshing) return; setRefreshing(true); void loadAll(); };
 
@@ -646,7 +646,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!campaignEndTs) {
-      setCampaignTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+      startTransition(() => { setCampaignTimeLeft({ d: 0, h: 0, m: 0, s: 0 }); });
       return;
     }
     const tick = () => {
@@ -700,6 +700,7 @@ export default function HomeScreen() {
       return;
     }
 
+    try {
     if (isListening) {
       ExpoSpeechRecognitionModule.stop();
       return;
@@ -729,6 +730,10 @@ export default function HomeScreen() {
       maxAlternatives: 1,
       iosTaskHint: "search",
     });
+    } catch {
+      setIsListening(false);
+      showAlert("Voice search", "Could not start voice search. Please type your search instead.");
+    }
   };
 
   return (

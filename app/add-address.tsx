@@ -1,3 +1,5 @@
+import { startTransition , useCallback, useEffect, useRef, useState } from "react";
+import Constants from "expo-constants";
 import { AppHeader } from "@/components/AppHeader";
 import { useAddress } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
@@ -7,7 +9,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -84,7 +85,7 @@ export default function AddAddressScreen() {
   const params = useLocalSearchParams();
   const isEditing = !!params.id;
 
-  const mapsSupported = Platform.OS !== "web";
+  const mapsSupported = Platform.OS === "ios" || (Platform.OS === "android" && Constants.expoConfig?.extra?.androidMapsConfigured === true);
   // Use the platform map provider: Apple Maps on iOS, Google Maps on Android.
   const useGoogleMapTiles = Platform.OS === "android";
 
@@ -183,8 +184,7 @@ export default function AddAddressScreen() {
 
   useEffect(() => {
     if (!mapModalVisible) {
-      setMapReady(false);
-      setMapPresented(false);
+      startTransition(() => { setMapReady(false); setMapPresented(false); });
     }
   }, [mapModalVisible]);
 

@@ -96,17 +96,13 @@ export const AddressProvider = ({
   useEffect(() => {
     if (user?._id) {
       loadAddresses();
-    } else {
-      setAddresses([]);
-      setDefaultAddressState(null);
-      setSelectedAddress(null);
     }
   }, [user]);
 
   /* ================= ADDRESS OPERATIONS ================= */
 
   // 📥 LOAD ADDRESSES FROM SERVER
-  const loadAddresses = async () => {
+  async function loadAddresses() {
     if (!user?._id) return;
 
     setLoading(true);
@@ -129,7 +125,7 @@ export const AddressProvider = ({
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   // ➕ ADD ADDRESS
   const addAddress = async (addressData: AddressInput): Promise<Address> => {

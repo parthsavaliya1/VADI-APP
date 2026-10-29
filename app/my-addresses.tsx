@@ -50,7 +50,7 @@ export default function MyAddressesScreen() {
     };
     void refresh();
     return () => { active = false; };
-  }, [user?._id]));
+  }, [user]));
 
   const loadAddresses = async () => {
     try {
