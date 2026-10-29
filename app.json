@@ -58,6 +58,14 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "VADI uses photos you select to upload product images.",
+          "cameraPermission": false,
+          "microphonePermission": "VADI uses the microphone only when you choose voice search. Your device speech provider may process audio to turn it into search text."
+        }
+      ],
+      [
         "expo-speech-recognition",
         {
           "microphonePermission": "VADI uses the microphone only when you choose voice search. Your device speech provider may process audio to turn it into search text.",
@@ -67,8 +75,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/vadi-brand-logo.png",
-          "color": "#ffffff",
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#276438",
           "defaultChannel": "default"
         }
       ],
@@ -124,6 +132,7 @@
     "updates": {
       "url": "https://u.expo.dev/f388db81-48ff-4df8-a155-1e55f92484c4"
     },
-    "owner": "vadi-app"
+    "owner": "vadi-app",
+    "backgroundColor": "#FFFFFF"
   }
 }
