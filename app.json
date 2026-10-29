@@ -115,8 +115,8 @@
         "messagingSenderId": "1082226902300",
         "appId": "1:1082226902300:android:3c4d7768e6eb4dcbc926d9"
       },
-      "privacyPolicyUrl": "https://vadi-backend.onrender.com/privacy-policy",
-      "accountDeletionUrl": "https://vadi-backend.onrender.com/account-deletion"
+      "privacyPolicyUrl": "https://vadindia.com/shop/privacy-policy",
+      "accountDeletionUrl": "https://vadindia.com/shop/delete-account"
     },
     "runtimeVersion": {
       "policy": "appVersion"
