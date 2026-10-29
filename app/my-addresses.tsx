@@ -1,3 +1,4 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { AppHeader } from "@/components/AppHeader";
 import { useAddress, type Address } from "@/context/AddressContext";
 import { useAuth } from "@/context/AuthContext";
@@ -7,7 +8,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -141,7 +141,7 @@ export default function MyAddressesScreen() {
           showCart={false}
         />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={C.primary} />
+          <AnimatedLoader size="large" color={C.primary} />
         </View>
       </SafeAreaView>
     );
@@ -271,7 +271,7 @@ export default function MyAddressesScreen() {
                     disabled={deleting === address._id}
                   >
                     {deleting === address._id ? (
-                      <ActivityIndicator size="small" color="#D32F2F" />
+                      <AnimatedLoader size="small" color="#D32F2F" />
                     ) : (
                       <>
                         <Ionicons

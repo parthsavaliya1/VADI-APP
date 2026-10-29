@@ -1,8 +1,8 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ActivityIndicator,
   Animated,
   FlatList,
   Image,
@@ -81,8 +81,6 @@ export default function AllProductsScreen() {
   // Animation refs
   const [searchFocusAnim] = useState(() => new Animated.Value(0));
   const [headerAnim] = useState(() => new Animated.Value(0));
-  const [logoRotate] = useState(() => new Animated.Value(0));
-  const [logoScale] = useState(() => new Animated.Value(1));
 
   async function loadProducts() {
     try {
@@ -135,42 +133,7 @@ export default function AllProductsScreen() {
     startTransition(() => { void loadProducts(); });
   }, [type, categoryId]);
 
-  useEffect(() => {
-    // Logo loading animation
-    if (loading) {
-      Animated.loop(
-        Animated.parallel([
-          Animated.sequence([
-            Animated.timing(logoRotate, {
-              toValue: 1,
-              duration: 2000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(logoRotate, {
-              toValue: 0,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.sequence([
-            Animated.timing(logoScale, {
-              toValue: 1.1,
-              duration: 1000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(logoScale, {
-              toValue: 1,
-              duration: 1000,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
-      ).start();
-    } else {
-      logoRotate.setValue(0);
-      logoScale.setValue(1);
-    }
-  }, [loading]);
+
 
   
 
@@ -363,7 +326,7 @@ export default function AllProductsScreen() {
                 disabled={isAdding || variant.stock === 0}
               >
                 {isAdding ? (
-                  <ActivityIndicator size="small" color={C.primary} />
+                  <AnimatedLoader size="small" color={C.primary} />
                 ) : inCart ? (
                   <Ionicons name="checkmark" size={15} color="#fff" />
                 ) : (
@@ -532,33 +495,7 @@ export default function AllProductsScreen() {
 
       {/* PRODUCTS LIST */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          {/* Replace with your logo image */}
-          <Animated.View
-            style={{
-              transform: [
-                {
-                  rotate: logoRotate.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ["0deg", "360deg"],
-                  }),
-                },
-                { scale: logoScale },
-              ],
-            }}
-          >
-            <Image
-              source={require("../assets/images/vadi-brand-logo.png")}
-              style={styles.loadingLogo}
-            />
-          </Animated.View>
-          <Text style={styles.loadingText}>Loading fresh products...</Text>
-          <ActivityIndicator
-            size="small"
-            color={C.primary}
-            style={{ marginTop: 8 }}
-          />
-        </View>
+        <AnimatedLoader fullScreen />
       ) : displayProducts.length > 0 ? (
         <FlatList
           data={displayProducts}
@@ -828,25 +765,6 @@ const styles = themed(() => StyleSheet.create({
   },
 
   /* PRODUCTS */
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  loadingLogo: {
-    width: 100,
-    height: 100,
-    resizeMode: "contain",
-  },
-
-  loadingText: {
-    marginTop: 20,
-    fontSize: 16,
-    fontWeight: "600",
-    color: C.primary,
-  },
-
   list: {
     padding: 16,
     paddingBottom: 24,

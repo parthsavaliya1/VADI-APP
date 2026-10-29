@@ -1,3 +1,4 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
@@ -6,7 +7,6 @@ import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -112,7 +112,7 @@ export default function SellerScreen() {
       <AppHeader title="Sell on VADI" showBack showCart={false} />
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={C.primary} size="large" />
+          <AnimatedLoader color={C.primary} size="large" />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -233,7 +233,7 @@ export default function SellerScreen() {
 
               <TouchableOpacity style={styles.btn} onPress={register} disabled={saving}>
                 {saving ? (
-                  <ActivityIndicator color="#fff" />
+                  <AnimatedLoader color="#fff" />
                 ) : (
                   <Text style={styles.btnText}>Request approval</Text>
                 )}

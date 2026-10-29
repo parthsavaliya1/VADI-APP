@@ -1,3 +1,4 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
@@ -9,7 +10,6 @@ import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
@@ -169,7 +169,7 @@ export default function SellerAddProductScreen() {
     <SafeAreaView style={styles.safe}>
       <AppHeader title={productId ? "Edit product" : "Add product"} showBack showCart={false} />
       {loadingProduct ? (
-        <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} />
+        <AnimatedLoader fullScreen />
       ) : (
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <TextInput style={styles.input} placeholder="Product name" value={name} onChangeText={setName} />
@@ -269,7 +269,7 @@ export default function SellerAddProductScreen() {
 
         <TouchableOpacity style={styles.btn} onPress={submit} disabled={saving}>
           {saving ? (
-            <ActivityIndicator color="#fff" />
+            <AnimatedLoader color="#fff" />
           ) : (
             <Text style={styles.btnText}>{productId ? "Save changes" : "Submit product"}</Text>
           )}

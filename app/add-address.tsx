@@ -1,3 +1,4 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useRef, useState } from "react";
 import Constants from "expo-constants";
 import { AppHeader } from "@/components/AppHeader";
@@ -10,7 +11,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Keyboard,
   Modal,
@@ -570,7 +570,7 @@ export default function AddAddressScreen() {
               >
                 <View style={styles.mapCardIconWrap}>
                   {geoLoading ? (
-                    <ActivityIndicator size="small" color={C.ink} />
+                    <AnimatedLoader size="small" color={C.ink} />
                   ) : (
                     <Ionicons name="map" size={26} color={C.ink} />
                   )}
@@ -600,7 +600,7 @@ export default function AddAddressScreen() {
 
           {mapsSupported && (
             <TouchableOpacity style={styles.currentLocationButton} onPress={useCurrentLocation} disabled={mapBusy} accessibilityRole="button">
-              {locating ? <ActivityIndicator size="small" color={C.primary} /> : <Ionicons name="locate-outline" size={20} color={C.primary} />}
+              {locating ? <AnimatedLoader size="small" color={C.primary} /> : <Ionicons name="locate-outline" size={20} color={C.primary} />}
               <Text style={styles.currentLocationText}>{locating ? "Finding your location..." : "Use current location"}</Text>
             </TouchableOpacity>
           )}
@@ -825,7 +825,7 @@ export default function AddAddressScreen() {
               <Ionicons name="search-outline" size={20} color={C.muted} />
               <TextInput style={styles.mapSearchInput} placeholder="Search area or street in Rajkot" placeholderTextColor={C.muted} value={mapQuery} onChangeText={(query) => { setMapQuery(query); setSearchResults([]); setMapError(""); }} onSubmitEditing={searchMapAddress} returnKeyType="search" editable={!mapBusy} accessibilityLabel="Search address in Rajkot" />
               <TouchableOpacity style={styles.mapSearchButton} onPress={searchMapAddress} disabled={!mapReady || mapBusy || mapQuery.trim().length < 3} accessibilityRole="button">
-                {searching ? <ActivityIndicator size="small" color={C.primary} /> : <Text style={styles.currentLocationText}>Search</Text>}
+                {searching ? <AnimatedLoader size="small" color={C.primary} /> : <Text style={styles.currentLocationText}>Search</Text>}
               </TouchableOpacity>
             </View>
             {searchResults.length > 0 && <View style={styles.mapSearchResults}>
@@ -836,7 +836,7 @@ export default function AddAddressScreen() {
               </TouchableOpacity>)}
             </View>}
             <TouchableOpacity style={styles.mapLocateButton} onPress={useCurrentLocation} disabled={mapBusy} accessibilityRole="button">
-              {locating ? <ActivityIndicator size="small" color={C.primary} /> : <Ionicons name="locate-outline" size={20} color={C.primary} />}
+              {locating ? <AnimatedLoader size="small" color={C.primary} /> : <Ionicons name="locate-outline" size={20} color={C.primary} />}
               <Text style={styles.currentLocationText}>{locating ? "Finding your location..." : "Use current location"}</Text>
             </TouchableOpacity>
             {!!mapError && <Text accessibilityRole="alert" style={{ color: "#B42318", paddingHorizontal: 20, paddingBottom: 12, lineHeight: 20 }}>{mapError}</Text>}
@@ -871,7 +871,7 @@ export default function AddAddressScreen() {
               </MapView>}
               {!mapReady && (
                 <View style={styles.mapLoadingOverlay}>
-                  <ActivityIndicator size="large" color={C.primary} />
+                  <AnimatedLoader size="large" color={C.primary} />
                 </View>
               )}
             </View>
@@ -886,7 +886,7 @@ export default function AddAddressScreen() {
                 disabled={!mapReady || mapBusy}
               >
                 {geoLoading ? (
-                  <ActivityIndicator color="#fff" />
+                  <AnimatedLoader color="#fff" />
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle" size={22} color="#fff" />

@@ -3,7 +3,7 @@ import { AddressProvider } from "@/context/AddressContext";
 import { CartProvider } from "@/context/CartContext";
 import { CustomAlertProvider } from "@/context/CustomAlertContext";
 import { OrderProvider } from "@/context/OrderContext";
-import { C } from "@/constants/theme";
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { getApiUrl, loadRemoteConfig } from "@/firebase";
 import { resolveStartupApiUrl, setBaseUrl } from "@/utils/api";
 import { loadAppTheme } from "@/utils/appTheme";
@@ -11,7 +11,7 @@ import { ensurePushChannel } from "@/utils/pushNotifications";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 import { RazorpayHost } from "@/components/RazorpayCheckout";
 import SeasonalAtmosphere from "@/components/SeasonalAtmosphere";
@@ -56,14 +56,9 @@ export default function RootLayout() {
   useEffect(() => {
     const init = async () => {
       try {
-        await Promise.race([
-          loadRemoteConfig(),
-          new Promise((resolve) => setTimeout(resolve, 3000)),
-        ]);
-
-        // Local dev override: set EXPO_PUBLIC_API_URL in vadi-app/.env.local (git-ignored).
-        const url = resolveStartupApiUrl(process.env.EXPO_PUBLIC_API_URL, getApiUrl());
-        console.log("🔥 Remote API URL:", url);
+        await loadRemoteConfig();
+        const url = resolveStartupApiUrl(getApiUrl(), process.env.EXPO_PUBLIC_API_URL, process.env.EXPO_PUBLIC_USE_LOCAL_API);
+        console.log("API URL:", url);
         setBaseUrl(url);
         await Promise.race([ensurePushChannel(), new Promise(resolve => setTimeout(resolve, 3000))]);
       } catch (err) {
@@ -82,8 +77,8 @@ export default function RootLayout() {
 
   if (!isReady) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color={C.primary} />
+      <View style={{ flex: 1, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center" }}>
+        <AnimatedLoader size="large" />
       </View>
     );
   }

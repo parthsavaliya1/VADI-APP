@@ -1,6 +1,6 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { useState } from "react";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -133,7 +133,7 @@ export default function DriverLoginScreen() {
                   disabled={loading}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#fff" />
+                    <AnimatedLoader color="#fff" />
                   ) : (
                     <Text style={styles.ctaText}>Send OTP</Text>
                   )}
@@ -157,7 +157,7 @@ export default function DriverLoginScreen() {
                   disabled={loading}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#fff" />
+                    <AnimatedLoader color="#fff" />
                   ) : (
                     <Text style={styles.ctaText}>Verify and continue</Text>
                   )}

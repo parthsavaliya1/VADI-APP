@@ -1,3 +1,4 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
@@ -6,7 +7,6 @@ import { openWalletTopup } from "@/utils/razorpay";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-  ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
@@ -87,7 +87,7 @@ export default function WalletScreen() {
       <AppHeader title="Wallet" showBack showCart={false} />
 
       {loading ? (
-        <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} />
+        <AnimatedLoader fullScreen />
       ) : (
         <FlatList
           data={history}

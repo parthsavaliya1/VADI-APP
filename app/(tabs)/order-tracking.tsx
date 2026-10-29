@@ -1,8 +1,8 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import React, { useCallback, useEffect, useState } from "react";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import {
-  ActivityIndicator,
   Animated,
   Dimensions,
   Easing,
@@ -633,7 +633,7 @@ export default function OrderTrackingScreen() {
             }}
           >
             {invoiceBusy ? (
-              <ActivityIndicator color={C.ink} size="small" />
+              <AnimatedLoader color={C.ink} size="small" />
             ) : (
               <Ionicons name="document-text-outline" size={20} color={C.ink} />
             )}
@@ -659,7 +659,7 @@ export default function OrderTrackingScreen() {
 
         {orderLoading && params.orderId && effectiveUserId ? (
           <View style={styles.handoverLoading}>
-            <ActivityIndicator color={C.primary} />
+            <AnimatedLoader color={C.primary} />
             <Text style={styles.handoverLoadingText}>Updating order…</Text>
           </View>
         ) : null}

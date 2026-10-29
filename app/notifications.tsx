@@ -1,7 +1,8 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { ActivityIndicator, Image, Modal, RefreshControl, SectionList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, Modal, RefreshControl, SectionList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
@@ -148,7 +149,7 @@ export default function NotificationsScreen() {
       <AppHeader title="Notifications" subtitle={selectMode ? selectedIds.length + " selected" : undefined} showBack right={
         <View style={s.headerActions}>
           {!selectMode && <TouchableOpacity style={[s.headerAction, (busy || loading || !unreadCount) && s.disabled]} onPress={markAllRead} disabled={busy || loading || !unreadCount} accessibilityRole="button" accessibilityLabel="Mark all notifications as read">
-            {markingAll ? <ActivityIndicator size="small" color={C.primary} /> : <Ionicons name="checkmark-done-outline" size={22} color={C.primary} />}
+            {markingAll ? <AnimatedLoader size="small" color={C.primary} /> : <Ionicons name="checkmark-done-outline" size={22} color={C.primary} />}
           </TouchableOpacity>}
           <TouchableOpacity style={[s.headerAction, (busy || loading || !items.length) && s.disabled]} onPress={selectMode ? exitSelection : openDeleteMenu} disabled={busy || loading || !items.length} accessibilityRole="button" accessibilityLabel={selectMode ? "Cancel selection" : "Delete notifications"}>
             <Ionicons name={selectMode ? "close" : "trash-outline"} size={21} color={selectMode ? C.ink : "#B33F40"} />
@@ -156,7 +157,7 @@ export default function NotificationsScreen() {
         </View>
       } />
       {!!error && <View style={s.errorBanner}><Text style={s.errorText} accessibilityRole="alert">{error}</Text><TouchableOpacity onPress={() => { setRefreshing(true); void load(); }} disabled={busy} style={s.retry}><Text style={s.readAllText}>Retry</Text></TouchableOpacity></View>}
-      {loading ? <View style={s.loader}><ActivityIndicator size="large" color={C.primary} /></View> : (
+      {loading ? <View style={s.loader}><AnimatedLoader size="large" color={C.primary} /></View> : (
         <SectionList
           sections={sections}
           keyExtractor={(item) => item._id}
@@ -199,7 +200,7 @@ export default function NotificationsScreen() {
           <Text style={s.readAllText}>{selectedIds.length === items.length ? "Deselect all" : "Select all"}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.deleteButton, (!selectedIds.length || busy) && s.disabled]} disabled={!selectedIds.length || busy} onPress={() => confirmDelete(selectedIds)} accessibilityRole="button">
-          {deleting ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Ionicons name="trash-outline" size={18} color="#FFFFFF" />}
+          {deleting ? <AnimatedLoader color="#FFFFFF" size="small" /> : <Ionicons name="trash-outline" size={18} color="#FFFFFF" />}
           <Text style={s.deleteText}>{deleting ? "Deleting…" : "Delete (" + selectedIds.length + ")"}</Text>
         </TouchableOpacity>
       </View>}

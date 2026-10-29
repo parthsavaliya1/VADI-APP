@@ -1,5 +1,6 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput } from "react-native";
+import { Pressable, ScrollView, Text, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { AppHeader } from "@/components/AppHeader";
@@ -35,7 +36,7 @@ export default function ReviewLogin() {
       <Pressable onPress={() => setAccepted(!accepted)} disabled={busy} accessibilityRole="checkbox" accessibilityState={{ checked: accepted }}><Text style={{ color: C.ink }}>{accepted ? "☑" : "☐"} I have read and accept the privacy policy.</Text></Pressable>
       <Pressable onPress={() => router.push("/privacy-policy")}><Text style={{ color: C.primary }}>Read privacy policy</Text></Pressable>
       {!!error && <Text accessibilityRole="alert" style={{ color: "#b91c1c" }}>{error}</Text>}
-      <Pressable disabled={busy || !accepted || !login.trim() || !password} onPress={() => void signIn()} style={{ padding: 16, borderRadius: 10, backgroundColor: C.primary, opacity: !accepted || busy ? 0.5 : 1 }}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Sign in without OTP</Text>}</Pressable>
+      <Pressable disabled={busy || !accepted || !login.trim() || !password} onPress={() => void signIn()} style={{ padding: 16, borderRadius: 10, backgroundColor: C.primary, opacity: !accepted || busy ? 0.5 : 1 }}>{busy ? <AnimatedLoader color="#fff" /> : <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Sign in without OTP</Text>}</Pressable>
     </ScrollView>
   </SafeAreaView>;
 }

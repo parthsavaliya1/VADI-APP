@@ -1,6 +1,6 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -131,7 +131,7 @@ export default function DriverConfirmHandoverScreen() {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <AnimatedLoader color="#fff" />
               ) : (
                 <Text style={styles.ctaText}>Verify code</Text>
               )}

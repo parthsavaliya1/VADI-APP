@@ -1,8 +1,8 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   RefreshControl,
   Image,
@@ -122,7 +122,7 @@ export default function CategoriesScreen() {
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <AppHeader title="Categories" showCart />
       {loading ? (
-        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={C.primary} /></View>
+        <View style={styles.loadingContainer}><AnimatedLoader size="large" color={C.primary} /></View>
       ) : (
         <FlatList
           data={filteredCategories}

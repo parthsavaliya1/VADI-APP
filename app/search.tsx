@@ -1,8 +1,8 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   ScrollView,
@@ -154,7 +154,7 @@ export default function SearchScreen() {
       </ScrollView>
 
       {loading ? (
-        <ActivityIndicator color={C.primary} style={{ marginTop: 32 }} />
+        <AnimatedLoader fullScreen />
       ) : (
         <FlatList
           data={products}

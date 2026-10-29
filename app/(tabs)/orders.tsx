@@ -1,6 +1,6 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Dimensions,
   Easing,
@@ -528,7 +528,7 @@ function OrderCard({
                 disabled={invoiceBusy}
               >
                 {invoiceBusy ? (
-                  <ActivityIndicator color="#fff" />
+                  <AnimatedLoader color="#fff" />
                 ) : (
                   <>
                     <Ionicons name="download-outline" size={18} color="#fff" />
@@ -724,7 +724,7 @@ export default function OrdersScreen() {
         <AppHeader title="Orders" showCart />
         <View style={styles.centered}>
           <View style={styles.loadingSpinnerWrap}>
-            <ActivityIndicator size="large" color={C.primary} />
+            <AnimatedLoader size="large" color={C.primary} />
           </View>
           <Text style={styles.loadingTitle}>Fetching orders</Text>
           <Text style={styles.loadingSubtitle}>Just a moment…</Text>
@@ -1109,10 +1109,9 @@ const styles = themed(() => StyleSheet.create({
   // Empty / Loading
   centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
   loadingSpinnerWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: C.soft,
+    width: 128,
+    height: 128,
+    borderRadius: 64,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,

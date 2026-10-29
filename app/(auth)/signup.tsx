@@ -1,9 +1,9 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Image,
   Keyboard,
@@ -290,7 +290,7 @@ export default function EnhancedSignupScreen() {
                       style={styles.continueButton}
                     >
                       {loading ? (
-                        <ActivityIndicator color="#fff" size="small" />
+                        <AnimatedLoader color="#fff" size="small" />
                       ) : (
                         <>
                           <Text style={styles.continueText}>Continue</Text>

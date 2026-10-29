@@ -1,9 +1,9 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/context/CustomAlertContext";
 import { router, useFocusEffect, useGlobalSearchParams, useLocalSearchParams } from "expo-router";
 import {
-  ActivityIndicator,
   Animated,
   Dimensions,
   Image,
@@ -259,20 +259,15 @@ export default function ProductDetailScreen() {
     return () => scrollY.removeListener(listener);
   }, []);
 
-  const loadSimilarProducts = async () => {
-    try {
-      setSimilarLoading(true);
-      const res = await API.get(`/products/${id}/similar`);
-      setSimilarProducts(res.data.data || []);
-    } catch (error) {
-      console.error("Failed to load similar products", error);
-    } finally {
-      setSimilarLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (id) startTransition(() => { loadSimilarProducts(); });
+    let alive = true;
+    startTransition(() => { setSimilarProducts([]); setSimilarLoading(Boolean(id)); });
+    if (!id) return;
+    API.get(`/products/${id}/similar`)
+      .then((res) => { if (alive) setSimilarProducts(res.data.data || []); })
+      .catch((error) => { if (alive) console.error("Failed to load similar products", error); })
+      .finally(() => { if (alive) setSimilarLoading(false); });
+    return () => { alive = false; };
   }, [id]);
 
   useEffect(() => {
@@ -284,8 +279,7 @@ export default function ProductDetailScreen() {
 
   useEffect(() => {
     let alive = true;
-    setRecentLoading(true);
-    setRecentProducts([]);
+    startTransition(() => { setRecentLoading(true); setRecentProducts([]); });
     (async () => {
       const ids = (await readRecentIds()).filter((item) => item !== id).slice(0, 8);
       if (!ids.length) {
@@ -653,7 +647,7 @@ export default function ProductDetailScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={C.primary} />
+          <AnimatedLoader size="large" color={C.primary} />
           <Text style={styles.loadingText}>Loading product...</Text>
         </View>
       </SafeAreaView>
@@ -1227,13 +1221,10 @@ export default function ProductDetailScreen() {
             <View style={styles.similarSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>You may also like</Text>
-                <TouchableOpacity>
-                  <Text style={styles.seeAll}>See all</Text>
-                </TouchableOpacity>
               </View>
 
               {similarLoading ? (
-                <ActivityIndicator color={C.primary} />
+                <AnimatedLoader color={C.primary} />
               ) : (
                 <ScrollView
                   horizontal
@@ -1241,9 +1232,8 @@ export default function ProductDetailScreen() {
                   contentContainerStyle={styles.similarScrollContent}
                 >
                   {recommendations.map((item) => {
-                    const variant =
-                      item.variants.find((v) => v.isDefault) ||
-                      item.variants[0];
+                    const activeVariants = item.variants.filter((variant) => variant.isActive !== false);
+                    const variant = activeVariants.find((variant) => variant.isDefault) || activeVariants[0];
                     const itemDiscount =
                       variant.mrp > variant.price
                         ? Math.round(
@@ -1437,7 +1427,7 @@ export default function ProductDetailScreen() {
                 </View>
 
                 {reviewsLoading ? (
-                  <ActivityIndicator
+                  <AnimatedLoader
                     color={C.primary}
                     style={{ marginTop: 20 }}
                   />
@@ -1761,7 +1751,7 @@ export default function ProductDetailScreen() {
                 }
               >
                 {submittingReview ? (
-                  <ActivityIndicator color="#fff" />
+                  <AnimatedLoader color="#fff" />
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle" size={20} color="#fff" />

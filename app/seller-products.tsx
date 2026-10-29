@@ -1,3 +1,4 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
@@ -5,7 +6,7 @@ import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { C, themed } from "@/constants/theme";
 
@@ -46,7 +47,7 @@ export default function SellerProductsScreen() {
         }
       />
       {loading ? (
-        <ActivityIndicator color={C.primary} style={{ marginTop: 40 }} />
+        <AnimatedLoader fullScreen />
       ) : (
         <FlatList
           data={products}

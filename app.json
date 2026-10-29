@@ -76,10 +76,11 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/vadi-brand-logo.png",
-          "imageWidth": 140,
+          "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#FFFFFF",
           "dark": {
+            "image": "./assets/images/vadi-brand-logo.png",
             "backgroundColor": "#FFFFFF"
           }
         }

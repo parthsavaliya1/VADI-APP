@@ -1,9 +1,9 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/context/CustomAlertContext";
 import { router, useFocusEffect } from "expo-router";
 import {
-  ActivityIndicator,
   Animated,
   BackHandler,
   Dimensions,
@@ -414,7 +414,7 @@ function ProductCard({
             activeOpacity={0.8}
           >
             {isAdding ? (
-              <ActivityIndicator size="small" color={C.primary} />
+              <AnimatedLoader size="small" color={C.primary} />
             ) : inCart ? (
               <Ionicons name="checkmark" size={15} color="#fff" />
             ) : (
@@ -671,7 +671,7 @@ export default function HomeScreen() {
   }, []);
 
   if (authLoading) {
-    return <View style={s.loadingScreen}><ActivityIndicator size="large" color={C.primary} /></View>;
+    return <View style={s.loadingScreen}><AnimatedLoader size="large" color={C.primary} /></View>;
   }
 
   const trendingProducts = (() => {

@@ -1,9 +1,9 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ActivityIndicator,
   Image,
   Linking,
   Modal,
@@ -253,7 +253,7 @@ export default function AboutScreen() {
                   style={[styles.modalDelete, busy && { opacity: 0.7 }]}
                 >
                   {busy ? (
-                    <ActivityIndicator color="#fff" size="small" />
+                    <AnimatedLoader color="#fff" size="small" />
                   ) : (
                     <Text style={styles.modalDeleteText}>Delete</Text>
                   )}

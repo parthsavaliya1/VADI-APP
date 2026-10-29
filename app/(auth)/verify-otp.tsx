@@ -1,9 +1,9 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Image,
   Keyboard,
@@ -295,7 +295,7 @@ export default function VerifyOtpScreen() {
                     ]}
                   >
                     {resendBusy ? (
-                      <ActivityIndicator size="small" color="#3A8A3A" />
+                      <AnimatedLoader size="small" color="#3A8A3A" />
                     ) : (
                       <Text
                         style={[
@@ -326,7 +326,7 @@ export default function VerifyOtpScreen() {
                     style={styles.continueButton}
                   >
                     {loading ? (
-                      <ActivityIndicator color="#fff" size="small" />
+                      <AnimatedLoader color="#fff" size="small" />
                     ) : (
                       <>
                         <Text style={styles.continueText}>Verify & Continue</Text>

@@ -1,7 +1,8 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { Ionicons } from "@expo/vector-icons";
 import { router , useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/components/AppHeader";
 import { C } from "@/constants/theme";
@@ -47,7 +48,7 @@ export default function WishlistScreen() {
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <AppHeader title="Wishlist" showBack />
       {loading ? (
-        <ActivityIndicator color={C.primary} style={{ marginTop: 32 }} />
+        <AnimatedLoader fullScreen />
       ) : (
         <FlatList
           data={products}

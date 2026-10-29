@@ -1,5 +1,6 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { Redirect, Stack } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
 import Toast from "react-native-toast-message";
 import { useAuth } from "../../context/AuthContext";
 import { C } from "@/constants/theme";
@@ -11,7 +12,7 @@ export default function AuthLayout() {
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: C.page }}>
-        <ActivityIndicator size="large" color={C.primary} />
+        <AnimatedLoader size="large" color={C.primary} />
       </View>
     );
   }

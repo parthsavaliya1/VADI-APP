@@ -1,3 +1,4 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
 import { showAlert } from "@/context/CustomAlertContext";
@@ -5,7 +6,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
   StyleSheet,
   Text,
   TextInput,
@@ -47,7 +47,7 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>Phone</Text>
         <TextInput style={[styles.input, styles.locked]} value={user?.phone || ""} editable={false} />
         <TouchableOpacity style={styles.btn} onPress={save} disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Save</Text>}
+          {saving ? <AnimatedLoader color="#fff" /> : <Text style={styles.btnText}>Save</Text>}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

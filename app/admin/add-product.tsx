@@ -1,3 +1,4 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { API } from "@/utils/api";
 import { showAlert } from "@/context/CustomAlertContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -5,7 +6,6 @@ import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Image,
   KeyboardAvoidingView,
@@ -451,7 +451,7 @@ export default function AddProductScreen() {
               <View style={styles.pickerWrapper}>
                 {loadingCategories ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator color={C.primary} size="small" />
+                    <AnimatedLoader color={C.primary} size="small" />
                     <Text style={styles.loadingText}>
                       Loading categories...
                     </Text>
@@ -661,7 +661,7 @@ export default function AddProductScreen() {
             >
               {loading ? (
                 <View style={styles.loadingRow}>
-                  <ActivityIndicator color="#fff" size="small" />
+                  <AnimatedLoader color="#fff" size="small" />
                   <Text style={styles.saveBtnText}>ADDING...</Text>
                 </View>
               ) : (

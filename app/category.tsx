@@ -1,8 +1,8 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
@@ -149,7 +149,7 @@ export default function CategoryScreen() {
       {/* PRODUCTS */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={C.primary} />
+          <AnimatedLoader size="large" color={C.primary} />
         </View>
       ) : filteredProducts.length > 0 ? (
         <FlatList

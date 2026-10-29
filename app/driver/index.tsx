@@ -1,5 +1,6 @@
+import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -33,7 +34,7 @@ export default function DriverHomeScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={C.primary} />
+          <AnimatedLoader size="large" color={C.primary} />
         </View>
       </SafeAreaView>
     );
