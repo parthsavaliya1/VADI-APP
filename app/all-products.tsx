@@ -318,6 +318,7 @@ export default function AllProductsScreen() {
               </View>
 
               <TouchableOpacity
+                hitSlop={{ top: 7, bottom: 7, left: 0, right: 0 }}
                 style={[
                   styles.addBtn,
                   inCart && styles.addBtnActive,
@@ -332,7 +333,7 @@ export default function AllProductsScreen() {
                 disabled={isAdding || variant.stock === 0}
               >
                 {isAdding ? (
-                  <AnimatedLoader size="small" color={C.primary} />
+                  <AnimatedLoader size={20} color={C.primary} />
                 ) : inCart ? (
                   <Ionicons name="checkmark" size={15} color="#fff" />
                 ) : (
@@ -798,7 +799,7 @@ const styles = themed(() => StyleSheet.create({
 
   imageWrapper: {
     backgroundColor: C.page,
-    height: 110,
+    height: 104,
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
@@ -840,14 +841,14 @@ const styles = themed(() => StyleSheet.create({
     fontWeight: "600",
     color: C.ink,
     paddingHorizontal: 10,
-    paddingTop: 8,
+    paddingTop: 6,
   },
 
   unit: {
     fontSize: 10,
     color: C.muted,
     marginTop: 2,
-    marginBottom: 8,
+    marginBottom: 4,
     fontWeight: "500",
     paddingHorizontal: 10,
   },
@@ -857,7 +858,7 @@ const styles = themed(() => StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 10,
-    paddingBottom: 10,
+    paddingBottom: 8,
   },
 
   priceColumn: {
@@ -881,11 +882,11 @@ const styles = themed(() => StyleSheet.create({
   addBtn: {
     borderWidth: 1.5,
     borderColor: C.primary,
-    borderRadius: 10,
-    minWidth: 52,
-    minHeight: 44,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 44,
+    minHeight: 30,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,

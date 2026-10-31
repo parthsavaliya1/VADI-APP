@@ -190,6 +190,7 @@ export default function CategoryScreen() {
                     </Text>
                     <TouchableOpacity
                       style={styles.addBtn}
+                      hitSlop={{ top: 7, bottom: 7, left: 0, right: 0 }}
                       onPress={() => handleAddToCart(item)}
                     >
                       <Text style={styles.addText}>ADD</Text>
@@ -298,7 +299,7 @@ const styles = themed(() => StyleSheet.create({
     elevation: 2,
   },
   imageWrap: {
-    height: 120,
+    height: 104,
     width: "100%",
     backgroundColor: C.soft,
   },
@@ -319,20 +320,24 @@ const styles = themed(() => StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
     color: C.primary,
-    marginTop: 4,
+    marginTop: 2,
   },
   unit: {
     fontSize: 12,
     color: C.muted,
-    marginTop: 4,
+    marginTop: 2,
   },
   addBtn: {
-    marginTop: 8,
+    marginTop: 6,
+    minWidth: 44,
+    minHeight: 30,
+    alignItems: "center",
+    justifyContent: "center",
     alignSelf: "flex-start",
     backgroundColor: C.primary,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
   addText: {
     color: "#fff",

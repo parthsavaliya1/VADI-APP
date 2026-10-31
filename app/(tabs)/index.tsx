@@ -335,7 +335,7 @@ function DealCard({
             <Text style={s.dealPrice}>₹{v.price.toFixed(2)}</Text>
             {disc > 0 && <StruckPrice style={s.strikePrice}>₹{v.mrp.toFixed(2)}</StruckPrice>}
           </View>
-          <TouchableOpacity style={[s.addBtn, inCart && s.addBtnActive]} hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }} accessibilityLabel={inCart ? `${item.name} added to cart` : `Add ${item.name} to cart`} onPress={(e) => { e.stopPropagation(); if (!inCart) onAdd(); }} activeOpacity={0.8}>
+          <TouchableOpacity style={[s.addBtn, inCart && s.addBtnActive]} hitSlop={{ top: 7, bottom: 7, left: 0, right: 0 }} accessibilityLabel={inCart ? `${item.name} added to cart` : `Add ${item.name} to cart`} onPress={(e) => { e.stopPropagation(); if (!inCart) onAdd(); }} activeOpacity={0.8}>
             {inCart ? <Ionicons name="checkmark" size={16} color="#fff" /> : <Text style={s.addBtnText}>ADD</Text>}
           </TouchableOpacity>
         </View>
@@ -368,6 +368,7 @@ function FeaturedCard({ item, onAdd, inCart }: { item: Product; onAdd: () => voi
           <Text style={[s.featPrice, stackActions && { flex: 0 }]}>₹{v.price.toFixed(2)}</Text>
           <TouchableOpacity
             style={[s.addBtn, s.featAddButton, inCart && s.addBtnActive]}
+            hitSlop={{ top: 7, bottom: 7, left: 0, right: 0 }}
             accessibilityRole="button"
             accessibilityLabel={inCart ? "View " + item.name + " in cart" : "Add " + item.name + " to cart"}
             onPress={(event) => { event.stopPropagation(); if (inCart) router.push("/cart"); else onAdd(); }}
@@ -423,14 +424,14 @@ function ProductCard({
             {disc > 0 && <StruckPrice style={s.strikePrice}>₹{v.mrp.toFixed(2)}</StruckPrice>}
           </View>
           <TouchableOpacity
-            hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }} accessibilityLabel={inCart ? `${item.name} added to cart` : `Add ${item.name} to cart`}
+            hitSlop={{ top: 7, bottom: 7, left: 0, right: 0 }} accessibilityLabel={inCart ? `${item.name} added to cart` : `Add ${item.name} to cart`}
             style={[s.addBtn, inCart && s.addBtnActive, isAdding && { opacity: 0.6 }]}
             onPress={(e) => { e.stopPropagation(); if (!inCart) handleAdd(); }}
             disabled={isAdding}
             activeOpacity={0.8}
           >
             {isAdding ? (
-              <AnimatedLoader size="small" color={C.primary} />
+              <AnimatedLoader size={20} color={C.primary} />
             ) : inCart ? (
               <Ionicons name="checkmark" size={15} color="#fff" />
             ) : (
@@ -1226,8 +1227,8 @@ const s = themed(() => StyleSheet.create({
   dealBadge: { position: "absolute", top: 6, right: 6, backgroundColor: C.badge, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, zIndex: 10, elevation: 5 },
   badgeTxt: { color: C.badgeText, fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
   dealImg: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", resizeMode: "contain" },
-  dealInfo: { flex: 1, paddingHorizontal: 12, paddingVertical: 14, justifyContent: "center" },
-  dealName: { fontSize: 11, fontWeight: "800", color: C.ink, marginBottom: 7, lineHeight: 15 },
+  dealInfo: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, justifyContent: "center" },
+  dealName: { fontSize: 11, fontWeight: "800", color: C.ink, marginBottom: 4, lineHeight: 15 },
   dealUnit: { fontSize: 10, color: C.muted, fontWeight: "600", marginBottom: 4 },
   dealCardTimer: { fontSize: 10, fontWeight: "800", color: "#DC2626", marginBottom: 6 },
   dealFooter: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },
@@ -1255,16 +1256,16 @@ const s = themed(() => StyleSheet.create({
     shadowColor: C.ink, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
     borderWidth: 1, borderColor: C.line, overflow: "hidden",
   },
-  prodImgZone: { backgroundColor: C.card, height: 120, justifyContent: "center", alignItems: "center", position: "relative" },
+  prodImgZone: { backgroundColor: C.card, height: 104, justifyContent: "center", alignItems: "center", position: "relative" },
   prodImg: { width: "100%", height: "100%", resizeMode: "contain" },
   trendBadge: { position: "absolute", top: 8, left: 8, backgroundColor: C.badge, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   offBadge: { position: "absolute", top: 8, right: 8, backgroundColor: C.badge, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   prodBadgeTxt: { color: C.badgeText, fontSize: 8, fontWeight: "800", letterSpacing: 0.3 },
-  prodName: { fontSize: 12, fontWeight: "700", color: C.ink, paddingHorizontal: 10, paddingTop: 8, lineHeight: 16 },
-  prodUnit: { fontSize: 10, color: C.muted, fontWeight: "600", marginTop: 2, marginBottom: 8, paddingHorizontal: 10 },
-  prodFooter: { gap: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10, paddingBottom: 10 },
+  prodName: { fontSize: 12, fontWeight: "700", color: C.ink, paddingHorizontal: 10, paddingTop: 6, lineHeight: 16 },
+  prodUnit: { fontSize: 10, color: C.muted, fontWeight: "600", marginTop: 2, marginBottom: 4, paddingHorizontal: 10 },
+  prodFooter: { gap: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10, paddingBottom: 8 },
   prodPrice: { fontSize: 13, fontWeight: "800", color: C.primary },
-  addBtn: { borderWidth: 1.5, borderColor: C.primary, borderRadius: 8, minWidth: 44, minHeight: 44, paddingHorizontal: 10, paddingVertical: 8, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  addBtn: { borderWidth: 1.5, borderColor: C.primary, borderRadius: 8, minWidth: 44, minHeight: 30, paddingHorizontal: 8, paddingVertical: 3, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   addBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
   addBtnText: { color: C.primary, fontWeight: "800", fontSize: 10 },
 
@@ -1275,19 +1276,19 @@ const s = themed(() => StyleSheet.create({
     borderWidth: 1, borderColor: C.line, overflow: "hidden",
   },
   featCardPressed: { opacity: 0.92, transform: [{ scale: 0.98 }] },
-  featImgZone: { height: 112, backgroundColor: C.card, alignItems: "center", justifyContent: "center", position: "relative" },
+  featImgZone: { height: 104, backgroundColor: C.card, alignItems: "center", justifyContent: "center", position: "relative" },
   carouselContent: { paddingHorizontal: 16, paddingVertical: 4, gap: 12 },
   trendingCard: { borderRadius: 16, elevation: 0, shadowOpacity: 0 },
-  trendingImgZone: { height: 104 },
+  trendingImgZone: { height: 96 },
   featImg: { width: "100%", height: "100%", resizeMode: "contain" },
   cardFooterStacked: { flexDirection: "column", alignItems: "stretch", gap: 8 },
-  featContent: { flex: 1, padding: 12, gap: 12 },
-  featDetails: { gap: 4 },
+  featContent: { flex: 1, padding: 10, gap: 6 },
+  featDetails: { gap: 2 },
   featName: { fontSize: 12, fontWeight: "700", color: C.ink, lineHeight: 16 },
   featUnit: { fontSize: 10, lineHeight: 14, color: C.muted, fontWeight: "600" },
   featFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: "auto" },
   featPrice: { fontSize: 13, fontWeight: "800", color: C.primary, flex: 1, minWidth: 0 },
-  featAddButton: { minWidth: 52, borderRadius: 10 },
+  featAddButton: { minWidth: 44, borderRadius: 8 },
   featAddBtn: { backgroundColor: C.primary, width: 28, height: 28, borderRadius: 8, flexShrink: 0, justifyContent: "center", alignItems: "center" },
 
   // FRESH STRIP

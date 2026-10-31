@@ -1,8 +1,7 @@
 import { AnimatedLoader } from "@/components/AnimatedLoader";
-import { startTransition , useEffect, useRef, useState } from "react";
+import { startTransition , useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
-  Dimensions,
   Easing,
   FlatList,
   Image,
@@ -18,7 +17,7 @@ import {
   UIManager,
   View,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useOrders } from "../../context/OrderContext";
@@ -33,8 +32,6 @@ import { C, themed } from "@/constants/theme";
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
 }
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,8 +125,8 @@ const getStatusConfig = (status: string) => {
 const getFilterValue = (status: string) => {
   const n = status.toLowerCase().replace(/[-\s]+/g, "_");
   if (n.includes("cancel") || n.includes("return")) return "cancelled";
-  if (n.includes("deliver") || n.includes("complete")) return "delivered";
   if (n === "shipped" || n === "out_for_delivery") return "shipped";
+  if (n.includes("deliver") || n.includes("complete")) return "delivered";
   return "processing";
 };
 
@@ -262,7 +259,7 @@ function OrderCard({
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim, index]);
 
   const toggleExpand = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -293,8 +290,8 @@ function OrderCard({
       <View style={styles.cardTop}>
         <View style={styles.cardTopLeft}>
           <View style={[styles.statusDot, { backgroundColor: statusConfig.dot }]} />
-          <View>
-            <Text style={styles.orderNumber}>#{item.orderNumber}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.orderNumber} numberOfLines={1}>#{item.orderNumber}</Text>
             <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
           </View>
         </View>
@@ -314,7 +311,7 @@ function OrderCard({
               key={`${oi.variantId}-${i}`}
               style={[styles.imageBox, { marginLeft: i > 0 ? -10 : 0, zIndex: previewItems.length - i }]}
             >
-              <Image source={{ uri: oi.image }} style={styles.itemThumb} resizeMode="cover" />
+              <OrderProductImage item={oi} detail={false} />
             </View>
           ))}
           {extraCount > 0 && (
@@ -378,7 +375,7 @@ function OrderCard({
           <Text style={styles.sectionLabel}>Items in this order</Text>
           {item.items.map((p, i) => (
             <View key={`${p.variantId}-${i}-d`} style={styles.detailItem}>
-              <Image source={{ uri: p.image }} style={styles.detailItemImg} resizeMode="cover" />
+              <OrderProductImage item={p} detail />
               <View style={styles.detailItemInfo}>
                 <Text style={styles.detailItemName} numberOfLines={2}>{p.productName}</Text>
                 <Text style={styles.detailItemMeta}>
@@ -550,7 +547,7 @@ function OrderCard({
                   Request {item.returnRequest.status}
                   {item.returnRequest.refundedTo === "wallet"
                     ? ` · ₹${item.returnRequest.refundAmount || 0} refunded to wallet`
-                    : ""}
+                    : item.returnRequest.refundedTo === "original" ? ` · ₹${item.returnRequest.refundAmount || 0} refunded to the original payment` : ""}
                 </Text>
               ) : (
                 <>
@@ -594,7 +591,9 @@ function OrderCard({
                       </View>
                     );
                   })}
+                  <Text style={styles.addressLine}>Choose Refund or Replace for each item. Approved online refunds return to your original payment method. Collected COD and VADI balance refunds go to your VADI wallet. Delivery charges are not refundable. Replacements do not receive a refund.</Text>
                   <TextInput
+                    maxLength={1000}
                     value={returnReason}
                     onChangeText={setReturnReason}
                     placeholder="What went wrong? Returns are accepted within 24 hours."
@@ -610,9 +609,13 @@ function OrderCard({
                   />
                   <TouchableOpacity
                     style={styles.invoiceDownloadBtn}
-                    disabled={returnBusy}
+                    disabled={returnBusy || !Object.keys(selectedReturns).length || returnReason.trim().length < 5}
                     onPress={() => {
                       void (async () => {
+                        if (!Object.keys(selectedReturns).length || returnReason.trim().length < 5) {
+                          showAlert("Return request", "Choose at least one item and describe the issue in at least 5 characters.");
+                          return;
+                        }
                         setReturnBusy(true);
                         try {
                           await API.post(`/orders/${item._id}/return`, {
@@ -648,6 +651,14 @@ function OrderCard({
   );
 }
 
+function OrderProductImage({ item, detail }: { item: OrderItem; detail: boolean }) {
+  const uri = item.image || item.product?.image;
+  const imageStyle = detail ? styles.detailItemImg : styles.itemThumb;
+  return uri
+    ? <Image source={{ uri }} style={imageStyle} resizeMode="cover" />
+    : <View style={[imageStyle, { alignItems: "center", justifyContent: "center", backgroundColor: C.soft }]}><Ionicons name="leaf-outline" size={detail ? 22 : 26} color={C.primary} /></View>;
+}
+
 function PriceRow({
   label,
   value,
@@ -675,9 +686,9 @@ export default function OrdersScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const listRef = useRef<FlatList<Order> | null>(null);
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  useFocusEffect(useCallback(() => {
+    void fetchOrders();
+  }, [fetchOrders]));
 
   const onRefresh = async () => {
     if (refreshing) return;
@@ -921,18 +932,20 @@ const styles = themed(() => StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  cardTopLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
+  cardTopLeft: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8, marginRight: 8 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   orderNumber: { fontSize: 14, fontWeight: "800", color: C.ink },
   orderDate: { fontSize: 11, color: C.muted, marginTop: 1 },
   statusBadge: {
+    maxWidth: "54%",
+    flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 20,
     paddingHorizontal: 9,
     paddingVertical: 5,
   },
-  statusBadgeText: { fontSize: 11, fontWeight: "700" },
+  statusBadgeText: { fontSize: 11, fontWeight: "700", flexShrink: 1 },
 
   // Card Mid
   cardMid: {

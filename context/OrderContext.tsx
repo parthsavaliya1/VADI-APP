@@ -1,6 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
 import { API } from "@/utils/api";
-import { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useState } from "react";
 
 /* ================= TYPES ================= */
 type OrderAddress = {
@@ -51,21 +51,19 @@ const OrderContext = createContext<OrderContextType | null>(null);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const userId = user?._id;
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
 
   /* ================= FETCH ORDERS ================= */
 
-  const fetchOrders = async () => {
-    if (!user?._id) return;
+  const fetchOrders = useCallback(async () => {
+    if (!userId) return;
 
     try {
       setLoading(true);
-      const res = await API.get("/orders", {
-        params: { userId: user._id },
-      });
-
+      const res = await API.get("/orders", { params: { userId } });
       if (res.data?.success) {
         setOrders(res.data.data || []);
       } else {
@@ -76,7 +74,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   /* ================= PLACE ORDER ================= */
 
