@@ -1,14 +1,13 @@
+import { ProductCard } from "@/components/ProductCard";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   FlatList,
-  Image,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -76,7 +75,7 @@ const getDefaultVariant = (product: Product): ProductVariant => {
 export default function CategoryScreen() {
   const params = useLocalSearchParams();
   const { categoryId, title } = params;
-  const { addToCart } = useCart();
+  const { addToCart, items: cartItems } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,44 +160,15 @@ export default function CategoryScreen() {
           renderItem={({ item }) => {
             const variant = getDefaultVariant(item);
 
-            return (
-              <View style={styles.card}>
-                <TouchableOpacity
-                  onPress={() =>
-                    router.push({
-                      pathname: "/product-detail",
-                      params: { id: item._id },
-                    })
-                  }
-                >
-                  <View style={styles.imageWrap}>
-                    <Image
-                      source={{
-                        uri: item.image || "https://via.placeholder.com/150",
-                      }}
-                      style={styles.image}
-                    />
-                  </View>
-                  <View style={styles.cardBody}>
-                    <Text numberOfLines={1} style={styles.name}>
-                      {item.name}
-                    </Text>
-                    <Text style={styles.price}>₹{variant.price}</Text>
-                    <Text style={styles.unit} numberOfLines={1}>
-                      {variant.packSize}
-                      {variant.packUnit}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.addBtn}
-                      hitSlop={{ top: 7, bottom: 7, left: 0, right: 0 }}
-                      onPress={() => handleAddToCart(item)}
-                    >
-                      <Text style={styles.addText}>ADD</Text>
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            );
+            if (!variant) return null;
+            const inCart = cartItems.some((line) => line.productId === item._id && line.variantId === variant._id);
+            return <ProductCard
+              item={item}
+              inCart={inCart}
+              disabled={variant.stock <= 0}
+              onAdd={() => handleAddToCart(item)}
+              onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
+            />;
           }}
         />
       ) : (
@@ -258,7 +228,7 @@ const styles = themed(() => StyleSheet.create({
     paddingLeft: 14,
     paddingRight: 10,
     height: 42,
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: C.line,
@@ -276,73 +246,14 @@ const styles = themed(() => StyleSheet.create({
     alignItems: "center",
   },
   list: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 24,
   },
   row: {
     justifyContent: "space-between",
-    gap: 12,
-  },
-  card: {
-    backgroundColor: C.card,
-    borderRadius: 20,
-    flex: 1,
+    gap: 10,
     marginBottom: 12,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: C.line,
-    shadowColor: C.ink,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  imageWrap: {
-    height: 104,
-    width: "100%",
-    backgroundColor: C.soft,
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  cardBody: {
-    padding: 10,
-  },
-  name: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: C.ink,
-  },
-  price: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: C.primary,
-    marginTop: 2,
-  },
-  unit: {
-    fontSize: 12,
-    color: C.muted,
-    marginTop: 2,
-  },
-  addBtn: {
-    marginTop: 6,
-    minWidth: 44,
-    minHeight: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "flex-start",
-    backgroundColor: C.primary,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  addText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 12,
   },
   emptyState: {
     flex: 1,

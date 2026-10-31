@@ -41,9 +41,20 @@ function PushOpenListener() {
       try {
         const Notifications = await import("expo-notifications");
         if (!alive) return;
-        sub = Notifications.addNotificationResponseReceivedListener(() => {
-          router.push("/notifications");
-        });
+        let lastId = "";
+        const open = (response: import("expo-notifications").NotificationResponse | null) => {
+          if (!alive || !response) return;
+          const id = response.notification.request.identifier;
+          if (lastId === id) return;
+          lastId = id;
+          const data = response.notification.request.content.data;
+          if (data?.type === "search" && typeof data.searchQuery === "string" && data.searchQuery.trim()) {
+            router.push({ pathname: "/search", params: { q: data.searchQuery.slice(0, 100) } });
+          } else router.push("/notifications");
+          void Notifications.clearLastNotificationResponseAsync();
+        };
+        sub = Notifications.addNotificationResponseReceivedListener(open);
+        open(await Notifications.getLastNotificationResponseAsync());
       } catch {
         // Expo Go on Android does not support remote push.
       }

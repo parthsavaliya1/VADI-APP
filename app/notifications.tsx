@@ -11,7 +11,7 @@ import { API } from "@/utils/api";
 import { C, themed } from "@/constants/theme";
 import { notificationAppearance, notificationDay, notificationTime } from "@/utils/notificationPresentation";
 
-type Notice = { _id: string; title: string; body: string; imageUrl?: string; createdAt: string; read: boolean };
+type Notice = { _id: string; title: string; body: string; imageUrl?: string; searchQuery?: string; createdAt: string; read: boolean };
 
 export default function NotificationsScreen() {
   const { user, isLoggedIn } = useAuth();
@@ -173,7 +173,7 @@ export default function NotificationsScreen() {
           renderItem={({ item }) => {
             const appearance = notificationAppearance(item.title);
             const isGeneralUpdate = appearance.label === "VADI update";
-            return <TouchableOpacity style={[s.card, !item.read && s.unreadCard, selectedIds.includes(item._id) && s.selectedCard]} activeOpacity={item.read ? 1 : 0.75} onPress={() => { if (selectMode) toggleSelected(item._id); else if (!item.read) void markRead(item._id); }} onLongPress={() => toggleSelected(item._id)} delayLongPress={350} accessibilityRole="button" accessibilityLabel={`${item.read ? "Read" : "Unread"}: ${item.title}. ${item.body}`} accessibilityState={{ selected: selectedIds.includes(item._id) }} accessibilityHint={selectMode ? "Select for deletion" : "Tap to mark as read. Long press to select for deletion"}>
+            return <TouchableOpacity style={[s.card, !item.read && s.unreadCard, selectedIds.includes(item._id) && s.selectedCard]} activeOpacity={item.read ? 1 : 0.75} onPress={() => { if (selectMode) toggleSelected(item._id); else { if (!item.read) void markRead(item._id); if (item.searchQuery) router.push({ pathname: "/search", params: { q: item.searchQuery } }); } }} onLongPress={() => toggleSelected(item._id)} delayLongPress={350} accessibilityRole="button" accessibilityLabel={`${item.read ? "Read" : "Unread"}: ${item.title}. ${item.body}`} accessibilityState={{ selected: selectedIds.includes(item._id) }} accessibilityHint={selectMode ? "Select for deletion" : "Tap to mark as read. Long press to select for deletion"}>
               {item.imageUrl && !selectMode ? <TouchableOpacity style={s.thumbnailWrap} accessibilityRole="button" accessibilityLabel="View notification image" onPress={(event) => { event.stopPropagation(); setPreviewImage(item.imageUrl!); if (!item.read) void markRead(item._id); }} onLongPress={() => toggleSelected(item._id)} delayLongPress={350}>
                 <Image source={{ uri: item.imageUrl }} style={s.thumbnail} resizeMode="contain" />
               </TouchableOpacity> : <View style={[s.icon, { backgroundColor: isGeneralUpdate ? C.page : appearance.background }]}><Ionicons name={selectMode ? (selectedIds.includes(item._id) ? "checkmark-circle" : "ellipse-outline") : isGeneralUpdate ? "notifications-outline" : appearance.icon} size={19} color={selectMode ? C.primary : isGeneralUpdate ? C.muted : appearance.color} /></View>}

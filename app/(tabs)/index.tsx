@@ -1,3 +1,4 @@
+import { ProductCard } from "@/components/ProductCard";
 import { StruckPrice } from "@/components/StruckPrice";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useRef, useState } from "react";
@@ -14,7 +15,6 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -383,67 +383,6 @@ function FeaturedCard({ item, onAdd, inCart }: { item: Product; onAdd: () => voi
 }
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
-function ProductCard({
-  item, onAdd, inCart, onPress, showTrendingBadge = false, compact = false,
-}: {
-  item: Product; onAdd: () => void; inCart: boolean; onPress: () => void; showTrendingBadge?: boolean; compact?: boolean;
-}) {
-  const { width, fontScale } = useWindowDimensions();
-  const { gridCardWidth: CARD_WIDTH, trendingCardWidth: TRENDING_CARD_W, stackActions } = getProductLayout(width, fontScale);
-  const [scale] = useState(() => new Animated.Value(1));
-  const [isAdding, setIsAdding] = useState(false);
-  const v = getDefaultVariant(item);
-  const disc = v.mrp > 0 ? Math.round(((v.mrp - v.price) / v.mrp) * 100) : item.discount || 0;
-
-  const handleAdd = () => {
-    setIsAdding(true);
-    Animated.sequence([
-      Animated.timing(scale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, tension: 120, friction: 4, useNativeDriver: true }),
-    ]).start(() => setIsAdding(false));
-    onAdd();
-  };
-
-  return (
-    <Animated.View style={[s.prodCard, compact && s.trendingCard, { transform: [{ scale }], width: compact ? TRENDING_CARD_W : CARD_WIDTH }]}>
-      <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={{ flex: 1 }}>
-        <View style={[s.prodImgZone, compact && s.trendingImgZone]}>
-          <Image source={{ uri: item.image || "https://via.placeholder.com/150" }} style={s.prodImg} />
-          {showTrendingBadge && (
-            <View style={s.trendBadge}><Ionicons name="trending-up" size={14} color={C.badgeText} /></View>
-          )}
-          {disc > 0 && (
-            <View style={s.offBadge}><Text style={s.prodBadgeTxt}>{disc}% OFF</Text></View>
-          )}
-        </View>
-        <Text style={s.prodName}>{item.name}</Text>
-        <Text style={s.prodUnit}>{v.packSize}{v.packUnit}</Text>
-        <View style={[s.prodFooter, stackActions && s.cardFooterStacked]}>
-          <View style={{ flex: stackActions ? 0 : 1, minWidth: 0, marginRight: 6 }}>
-            <Text style={s.prodPrice}>₹{v.price.toFixed(2)}</Text>
-            {disc > 0 && <StruckPrice style={s.strikePrice}>₹{v.mrp.toFixed(2)}</StruckPrice>}
-          </View>
-          <TouchableOpacity
-            hitSlop={{ top: 7, bottom: 7, left: 0, right: 0 }} accessibilityLabel={inCart ? `${item.name} added to cart` : `Add ${item.name} to cart`}
-            style={[s.addBtn, inCart && s.addBtnActive, isAdding && { opacity: 0.6 }]}
-            onPress={(e) => { e.stopPropagation(); if (!inCart) handleAdd(); }}
-            disabled={isAdding}
-            activeOpacity={0.8}
-          >
-            {isAdding ? (
-              <AnimatedLoader size={20} color={C.primary} />
-            ) : inCart ? (
-              <Ionicons name="checkmark" size={15} color="#fff" />
-            ) : (
-              <Text style={s.addBtnText}>ADD</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}
-
 // ─── Empty Category ───────────────────────────────────────────────────────────
 function EmptyCategoryState({ categoryName, onClear }: { categoryName: string; onClear: () => void }) {
   return (
@@ -525,8 +464,7 @@ export default function HomeScreen() {
   useSpeechRecognitionEvent("result", (event) => {
     const transcript = event.results?.[0]?.transcript?.trim();
     if (!transcript) return;
-    setSearchQuery(transcript);
-    setSelectedCatId(null);
+    if (event.isFinal) router.push({ pathname: "/search", params: { q: transcript } });
   });
   useSpeechRecognitionEvent("error", (event) => {
     setIsListening(false);
@@ -811,20 +749,14 @@ export default function HomeScreen() {
 
         {/* ── SEARCH ─────────────────────────────────────────────────────── */}
         <Animated.View style={[s.searchBox, { transform: [{ scale: searchScale }] }]}>
-          <Ionicons name="search" size={16} color={C.muted} style={{ marginLeft: 2, marginRight: 8 }} />
-          <TextInput
-            placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-            placeholderTextColor={C.muted}
-            style={s.searchInput}
-            value={searchQuery}
-            onChangeText={(t) => { setSearchQuery(t); setSelectedCatId(null); }}
-            onFocus={() => Animated.spring(searchAnim, { toValue: 1, useNativeDriver: true }).start()}
-            onBlur={() => Animated.spring(searchAnim, { toValue: 0, useNativeDriver: true }).start()}
-            returnKeyType="search"
-            onSubmitEditing={() =>
-              router.push({ pathname: "/search", params: { q: searchQuery.trim() } })
-            }
-          />
+          <TouchableOpacity
+            style={{ flex: 1, flexDirection: "row", alignItems: "center", minHeight: 42 }}
+            accessibilityRole="button" accessibilityLabel="Search products and view recent searches"
+            onPress={() => router.push("/search")}
+          >
+            <Ionicons name="search" size={16} color={C.muted} style={{ marginLeft: 2, marginRight: 8 }} />
+            <Text style={[s.searchInput, { color: C.muted }]}>{SEARCH_PLACEHOLDERS[placeholderIndex]}</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={[s.voicePill, isListening && s.voicePillActive]}
             onPress={handleVoiceSearch}
@@ -923,7 +855,14 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     style={[s.catCard, selected && s.catCardSelected]}
                     activeOpacity={0.75}
-                    onPress={() => { setSelectedCatId(item._id); setSearchQuery(""); }}
+                    onPress={() => router.push({
+                      pathname: "/category",
+                      params: {
+                        categoryId: item._id,
+                        categorySlug: item.slug,
+                        title: item.name,
+                      },
+                    })}
                   >
                     <View style={[s.catIconWrap, { backgroundColor: item.image ? C.card : qa.bg }]}>
                       {item.image
