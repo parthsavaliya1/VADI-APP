@@ -1,3 +1,5 @@
+import { isRunningInExpoGo } from "expo";
+import { getAddressCapabilities } from "@/utils/addressCapabilities";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useRef, useState } from "react";
 import Constants from "expo-constants";
@@ -85,7 +87,7 @@ export default function AddAddressScreen() {
   const params = useLocalSearchParams();
   const isEditing = !!params.id;
 
-  const mapsSupported = Platform.OS === "ios" || (Platform.OS === "android" && Constants.expoConfig?.extra?.androidMapsConfigured === true);
+  const { maps: mapsSupported, location: locationSupported } = getAddressCapabilities(Platform.OS, isRunningInExpoGo(), Constants.expoConfig?.extra?.androidMapsConfigured === true);
   // Use the platform map provider: Apple Maps on iOS, Google Maps on Android.
   const useGoogleMapTiles = Platform.OS === "android";
 
@@ -190,7 +192,7 @@ export default function AddAddressScreen() {
 
   const openMapPicker = useCallback(() => {
     if (!mapsSupported) {
-      showAlert("Maps", "Choose your delivery location in the iOS or Android app.");
+      showAlert("Map unavailable", locationSupported ? "The map is unavailable in this version of the app. You can use current location or enter your address below." : "Choose your delivery location in the iOS or Android app.");
       return;
     }
     Keyboard.dismiss();
@@ -200,7 +202,7 @@ export default function AddAddressScreen() {
     setMapError("");
     setMapReady(false);
     setMapModalVisible(true);
-  }, [mapsSupported, mapCoords]);
+  }, [mapsSupported, locationSupported, mapCoords]);
 
   const closeMapPicker = () => {
     mapOperation.current += 1;
@@ -233,7 +235,17 @@ export default function AddAddressScreen() {
     setMapError("");
     try {
       const result = await currentRajkotLocation();
-      if (operation === mapOperation.current) selectSearchResult(result);
+      if (operation !== mapOperation.current) return;
+      if (mapsSupported) {
+        selectSearchResult(result);
+      } else {
+        // GPS and verified address autofill work even when native map tiles are unavailable.
+        applyGeocodeToForm(result.address, setAddressLine1, setAddressLine2, setPincode);
+        setPincode(result.pincode);
+        setMapCoords({ latitude: result.latitude, longitude: result.longitude });
+        setMapPin({ latitude: result.latitude, longitude: result.longitude });
+        showAlert("Location selected", "Your current location has been added. Check the house number and address before saving.");
+      }
     } catch (error) {
       if (operation !== mapOperation.current) return;
       const message = error instanceof Error ? error.message : "Could not get your current location. Search for your address instead.";
@@ -462,7 +474,7 @@ export default function AddAddressScreen() {
           showCart={false}
         />
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           {/* ADDRESS TYPE */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Address Type</Text>
@@ -505,7 +517,7 @@ export default function AddAddressScreen() {
             <Text style={styles.label}>Display Name (Optional)</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="pricetag-outline" size={20} color={C.muted} />
-              <TextInput
+              <TextInput placeholderTextColor={C.muted}
                 style={styles.input}
                 placeholder="e.g., My Home, Office, etc."
                 value={name}
@@ -522,7 +534,7 @@ export default function AddAddressScreen() {
             </Text>
             <View style={styles.inputContainer}>
               <Ionicons name="call-outline" size={20} color={C.muted} />
-              <TextInput
+              <TextInput placeholderTextColor={C.muted}
                 editable={!isEditing}
                 style={styles.input}
                 placeholder="10-digit phone number"
@@ -555,7 +567,7 @@ export default function AddAddressScreen() {
               </View>
             )}
 
-          {mapsSupported && (
+          {locationSupported && (
             <TouchableOpacity
               onPress={openMapPicker}
               disabled={mapBusy}
@@ -587,8 +599,7 @@ export default function AddAddressScreen() {
                   </View>
                   <Text style={styles.mapCardTitle}>Choose location on map</Text>
                   <Text style={styles.mapCardSubtitle}>
-                    Map opens centred on Rajkot. Confirm your pin to save — we only deliver inside
-                    the city boundary.
+                    {mapsSupported ? "Map opens centred on Rajkot. Confirm your pin to save — we only deliver inside the city boundary." : "Map unavailable. Use current location or enter your address below."}
                   </Text>
                 </View>
                 <View style={styles.mapCardArrow}>
@@ -598,7 +609,7 @@ export default function AddAddressScreen() {
             </TouchableOpacity>
           )}
 
-          {mapsSupported && (
+          {locationSupported && (
             <TouchableOpacity style={styles.currentLocationButton} onPress={useCurrentLocation} disabled={mapBusy} accessibilityRole="button">
               {locating ? <AnimatedLoader size="small" color={C.primary} /> : <Ionicons name="locate-outline" size={20} color={C.primary} />}
               <Text style={styles.currentLocationText}>{locating ? "Finding your location..." : "Use current location"}</Text>
@@ -631,7 +642,7 @@ export default function AddAddressScreen() {
                 color={C.muted}
                 style={styles.textAreaIcon}
               />
-              <TextInput
+              <TextInput placeholderTextColor={C.muted}
                 style={[styles.input, styles.textArea]}
                 placeholder="House No., Building Name, Street"
                 value={addressLine1}
@@ -664,7 +675,7 @@ export default function AddAddressScreen() {
             </View>
             <View style={styles.inputContainer}>
               <Ionicons name="location-outline" size={20} color={C.muted} />
-              <TextInput
+              <TextInput placeholderTextColor={C.muted}
                 style={styles.input}
                 placeholder="Area, Colony, Sector"
                 value={addressLine2}
@@ -678,7 +689,7 @@ export default function AddAddressScreen() {
             <Text style={styles.label}>Landmark (Optional)</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="navigate-outline" size={20} color={C.muted} />
-              <TextInput
+              <TextInput placeholderTextColor={C.muted}
                 style={styles.input}
                 placeholder="Nearby landmark"
                 value={landmark}
@@ -694,7 +705,7 @@ export default function AddAddressScreen() {
             </Text>
             <View style={styles.inputContainer}>
               <Ionicons name="business-outline" size={20} color={C.muted} />
-              <TextInput
+              <TextInput placeholderTextColor={C.muted}
                 style={styles.input}
                 placeholder={DELIVERY_CITY}
                 value={city}
@@ -712,7 +723,7 @@ export default function AddAddressScreen() {
               </Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="map-outline" size={20} color={C.muted} />
-                <TextInput
+                <TextInput placeholderTextColor={C.muted}
                   style={styles.input}
                   placeholder="State"
                   value={state}
@@ -728,7 +739,7 @@ export default function AddAddressScreen() {
               </Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="pin-outline" size={20} color={C.muted} />
-                <TextInput
+                <TextInput placeholderTextColor={C.muted}
                   style={styles.input}
                   placeholder="360001–360007"
                   value={pincode}
@@ -993,9 +1004,12 @@ const styles = themed(() => StyleSheet.create({
     fontSize: 15,
     color: C.ink,
     marginLeft: 10,
+    minWidth: 0,
+    minHeight: 24,
+    paddingVertical: 4,
   },
   textArea: {
-    height: 60,
+    minHeight: 60,
     textAlignVertical: "top",
   },
   row: {

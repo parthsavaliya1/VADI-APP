@@ -2,7 +2,7 @@ import * as Location from "expo-location";
 import { Platform } from "react-native";
 import { DELIVERY_PIN_HELP_MESSAGE, isDeliveryAllowedPin, isGujaratState, isInRajkotBounds } from "./deliveryZone";
 
-export type AddressMapResult = { latitude: number; longitude: number; label: string; pincode: string };
+export type AddressMapResult = { latitude: number; longitude: number; label: string; pincode: string; address: Location.LocationGeocodedAddress };
 
 function withTimeout<T>(request: Promise<T>, timeoutMs: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout>;
@@ -24,7 +24,7 @@ async function resolveResult(coords: { latitude: number; longitude: number }, ap
   const pincode = address.postalCode?.replace(/\D/g, "") || "";
   if (!isDeliveryAllowedPin(pincode) || (address.region && !isGujaratState(address.region))) return null;
   const label = address.formattedAddress || [...new Set([address.name, address.street, address.district, "Rajkot", pincode].filter(Boolean))].join(", ");
-  return { latitude: coords.latitude, longitude: coords.longitude, label, pincode };
+  return { latitude: coords.latitude, longitude: coords.longitude, label, pincode, address };
 }
 
 /** Called only on a deliberate tap; opening the map itself never requests GPS. */

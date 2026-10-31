@@ -37,7 +37,7 @@ type AuthContextType = {
     phone: string,
     mode: "login" | "signup",
     options?: { forceResend?: boolean },
-  ) => Promise<{ demoLoggedIn?: boolean }>;
+  ) => Promise<void>;
   acceptSession: (user: User, token: string) => Promise<void>;
   verifyOtpAndLogin: (phone: string, otp: string, privacyPolicyAccepted?: boolean) => Promise<void>;
   verifyOtpAndSignup: (
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         mode,
         ...(options?.forceResend ? { forceResend: true } : {}),
       });
-      return {};
+      return;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || "Failed to send OTP");
     }

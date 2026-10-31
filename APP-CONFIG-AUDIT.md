@@ -46,3 +46,13 @@ Final cleanup prompt: Keep the V and single-leaf proportions; remove speckles, d
 Exact final ImageGen cleanup prompt:
 
 > Technical cleanup of the edit target. Keep the white V with its single leaf and overall proportions. Reconstruct it as a perfectly smooth, clean, flat white icon silhouette suitable for a tiny Android notification icon. Remove absolutely every speckle, scratch, stray pixel, distressed edge, and random fragment inside and outside the main silhouette. The only transparent internal feature is one simple smooth curved leaf vein. White shape fill must be solid pure #FFFFFF, no texture or shading. All edges should be clean smooth vector-like curves and straight edges. Genuinely transparent canvas. No lettering, no shadow, no border. Square canvas, generous clear padding. The result should look like a precision drawn flat icon, not a traced noisy photo.
+
+## APK build fix — Razorpay namespace collision
+
+Failed EAS preview build: 824fa85d-dc14-4c45-a79a-b54e55a02c14. Its Run gradlew logs identify standard-core 1.7.1 and core 1.0.1 as sharing com.razorpay, rejected by Android Gradle Plugin 9. This is distinct from the Gradle deprecation warning.
+
+Added plugins/withRazorpaySdk.js to app.json. Its generated root Gradle rule selects com.razorpay:standard-core:1.7.18 wherever the installed React Native wrapper requests its older Android SDK. The SDK's own POM selects core 1.0.18. No SDK classes are excluded and namespace validation stays enabled.
+
+Verified the official Maven AAR manifests: standard-core 1.7.18 declares com.razorpay.checkout.lib; core 1.0.18 declares com.razorpay. Checked the classes and API symbols used by the React Native wrapper, including Checkout.handleActivityResult, Checkout.RZP_REQUEST_CODE and PaymentData.getData. Expo prebuild succeeds and emits the persistent Gradle rule. Three regeneration/idempotence tests pass.
+
+A full native build has not been repeated locally because the Android SDK is not installed. Rebuild with: eas build -p android --profile preview. Once installed, test payment success, cancellation and error handling with Razorpay test credentials before releasing.

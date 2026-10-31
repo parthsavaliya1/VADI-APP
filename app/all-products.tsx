@@ -1,9 +1,11 @@
+import { StruckPrice } from "@/components/StruckPrice";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   Animated,
+  useWindowDimensions,
   FlatList,
   Image,
   StyleSheet,
@@ -17,6 +19,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { useCart } from "../context/CartContext";
 import { API } from "../utils/api";
 import { C, themed } from "@/constants/theme";
+import { getProductLayout } from "@/utils/productLayout";
 
 type ProductVariant = {
   _id: string;
@@ -68,6 +71,8 @@ const getDefaultVariant = (product: Product): ProductVariant => {
 };
 
 export default function AllProductsScreen() {
+  const { width, fontScale } = useWindowDimensions();
+  const { columns, gridCardWidth, stackActions } = getProductLayout(width, fontScale);
   const params = useLocalSearchParams();
   const { type, title, categoryId } = params;
   const { items, addToCart } = useCart();
@@ -257,6 +262,7 @@ export default function AllProductsScreen() {
       <Animated.View
         style={[
           styles.card,
+          { width: gridCardWidth },
           {
             opacity: fadeAnim,
             transform: [{ scale: scaleAnim }],
@@ -292,7 +298,7 @@ export default function AllProductsScreen() {
           </View>
 
           <View>
-            <Text numberOfLines={2} style={styles.name}>
+            <Text style={styles.name}>
               {item.name}
             </Text>
 
@@ -301,13 +307,13 @@ export default function AllProductsScreen() {
               {variant.packUnit}
             </Text>
 
-            <View style={styles.footerRow}>
-              <View style={styles.priceColumn}>
+            <View style={[styles.footerRow, stackActions && { flexDirection: "column", alignItems: "stretch", gap: 8 }]}>
+              <View style={[styles.priceColumn, stackActions && { flex: 0 }]}>
                 <Text style={styles.price}>₹{variant.price.toFixed(2)}</Text>
                 {discount > 0 && (
-                  <Text style={styles.originalPriceSmall}>
+                  <StruckPrice style={styles.originalPriceSmall}>
                     ₹{variant.mrp.toFixed(2)}
-                  </Text>
+                  </StruckPrice>
                 )}
               </View>
 
@@ -499,9 +505,10 @@ export default function AllProductsScreen() {
       ) : displayProducts.length > 0 ? (
         <FlatList
           data={displayProducts}
-          numColumns={2}
+          key={columns}
+          numColumns={columns}
           keyExtractor={(item) => item._id}
-          columnWrapperStyle={styles.row}
+          columnWrapperStyle={columns > 1 ? styles.row : undefined}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           renderItem={({ item, index }) => (
@@ -626,7 +633,7 @@ const styles = themed(() => StyleSheet.create({
     borderRadius: 12,
     paddingLeft: 14,
     paddingRight: 10,
-    height: 42,
+    minHeight: 42,
     marginHorizontal: 16,
     marginTop: 14,
     marginBottom: 12,
@@ -646,7 +653,7 @@ const styles = themed(() => StyleSheet.create({
     color: C.ink,
     fontWeight: "500",
     paddingVertical: 0,
-    height: 42,
+    minHeight: 42,
   },
 
   /* FILTER BAR */
@@ -778,7 +785,6 @@ const styles = themed(() => StyleSheet.create({
   card: {
     backgroundColor: C.card,
     borderRadius: 16,
-    width: "48%",
     marginBottom: 12,
     elevation: 2,
     shadowColor: "#000",
@@ -830,16 +836,15 @@ const styles = themed(() => StyleSheet.create({
   },
 
   name: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: C.ink,
-    minHeight: 34,
     paddingHorizontal: 10,
     paddingTop: 8,
   },
 
   unit: {
-    fontSize: 11,
+    fontSize: 10,
     color: C.muted,
     marginTop: 2,
     marginBottom: 8,
@@ -861,7 +866,7 @@ const styles = themed(() => StyleSheet.create({
   },
 
   price: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "800",
     color: C.primary,
   },
@@ -877,8 +882,10 @@ const styles = themed(() => StyleSheet.create({
     borderWidth: 1.5,
     borderColor: C.primary,
     borderRadius: 10,
-    width: 52,
-    height: 32,
+    minWidth: 52,
+    minHeight: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -901,7 +908,7 @@ const styles = themed(() => StyleSheet.create({
   addText: {
     color: C.primary,
     fontWeight: "800",
-    fontSize: 11,
+    fontSize: 10,
   },
 
   addTextDisabled: {

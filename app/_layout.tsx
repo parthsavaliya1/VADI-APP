@@ -10,11 +10,15 @@ import { loadAppTheme } from "@/utils/appTheme";
 import { ensurePushChannel } from "@/utils/pushNotifications";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 import { RazorpayHost } from "@/components/RazorpayCheckout";
 import SeasonalAtmosphere from "@/components/SeasonalAtmosphere";
+
+// Keep the configured native logo visible until startup content is laid out.
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 function AccountProviders({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -59,7 +63,8 @@ export default function RootLayout() {
         await loadRemoteConfig();
         const url = resolveStartupApiUrl(getApiUrl(), process.env.EXPO_PUBLIC_API_URL, process.env.EXPO_PUBLIC_USE_LOCAL_API);
         console.log("API URL:", url);
-        setBaseUrl(url);
+        setBaseUrl("http://192.168.1.8:5000");
+        // setBaseUrl(url);
         await Promise.race([ensurePushChannel(), new Promise(resolve => setTimeout(resolve, 3000))]);
       } catch (err) {
         console.warn("⚠️ Remote Config failed, using default BASE_URL:", err);
@@ -84,7 +89,7 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View key="ready-app" style={{ flex: 1 }} onLayout={() => SplashScreen.hide()}>
     <AuthProvider>
       <CustomAlertProvider>
         <AccountProviders>

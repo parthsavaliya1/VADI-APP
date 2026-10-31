@@ -6,6 +6,7 @@ import { router, useFocusEffect, useGlobalSearchParams, useLocalSearchParams } f
 import {
   Animated,
   Dimensions,
+  useWindowDimensions,
   Image,
   Linking,
   Modal,
@@ -18,7 +19,6 @@ import {
 } from "react-native";
 import {
   SafeAreaView,
-  useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
@@ -167,8 +167,8 @@ export default function ProductDetailScreen() {
   const id = pickRouteId(localParams) ?? pickRouteId(globalParams);
   const { items, addToCart, updateQty, getCartItemCount } = useCart();
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
-  const HEADER_HEIGHT = insets.top + 60;
+  const { width: viewportWidth, fontScale } = useWindowDimensions();
+  const [footerHeight, setFooterHeight] = useState(120);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -707,33 +707,19 @@ export default function ProductDetailScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
-      {/* Animated Header */}
-      <Animated.View
-        style={[
-          styles.header,
-          {
-            height: HEADER_HEIGHT,
-            paddingTop: insets.top,
-            backgroundColor: headerOpacity.interpolate({
-              inputRange: [0, 1],
-              outputRange: ["rgba(255,255,255,0)", "rgba(255,255,255,1)"],
-            }),
-          },
-        ]}
-      >
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      {/* The safe area and toolbar each occupy their own space above the gallery. */}
+      <View style={[styles.header, { minHeight: Math.max(60, 24 * fontScale + 16) }]}>
         <TouchableOpacity
           style={styles.headerButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
           onPress={() => router.back()}
         >
           <Ionicons name="arrow-back" size={22} color={C.ink} />
         </TouchableOpacity>
 
-        <View style={styles.headerCenter}>
-          <Image
-            source={require("../assets/images/vadi-brand-logo.png")}
-            style={styles.headerLogo}
-          />
+        <View style={styles.headerCenter} pointerEvents="none">
           <Animated.Text
             style={[styles.headerTitle, { opacity: headerOpacity }]}
             numberOfLines={1}
@@ -743,11 +729,13 @@ export default function ProductDetailScreen() {
         </View>
 
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerButton} onPress={toggleSaved} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.headerButton} onPress={toggleSaved} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={saved ? "Remove from wishlist" : "Add to wishlist"}>
             <Ionicons name={saved ? "heart" : "heart-outline"} size={20} color={saved ? "#E11D48" : C.ink} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerButton}
+            accessibilityRole="button"
+            accessibilityLabel="Share on WhatsApp"
             onPress={handleWhatsAppShare}
             activeOpacity={0.8}
           >
@@ -756,6 +744,8 @@ export default function ProductDetailScreen() {
 
           <TouchableOpacity
             style={styles.headerButton}
+            accessibilityRole="button"
+            accessibilityLabel="Open cart"
             onPress={() => router.push("/cart")}
           >
             <Ionicons name="cart-outline" size={22} color={C.ink} />
@@ -766,16 +756,16 @@ export default function ProductDetailScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </Animated.View>
+      </View>
 
       <Animated.ScrollView
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false },
         )}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingTop: insets.top }}
       >
         {/* ─── Image Carousel ─── */}
         <View
@@ -1572,12 +1562,12 @@ export default function ProductDetailScreen() {
             )}
           </View>
 
-          <View style={{ height: 120 }} />
+          <View style={{ height: footerHeight + 16 }} />
         </View>
       </Animated.ScrollView>
 
       {/* ─── Sticky Footer ─── */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, (fontScale >= 1.5 || viewportWidth < 320) && { flexDirection: "column" }]} onLayout={event => { const next = Math.ceil(event.nativeEvent.layout.height); setFooterHeight(previous => previous === next ? previous : next); }}>
         {!cartItem ? (
           <Animated.View
             style={[
@@ -1801,16 +1791,14 @@ const styles = themed(() => StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingBottom: 12,
-    paddingTop: 20,
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
+    minHeight: 60,
+    paddingVertical: 8,
+    flexShrink: 0,
+    backgroundColor: C.page,
   },
 
   headerButton: {
+    flexShrink: 0,
     width: 36,
     height: 36,
     borderRadius: 12,
@@ -1825,23 +1813,20 @@ const styles = themed(() => StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: C.ink,
-    marginHorizontal: 8,
+    marginLeft: 8,
   },
   headerCenter: {
     flex: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 8,
   },
   headerActions: {
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-  },
-  headerLogo: {
-    width: 24,
-    height: 24,
-    resizeMode: "contain",
   },
   headerCartBadge: {
     position: "absolute",
@@ -1850,7 +1835,7 @@ const styles = themed(() => StyleSheet.create({
     backgroundColor: C.primary,
     borderRadius: 9,
     minWidth: 18,
-    height: 18,
+    minHeight: 18,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 4,
@@ -2608,6 +2593,7 @@ const styles = themed(() => StyleSheet.create({
   addButton: {
     backgroundColor: C.primary,
     paddingVertical: 16,
+    paddingHorizontal: 12,
     borderRadius: 13,
     flexDirection: "row",
     justifyContent: "center",
@@ -2625,6 +2611,8 @@ const styles = themed(() => StyleSheet.create({
     elevation: 0,
   },
   addButtonText: {
+    flexShrink: 1,
+    textAlign: "center",
     color: "#fff",
     fontSize: 16,
     fontWeight: "800",

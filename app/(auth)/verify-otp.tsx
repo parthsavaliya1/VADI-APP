@@ -155,15 +155,11 @@ export default function VerifyOtpScreen() {
     if (!phone || !canResend) return;
     try {
       setResendBusy(true);
-      const { demoLoggedIn } = await sendOtp(
+      await sendOtp(
         phone,
         mode === "signup" ? "signup" : "login",
         { forceResend: true }
       );
-      if (demoLoggedIn) {
-        router.replace("/(tabs)");
-        return;
-      }
       setOtp("");
       setSecondsUntilResend(RESEND_COOLDOWN_SEC);
     } catch (err: unknown) {

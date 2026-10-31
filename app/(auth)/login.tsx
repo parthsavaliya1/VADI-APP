@@ -90,12 +90,7 @@ export default function EnhancedLoginScreen() {
 
     try {
       setLoading(true);
-      const { demoLoggedIn } = await sendOtp(normalizedPhone, "login");
-
-      if (demoLoggedIn) {
-        router.replace("/(tabs)");
-        return;
-      }
+      await sendOtp(normalizedPhone, "login");
 
       router.push({
         pathname: "/(auth)/verify-otp",
@@ -113,7 +108,6 @@ export default function EnhancedLoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-      <Pressable onPress={() => router.push("/review-login")} style={{ padding: 10, alignSelf: "center" }}><Text style={{ color: C.primary }}>Test account sign-in (no OTP)</Text></Pressable>
       {/* Background gradient + farm illustration area */}
       <LinearGradient
         colors={[BG_SURFACE, BG_GRADIENT_MID, BG_SURFACE]}

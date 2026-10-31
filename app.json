@@ -104,7 +104,8 @@
         }
       ],
       "expo-image",
-      "expo-sharing"
+      "expo-sharing",
+      "./plugins/withRazorpaySdk"
     ],
     "experiments": {
       "typedRoutes": true,

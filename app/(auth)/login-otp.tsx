@@ -29,14 +29,8 @@ export default function LoginOtpScreen() {
     try {
       setLoading(true);
 
-      // 🔐 FIREBASE OTP SEND
-      const { demoLoggedIn } = await sendOtp(normalizedPhone, "login");
-
-      // Demo number logs in without OTP (sendOtp will log the user in)
-      if (demoLoggedIn) {
-        router.replace("/(tabs)");
-        return;
-      }
+      // Request the login verification code
+      await sendOtp(normalizedPhone, "login");
 
       // ➡️ GO TO VERIFY OTP
       router.push({

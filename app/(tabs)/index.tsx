@@ -1,3 +1,4 @@
+import { StruckPrice } from "@/components/StruckPrice";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -6,7 +7,7 @@ import { router, useFocusEffect } from "expo-router";
 import {
   Animated,
   BackHandler,
-  Dimensions,
+  useWindowDimensions,
   FlatList,
   Image,
   Pressable,
@@ -29,6 +30,7 @@ import {
   remainingMsToCountdownDHMS,
 } from "../../utils/offerEnd";
 import { C, themed } from "@/constants/theme";
+import { getProductLayout } from "@/utils/productLayout";
 
 type SpeechEventName = "start" | "end" | "result" | "error";
 
@@ -46,11 +48,7 @@ try {
   // Native speech module isn't available in this runtime.
 }
 
-const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - 16 * 2 - 10) / 2;
-const HORIZONTAL_CARD_W = Math.min((width - 44) / 2, 190);
-const TRENDING_CARD_W = Math.min(width * 0.41, 180);
-const DEAL_CARD_W = width - 56;
+
 
 // ─── Fallbacks ────────────────────────────────────────────────────────────────
 // Built lazily so they pick up the colour theme loaded at startup.
@@ -227,6 +225,8 @@ function GuestBanner() {
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function ProductSkeleton() {
+  const { width, fontScale } = useWindowDimensions();
+  const { gridCardWidth: CARD_WIDTH } = getProductLayout(width, fontScale);
   const [anim] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.loop(
@@ -249,6 +249,7 @@ function ProductSkeleton() {
 
 // ─── Hero Banner Slide ────────────────────────────────────────────────────────
 function BannerSlide({ item }: { item: ReturnType<typeof getFallbackBanners>[0] }) {
+  const { width } = useWindowDimensions();
   return (
     <TouchableOpacity 
       style={[s.bannerSlide, { width: width - 32 }]}
@@ -307,11 +308,13 @@ function DealCard({
   inCart: boolean;
   offerEndMs: number | null;
 }) {
+  const { width, fontScale } = useWindowDimensions();
+  const { dealCardWidth: DEAL_CARD_W, stackActions } = getProductLayout(width, fontScale);
   const v = getDefaultVariant(item);
   const disc = v.mrp > 0 ? Math.round(((v.mrp - v.price) / v.mrp) * 100) : item.discount || 0;
   return (
     <TouchableOpacity
-      style={[s.dealCard, { width: DEAL_CARD_W }]}
+      style={[s.dealCard, { width: DEAL_CARD_W }, stackActions && { flexDirection: "column" }]}
       activeOpacity={0.85}
       onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
     >
@@ -320,17 +323,17 @@ function DealCard({
           <Text style={s.badgeTxt}>{disc}% OFF</Text>
         </View>
       )}
-      <View style={s.dealImgZone}>
+      <View style={[s.dealImgZone, stackActions && { width: "100%", height: 112 }]}>
         <Image source={{ uri: item.image || "https://via.placeholder.com/150" }} style={s.dealImg} />
       </View>
       <View style={s.dealInfo}>
         <Text numberOfLines={2} style={s.dealName}>{item.name}</Text>
         <Text style={s.dealUnit}>{v.packSize}{v.packUnit}</Text>
         {offerEndMs != null && <OfferEndsCountdown endMs={offerEndMs} />}
-        <View style={s.dealFooter}>
+        <View style={[s.dealFooter, { flexWrap: "wrap", gap: 8 }]}>
           <View style={{ flex: 1, marginRight: 6 }}>
             <Text style={s.dealPrice}>₹{v.price.toFixed(2)}</Text>
-            {disc > 0 && <Text style={s.strikePrice}>₹{v.mrp.toFixed(2)}</Text>}
+            {disc > 0 && <StruckPrice style={s.strikePrice}>₹{v.mrp.toFixed(2)}</StruckPrice>}
           </View>
           <TouchableOpacity style={[s.addBtn, inCart && s.addBtnActive]} hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }} accessibilityLabel={inCart ? `${item.name} added to cart` : `Add ${item.name} to cart`} onPress={(e) => { e.stopPropagation(); if (!inCart) onAdd(); }} activeOpacity={0.8}>
             {inCart ? <Ionicons name="checkmark" size={16} color="#fff" /> : <Text style={s.addBtnText}>ADD</Text>}
@@ -343,27 +346,38 @@ function DealCard({
 
 // ─── Featured Card ────────────────────────────────────────────────────────────
 function FeaturedCard({ item, onAdd, inCart }: { item: Product; onAdd: () => void; inCart: boolean }) {
+  const { width, fontScale } = useWindowDimensions();
+  const { horizontalCardWidth: HORIZONTAL_CARD_W, stackActions } = getProductLayout(width, fontScale);
   const v = getDefaultVariant(item);
   return (
-    <TouchableOpacity
-      style={[s.featCard, { width: HORIZONTAL_CARD_W }]}
-      activeOpacity={0.85}
+    <Pressable
+      style={({ pressed }) => [s.featCard, { width: HORIZONTAL_CARD_W }, pressed && s.featCardPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={item.name + ", " + v.packSize + v.packUnit + ", ₹" + v.price.toFixed(2) + ". View details"}
       onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
     >
       <View style={s.featImgZone}>
         <Image source={{ uri: item.image || "https://via.placeholder.com/150" }} style={s.featImg} />
       </View>
       <View style={s.featContent}>
-        <Text numberOfLines={2} style={s.featName}>{item.name}</Text>
-        <Text style={s.featUnit}>{v.packSize}{v.packUnit}</Text>
-        <View style={s.featFooter}>
-          <Text style={s.featPrice}>₹{v.price.toFixed(2)}</Text>
-          <TouchableOpacity style={[s.addBtn, inCart && s.addBtnActive]} hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }} accessibilityLabel={inCart ? `${item.name} added to cart` : `Add ${item.name} to cart`} onPress={(e) => { e.stopPropagation(); if (!inCart) onAdd(); }} activeOpacity={0.8}>
-            {inCart ? <Ionicons name="checkmark" size={16} color="#fff" /> : <Text style={s.addBtnText}>ADD</Text>}
+        <View style={s.featDetails}>
+          <Text style={s.featName}>{item.name}</Text>
+          <Text style={s.featUnit}>{v.packSize}{v.packUnit}</Text>
+        </View>
+        <View style={[s.featFooter, stackActions && s.cardFooterStacked]}>
+          <Text style={[s.featPrice, stackActions && { flex: 0 }]}>₹{v.price.toFixed(2)}</Text>
+          <TouchableOpacity
+            style={[s.addBtn, s.featAddButton, inCart && s.addBtnActive]}
+            accessibilityRole="button"
+            accessibilityLabel={inCart ? "View " + item.name + " in cart" : "Add " + item.name + " to cart"}
+            onPress={(event) => { event.stopPropagation(); if (inCart) router.push("/cart"); else onAdd(); }}
+            activeOpacity={0.7}
+          >
+            {inCart ? <Ionicons name="checkmark" size={18} color="#fff" /> : <Text style={s.addBtnText}>+ ADD</Text>}
           </TouchableOpacity>
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -373,6 +387,8 @@ function ProductCard({
 }: {
   item: Product; onAdd: () => void; inCart: boolean; onPress: () => void; showTrendingBadge?: boolean; compact?: boolean;
 }) {
+  const { width, fontScale } = useWindowDimensions();
+  const { gridCardWidth: CARD_WIDTH, trendingCardWidth: TRENDING_CARD_W, stackActions } = getProductLayout(width, fontScale);
   const [scale] = useState(() => new Animated.Value(1));
   const [isAdding, setIsAdding] = useState(false);
   const v = getDefaultVariant(item);
@@ -399,12 +415,12 @@ function ProductCard({
             <View style={s.offBadge}><Text style={s.prodBadgeTxt}>{disc}% OFF</Text></View>
           )}
         </View>
-        <Text numberOfLines={2} style={s.prodName}>{item.name}</Text>
+        <Text style={s.prodName}>{item.name}</Text>
         <Text style={s.prodUnit}>{v.packSize}{v.packUnit}</Text>
-        <View style={s.prodFooter}>
-          <View style={{ flex: 1, marginRight: 6 }}>
+        <View style={[s.prodFooter, stackActions && s.cardFooterStacked]}>
+          <View style={{ flex: stackActions ? 0 : 1, minWidth: 0, marginRight: 6 }}>
             <Text style={s.prodPrice}>₹{v.price.toFixed(2)}</Text>
-            {disc > 0 && <Text style={s.strikePrice}>₹{v.mrp.toFixed(2)}</Text>}
+            {disc > 0 && <StruckPrice style={s.strikePrice}>₹{v.mrp.toFixed(2)}</StruckPrice>}
           </View>
           <TouchableOpacity
             hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }} accessibilityLabel={inCart ? `${item.name} added to cart` : `Add ${item.name} to cart`}
@@ -459,7 +475,10 @@ function SectionHeader({ title, onSeeAll, right }: { title: React.ReactNode; onS
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
+  const { width, fontScale } = useWindowDimensions();
+  const { dealCardWidth: DEAL_CARD_W } = getProductLayout(width, fontScale);
   const insets = useSafeAreaInsets();
+  const [headerHeight, setHeaderHeight] = useState(0);
   const { loading: authLoading, user } = useAuth();
   const { items, addToCart, getCartItemCount } = useCart();
   const { defaultAddress } = useAddress();
@@ -738,7 +757,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={["left", "right"]}>
-      <Animated.View style={[s.headerFixed, { opacity: headerOpacity }]}>
+      <Animated.View style={[s.headerFixed, { opacity: headerOpacity }]} onLayout={event => { const next = Math.ceil(event.nativeEvent.layout.height); setHeaderHeight(previous => previous === next ? previous : next); }}>
         <View style={[s.headerWrap, { paddingTop: insets.top }]}>
           <View style={s.header}>
           <View style={{ flex: 1 }}>
@@ -782,10 +801,10 @@ export default function HomeScreen() {
       <Animated.ScrollView
         alwaysBounceVertical
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl progressViewOffset={insets.top + 70} refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}
+        refreshControl={<RefreshControl progressViewOffset={headerHeight || insets.top + 70} refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}
-        contentContainerStyle={[s.scrollContent, { paddingTop: insets.top + 60 }]}
+        contentContainerStyle={[s.scrollContent, { paddingTop: headerHeight || insets.top + 60 }]}
       >
         <GuestBanner />
 
@@ -1131,24 +1150,24 @@ const s = themed(() => StyleSheet.create({
   brandSubTagline: { fontSize: 11, color: C.muted, marginTop: 2 },
   deliverLabel: { fontSize: 11, color: C.muted, fontWeight: "500", marginBottom: 2 },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  addressText: { fontSize: 15, fontWeight: "800", color: C.ink, maxWidth: width * 0.5 },
-  headerIcons: { flexDirection: "row", alignItems: "center", gap: 8 },
+  addressText: { fontSize: 15, fontWeight: "800", color: C.ink, flexShrink: 1, minWidth: 0 },
+  headerIcons: { flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 8 },
   iconBtn: {
     position: "relative", padding: 7, backgroundColor: C.card, borderRadius: 12,
     elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 3,
   },
   notifDot: { position: "absolute", top: 5, right: 5, width: 7, height: 7, borderRadius: 4, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#fff" },
-  cartBadge: { position: "absolute", top: 0, right: 0, backgroundColor: C.primary, borderRadius: 10, minWidth: 17, height: 17, justifyContent: "center", alignItems: "center", paddingHorizontal: 3 },
+  cartBadge: { position: "absolute", top: 0, right: 0, backgroundColor: C.primary, borderRadius: 10, minWidth: 17, minHeight: 17, justifyContent: "center", alignItems: "center", paddingHorizontal: 3 },
   cartBadgeText: { color: "#fff", fontSize: 9, fontWeight: "800" },
 
   // SEARCH
   searchBox: {
     flexDirection: "row", alignItems: "center", backgroundColor: C.card, borderRadius: 12,
-    paddingLeft: 14, paddingRight: 8, height: 42, marginHorizontal: 16, marginBottom: 14,
+    paddingLeft: 14, paddingRight: 8, minHeight: 42, marginHorizontal: 16, marginBottom: 14,
     elevation: 2, shadowColor: C.primaryDark, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4,
     borderWidth: 1, borderColor: C.line, gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 13, color: C.ink, paddingVertical: 0, height: 42 },
+  searchInput: { flex: 1, fontSize: 13, color: C.ink, paddingVertical: 8, minHeight: 42 },
   voicePill: {
     backgroundColor: C.soft,
     borderRadius: 8,
@@ -1208,12 +1227,12 @@ const s = themed(() => StyleSheet.create({
   badgeTxt: { color: C.badgeText, fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
   dealImg: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", resizeMode: "contain" },
   dealInfo: { flex: 1, paddingHorizontal: 12, paddingVertical: 14, justifyContent: "center" },
-  dealName: { fontSize: 12, fontWeight: "800", color: C.ink, marginBottom: 7, lineHeight: 16 },
-  dealUnit: { fontSize: 11, color: C.muted, fontWeight: "600", marginBottom: 4 },
+  dealName: { fontSize: 11, fontWeight: "800", color: C.ink, marginBottom: 7, lineHeight: 15 },
+  dealUnit: { fontSize: 10, color: C.muted, fontWeight: "600", marginBottom: 4 },
   dealCardTimer: { fontSize: 10, fontWeight: "800", color: "#DC2626", marginBottom: 6 },
   dealFooter: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },
-  dealPrice: { fontSize: 14, fontWeight: "900", color: C.ink },
-  strikePrice: { fontSize: 12, color: C.muted, textDecorationLine: "line-through", marginTop: 2 },
+  dealPrice: { fontSize: 13, fontWeight: "900", color: C.ink },
+  strikePrice: { fontSize: 10, color: C.muted, textDecorationLine: "line-through", marginTop: 2 },
   roundAddBtn: { backgroundColor: C.primary, width: 28, height: 28, borderRadius: 8, justifyContent: "center", alignItems: "center", flexShrink: 0, elevation: 3 },
 
   // CATEGORY
@@ -1241,13 +1260,13 @@ const s = themed(() => StyleSheet.create({
   trendBadge: { position: "absolute", top: 8, left: 8, backgroundColor: C.badge, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   offBadge: { position: "absolute", top: 8, right: 8, backgroundColor: C.badge, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   prodBadgeTxt: { color: C.badgeText, fontSize: 8, fontWeight: "800", letterSpacing: 0.3 },
-  prodName: { fontSize: 13, fontWeight: "700", color: C.ink, minHeight: 34, paddingHorizontal: 10, paddingTop: 8, lineHeight: 18 },
-  prodUnit: { fontSize: 11, color: C.muted, fontWeight: "600", marginTop: 2, marginBottom: 8, paddingHorizontal: 10 },
-  prodFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10, paddingBottom: 10 },
-  prodPrice: { fontSize: 15, fontWeight: "800", color: C.primary },
-  addBtn: { borderWidth: 1.5, borderColor: C.primary, borderRadius: 8, width: 44, height: 32, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  prodName: { fontSize: 12, fontWeight: "700", color: C.ink, paddingHorizontal: 10, paddingTop: 8, lineHeight: 16 },
+  prodUnit: { fontSize: 10, color: C.muted, fontWeight: "600", marginTop: 2, marginBottom: 8, paddingHorizontal: 10 },
+  prodFooter: { gap: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10, paddingBottom: 10 },
+  prodPrice: { fontSize: 13, fontWeight: "800", color: C.primary },
+  addBtn: { borderWidth: 1.5, borderColor: C.primary, borderRadius: 8, minWidth: 44, minHeight: 44, paddingHorizontal: 10, paddingVertical: 8, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   addBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
-  addBtnText: { color: C.primary, fontWeight: "800", fontSize: 11 },
+  addBtnText: { color: C.primary, fontWeight: "800", fontSize: 10 },
 
   // FEATURED CARD
   featCard: {
@@ -1255,16 +1274,20 @@ const s = themed(() => StyleSheet.create({
     shadowColor: C.ink, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
     borderWidth: 1, borderColor: C.line, overflow: "hidden",
   },
+  featCardPressed: { opacity: 0.92, transform: [{ scale: 0.98 }] },
   featImgZone: { height: 112, backgroundColor: C.card, alignItems: "center", justifyContent: "center", position: "relative" },
   carouselContent: { paddingHorizontal: 16, paddingVertical: 4, gap: 12 },
   trendingCard: { borderRadius: 16, elevation: 0, shadowOpacity: 0 },
   trendingImgZone: { height: 104 },
   featImg: { width: "100%", height: "100%", resizeMode: "contain" },
-  featContent: { padding: 10 },
-  featName: { fontSize: 13, fontWeight: "700", color: C.ink, minHeight: 36, marginBottom: 4, lineHeight: 18 },
-  featUnit: { fontSize: 12, color: C.muted, fontWeight: "600", marginBottom: 8 },
-  featFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  featPrice: { fontSize: 15, fontWeight: "800", color: C.primary, flex: 1 },
+  cardFooterStacked: { flexDirection: "column", alignItems: "stretch", gap: 8 },
+  featContent: { flex: 1, padding: 12, gap: 12 },
+  featDetails: { gap: 4 },
+  featName: { fontSize: 12, fontWeight: "700", color: C.ink, lineHeight: 16 },
+  featUnit: { fontSize: 10, lineHeight: 14, color: C.muted, fontWeight: "600" },
+  featFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: "auto" },
+  featPrice: { fontSize: 13, fontWeight: "800", color: C.primary, flex: 1, minWidth: 0 },
+  featAddButton: { minWidth: 52, borderRadius: 10 },
   featAddBtn: { backgroundColor: C.primary, width: 28, height: 28, borderRadius: 8, flexShrink: 0, justifyContent: "center", alignItems: "center" },
 
   // FRESH STRIP
