@@ -2,7 +2,7 @@
   "expo": {
     "name": "VADI",
     "slug": "vadi-product",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/vadi-brand-logo.png",
     "scheme": "vadiapp",
@@ -24,6 +24,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.vadi.app",
+      "versionCode": 2,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",

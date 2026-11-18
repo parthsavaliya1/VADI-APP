@@ -74,8 +74,8 @@ export default function RootLayout() {
         await loadRemoteConfig();
         const url = resolveStartupApiUrl(getApiUrl(), process.env.EXPO_PUBLIC_API_URL, process.env.EXPO_PUBLIC_USE_LOCAL_API);
         console.log("API URL:", url);
-        setBaseUrl("http://192.168.29.55:5000");
-        // setBaseUrl(url);
+        // setBaseUrl("http://192.168.29.55:5000");
+        setBaseUrl(url);
         await Promise.race([ensurePushChannel(), new Promise(resolve => setTimeout(resolve, 3000))]);
       } catch (err) {
         console.warn("⚠️ Remote Config failed, using default BASE_URL:", err);
