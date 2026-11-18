@@ -30,7 +30,7 @@ import { C, themed } from "@/constants/theme";
 
 import { DELIVERY_CITY, DELIVERY_STATE, DELIVERY_PIN_HELP_MESSAGE, RAJKOT_CENTER, clampToRajkot, isInRajkotBounds, isDeliveryAllowedPin, isGujaratState, normalizeCity } from "@/utils/deliveryZone";
 
-import { currentRajkotLocation, searchRajkotAddresses, type AddressMapResult } from "@/utils/addressLocation";
+import { currentRajkotLocation, confirmRajkotPin, searchRajkotAddresses, type AddressMapResult } from "@/utils/addressLocation";
 
 type AddressPayload = {
   user?: string;
@@ -86,6 +86,7 @@ export default function AddAddressScreen() {
   const { refreshAddresses } = useAddress();
   const params = useLocalSearchParams();
   const isEditing = !!params.id;
+  const [addressLoading, setAddressLoading] = useState(isEditing);
 
   const { maps: mapsSupported, location: locationSupported } = getAddressCapabilities(Platform.OS, isRunningInExpoGo(), Constants.expoConfig?.extra?.androidMapsConfigured === true);
   // Use the platform map provider: Apple Maps on iOS, Google Maps on Android.
@@ -126,6 +127,7 @@ export default function AddAddressScreen() {
 
   const setRajkotPin = useCallback(
     (lat: number, lng: number) => {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
       const c = clampToRajkot(lat, lng);
       setMapPin(c);
       setMapError("");
@@ -141,10 +143,13 @@ export default function AddAddressScreen() {
 
   useEffect(() => {
     if (!isEditing || !params.id) return;
+    let active = true;
+    setAddressLoading(true);
 
     const loadAddress = async () => {
       try {
         const res = await API.get(`/addresses/single/${params.id}`);
+        if (!active) return;
         const addr = res.data;
 
         setType(addr.type);
@@ -176,12 +181,12 @@ export default function AddAddressScreen() {
           }
         }
       } catch {
-        showAlert("Error", "Failed to load address");
-        router.back();
-      }
+        if (active) { showAlert("Error", "Failed to load address"); router.back(); }
+      } finally { if (active) setAddressLoading(false); }
     };
 
-    loadAddress();
+    void loadAddress();
+    return () => { active = false; };
   }, [isEditing, params.id]);
 
   useEffect(() => {
@@ -191,6 +196,7 @@ export default function AddAddressScreen() {
   }, [mapModalVisible]);
 
   const openMapPicker = useCallback(() => {
+    if (addressLoading) return;
     if (!mapsSupported) {
       showAlert("Map unavailable", locationSupported ? "The map is unavailable in this version of the app. You can use current location or enter your address below." : "Choose your delivery location in the iOS or Android app.");
       return;
@@ -202,7 +208,7 @@ export default function AddAddressScreen() {
     setMapError("");
     setMapReady(false);
     setMapModalVisible(true);
-  }, [mapsSupported, locationSupported, mapCoords]);
+  }, [mapsSupported, locationSupported, mapCoords, addressLoading]);
 
   const closeMapPicker = () => {
     mapOperation.current += 1;
@@ -228,7 +234,7 @@ export default function AddAddressScreen() {
   };
 
   const useCurrentLocation = async () => {
-    if (mapBusy) return;
+    if (mapBusy || addressLoading) return;
     Keyboard.dismiss();
     const operation = ++mapOperation.current;
     setLocating(true);
@@ -284,42 +290,16 @@ export default function AddAddressScreen() {
 
     setGeoLoading(true);
     try {
-      if (Platform.OS === "android") {
-        const permission = await Location.requestForegroundPermissionsAsync();
-        if (operation !== mapOperation.current) return;
-        if (permission.status !== "granted") {
-          setMapError("Allow location access to verify the PIN code for your chosen delivery address.");
-          return;
-        }
-      }
-      const rows = await Location.reverseGeocodeAsync({
-        latitude: pinned.latitude,
-        longitude: pinned.longitude,
-      });
+      const result = await confirmRajkotPin(pinned);
       if (operation !== mapOperation.current) return;
-      const g = rows[0];
-      if (!g) {
-        setMapError("Could not resolve this pin to an address. Try moving it slightly.");
-        return;
-      }
-
-      const resolvedPin = g.postalCode?.replace(/\D/g, "") || "";
-      if (!isDeliveryAllowedPin(resolvedPin)) {
-        setMapError(resolvedPin ? DELIVERY_PIN_HELP_MESSAGE : "Could not verify the PIN code for this spot. Move the pin to a nearby street in Rajkot and try again.");
-        return;
-      }
-      if (g.region && !isGujaratState(g.region)) {
-        setMapError(DELIVERY_PIN_HELP_MESSAGE);
-        return;
-      }
-      applyGeocodeToForm(g, setAddressLine1, setAddressLine2, setPincode);
-      setPincode(resolvedPin);
+      applyGeocodeToForm(result.address, setAddressLine1, setAddressLine2, setPincode);
+      setPincode(result.pincode);
 
       setMapCoords(pinned);
       setMapPin(pinned);
       setMapModalVisible(false);
-    } catch {
-      if (operation === mapOperation.current) setMapError("Failed to fetch address details for this location. Please try again.");
+    } catch (error) {
+      if (operation === mapOperation.current) setMapError(error instanceof Error ? error.message : "Failed to fetch address details for this location. Please try again.");
     } finally {
       if (operation === mapOperation.current) setGeoLoading(false);
     }
@@ -400,7 +380,7 @@ export default function AddAddressScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    if (addressLoading || loading || mapBusy || !validateForm()) return;
 
     try {
       setLoading(true);
@@ -610,7 +590,7 @@ export default function AddAddressScreen() {
           )}
 
           {locationSupported && (
-            <TouchableOpacity style={styles.currentLocationButton} onPress={useCurrentLocation} disabled={mapBusy} accessibilityRole="button">
+            <TouchableOpacity style={styles.currentLocationButton} onPress={useCurrentLocation} disabled={mapBusy || addressLoading} accessibilityRole="button">
               {locating ? <AnimatedLoader size="small" color={C.primary} /> : <Ionicons name="locate-outline" size={20} color={C.primary} />}
               <Text style={styles.currentLocationText}>{locating ? "Finding your location..." : "Use current location"}</Text>
             </TouchableOpacity>
@@ -846,7 +826,7 @@ export default function AddAddressScreen() {
                 <Ionicons name="chevron-forward" size={16} color={C.muted} />
               </TouchableOpacity>)}
             </View>}
-            <TouchableOpacity style={styles.mapLocateButton} onPress={useCurrentLocation} disabled={mapBusy} accessibilityRole="button">
+            <TouchableOpacity style={styles.mapLocateButton} onPress={useCurrentLocation} disabled={mapBusy || addressLoading} accessibilityRole="button">
               {locating ? <AnimatedLoader size="small" color={C.primary} /> : <Ionicons name="locate-outline" size={20} color={C.primary} />}
               <Text style={styles.currentLocationText}>{locating ? "Finding your location..." : "Use current location"}</Text>
             </TouchableOpacity>
@@ -862,7 +842,7 @@ export default function AddAddressScreen() {
                   latitudeDelta: 0.015,
                   longitudeDelta: 0.015,
                 }}
-                onMapReady={() => { setMapReady(true); mapRef.current?.animateToRegion({ ...mapPin, latitudeDelta: 0.015, longitudeDelta: 0.015 }, 0); }}
+                onMapReady={() => setMapReady(true)}
                 showsMyLocationButton={false}
                 onPress={(e) => {
                   const c = e.nativeEvent.coordinate;

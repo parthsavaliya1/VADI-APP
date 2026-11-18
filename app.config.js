@@ -125,7 +125,6 @@ module.exports = ({ config }) => {
 
   const firebaseExtra = resolveFirebaseExtra(config, appRoot);
   const resolvedMapsKey = mapsKey || config.android?.config?.googleMaps?.apiKey || "";
-  if (process.env.EAS_BUILD_PROFILE === "production" && !resolvedMapsKey) throw new Error("Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY in the EAS production environment before building");
 
   return {
     ...config,

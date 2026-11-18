@@ -45,3 +45,23 @@ test('current location refuses unsupported delivery coordinates and PIN codes', 
   await assert.rejects(location.currentRajkotLocation({ ...api(), getLastKnownPositionAsync: async () => ({ coords: { latitude: 23, longitude: 72 } }) }), /Rajkot/);
   await assert.rejects(location.currentRajkotLocation({ ...api(), reverseGeocodeAsync: async () => [{ postalCode: '380001', region: 'Gujarat' }] }), /PIN/);
 });
+
+test('map pin confirmation checks permissions and returns verified address coordinates', async () => {
+  const result = await location.confirmRajkotPin({ latitude: 22.3039, longitude: 70.8022 }, api());
+  assert.equal(result.pincode, '360001'); assert.equal(result.address.street, 'Kalawad Road');
+  await assert.rejects(location.confirmRajkotPin({ latitude: 22.3039, longitude: 70.8022 }, { ...api(), requestForegroundPermissionsAsync: async () => ({ status: 'denied' }) }), /Allow location/);
+});
+test('manual map confirmation rejects invalid coordinates, unsupported PINs and unavailable geocoding', async () => {
+  await assert.rejects(location.confirmRajkotPin({ latitude: NaN, longitude: 70.8 }, api()), /Rajkot/);
+  await assert.rejects(location.confirmRajkotPin({ latitude: 22.3039, longitude: 70.8022 }, { ...api(), reverseGeocodeAsync: async () => [{ postalCode: '380001' }] }), /PIN/);
+  await assert.rejects(location.confirmRajkotPin({ latitude: 22.3039, longitude: 70.8022 }, { ...api(), reverseGeocodeAsync: async () => [] }), /PIN/);
+});
+test('map confirmation and GPS geocoding time out instead of leaving the form busy forever', async () => {
+  const hanging = { ...api(), reverseGeocodeAsync: () => new Promise(() => {}) };
+  await assert.rejects(location.confirmRajkotPin({ latitude: 22.3039, longitude: 70.8022 }, hanging, 5), /taking too long/);
+  await assert.rejects(location.currentRajkotLocation(hanging, 5), /taking too long/);
+});
+test('a stuck cached-location lookup falls back to a fresh GPS request', async () => {
+  const result = await location.currentRajkotLocation({ ...api(), getLastKnownPositionAsync: () => new Promise(() => {}), getCurrentPositionAsync: async () => ({ coords: { latitude: 22.3039, longitude: 70.8022 } }) }, 5);
+  assert.equal(result.pincode, '360001');
+});

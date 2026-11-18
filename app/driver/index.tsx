@@ -1,6 +1,7 @@
+import DriverReturnTasks from "@/components/DriverReturnTasks";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -43,7 +44,7 @@ export default function DriverHomeScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <AppHeader title="Delivery staff" showBack showCart={false} />
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
           <View style={styles.heroIcon}>
             <Ionicons name="bicycle" size={26} color={C.primary} />
@@ -105,6 +106,8 @@ export default function DriverHomeScreen() {
           </View>
         </Pressable>
 
+        <DriverReturnTasks />
+
         <Pressable
           style={({ pressed }) => [styles.signOut, pressed && { opacity: 0.85 }]}
           onPress={async () => {
@@ -116,7 +119,7 @@ export default function DriverHomeScreen() {
           <Ionicons name="log-out-outline" size={18} color={C.primary} />
           <Text style={styles.signOutText}>Sign out</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

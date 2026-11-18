@@ -1,3 +1,9 @@
+import { getReturnProgress, type ReturnProgressRequest } from "@/utils/returnProgress";
+import ReturnTracking from "@/components/ReturnTracking";
+import OrderReturn from "@/components/OrderReturn";
+import OrderCancellation from "@/components/OrderCancellation";
+import { canCancelOrder, type Cancellation } from "@/utils/orderActionPresentation";
+import CodOnlinePayment from "@/components/CodOnlinePayment";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -12,7 +18,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   UIManager,
   View,
@@ -24,8 +29,8 @@ import { useOrders } from "../../context/OrderContext";
 import * as Haptics from "expo-haptics";
 import { AppHeader } from "@/components/AppHeader";
 import { useAuth } from "@/context/AuthContext";
-import { showAlert } from "@/context/CustomAlertContext";
 import { API } from "@/utils/api";
+import { showAlert } from "@/context/CustomAlertContext";
 import { downloadOrderInvoicePdf } from "@/utils/orderInvoice";
 import { C, themed } from "@/constants/theme";
 
@@ -62,7 +67,7 @@ interface Order {
   taxAmount: number;
   deliveryFee: number;
   grandTotal: number;
-  payment: { method: string; status: string; isCod: boolean; codCollected: boolean };
+  payment: { method: string; status: string; isCod: boolean; codCollected: boolean; onlineAttempt?: string | null; convertedFromCod?: boolean; cashCollectionStarted?: boolean };
   address: {
     addressId: string;
     snapshot: {
@@ -77,11 +82,13 @@ interface Order {
   };
   status: string;
   deliveredAt?: string;
-  returnRequest?: {
+  cancellation?: Cancellation;
+  returnRequest?: ReturnProgressRequest & {
     status?: string;
     reason?: string;
     refundedTo?: string;
     refundAmount?: number;
+    refundStatus?: string;
     items?: { productName?: string; quantity?: number; action?: string }[];
   };
   createdAt: string;
@@ -124,7 +131,8 @@ const getStatusConfig = (status: string) => {
 
 const getFilterValue = (status: string) => {
   const n = status.toLowerCase().replace(/[-\s]+/g, "_");
-  if (n.includes("cancel") || n.includes("return")) return "cancelled";
+  if (n.includes("return")) return "returned";
+  if (n.includes("cancel")) return "cancelled";
   if (n === "shipped" || n === "out_for_delivery") return "shipped";
   if (n.includes("deliver") || n.includes("complete")) return "delivered";
   return "processing";
@@ -136,7 +144,7 @@ const getOrderPrimaryAction = (status: string) => {
   if (bucket === "delivered") {
     return { label: "View Timeline", icon: "reader-outline" as const };
   }
-  if (bucket === "cancelled") {
+  if (bucket === "cancelled" || bucket === "returned") {
     return { label: "Order Details", icon: "information-circle-outline" as const };
   }
   return { label: "Track Order", icon: "navigate-outline" as const };
@@ -159,6 +167,7 @@ const FILTERS = [
   { key: "shipped", label: "On the way", icon: "cube-outline" },
   { key: "delivered", label: "Delivered", icon: "checkmark-done-outline" },
   { key: "cancelled", label: "Cancelled", icon: "close-circle-outline" },
+  { key: "returned", label: "Returned", icon: "return-down-back-outline" },
 ];
 
 function FilterChip({
@@ -234,13 +243,11 @@ function OrderCard({
   const [slideAnim] = useState(() => new Animated.Value(30));
   const [trackBtnScale] = useState(() => new Animated.Value(1));
   const [invoiceBusy, setInvoiceBusy] = useState(false);
-  const [returnReason, setReturnReason] = useState("");
-  const [returnBusy, setReturnBusy] = useState(false);
   const [reorderBusy, setReorderBusy] = useState(false);
-  const [selectedReturns, setSelectedReturns] = useState<Record<string, "refund" | "replace">>({});
   const isExpanded = expandedId === item._id;
-  const statusConfig = getStatusConfig(item.status);
-  const primaryAction = getOrderPrimaryAction(item.status);
+  const returnProgress = getReturnProgress(item.status, item.returnRequest);
+  const statusConfig = returnProgress ? { text: C.ink, bg: C.soft, dot: C.primary, icon: 'swap-horizontal-outline', label: returnProgress.label } : getStatusConfig(item.status);
+  const primaryAction = item.returnRequest?.status === "approved" ? { label: "Return / replacement", icon: "swap-horizontal-outline" as const } : getOrderPrimaryAction(item.status);
 
   useEffect(() => {
     Animated.parallel([
@@ -352,12 +359,12 @@ function OrderCard({
             android_ripple={{ color: "rgba(255,255,255,0.2)", borderless: false }}
           >
             <Ionicons name={primaryAction.icon as any} size={15} color="#fff" />
-            <Text style={styles.trackBtnText}>{primaryAction.label}</Text>
+            <Text style={styles.trackBtnText} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85}>{primaryAction.label}</Text>
           </Pressable>
         </Animated.View>
 
         <TouchableOpacity style={styles.detailsBtn} onPress={toggleExpand} activeOpacity={0.75}>
-          <Text style={styles.detailsBtnText}>{isExpanded ? "Hide" : "Details"}</Text>
+          <Text style={styles.detailsBtnText}>{isExpanded ? "Hide details" : canCancelOrder(item.status) ? "Details / Cancel" : item.status === "delivered" ? "Details / Return" : "Details"}</Text>
           <Ionicons
             name={isExpanded ? "chevron-up" : "chevron-down"}
             size={14}
@@ -436,6 +443,7 @@ function OrderCard({
           {/* Payment */}
           <View style={styles.detailBlock}>
             <Text style={styles.sectionLabel}>Payment</Text>
+            <CodOnlinePayment order={item} onRefresh={onRefresh} />
             <View style={styles.paymentRow}>
               <View style={styles.paymentMethodBadge}>
                 <Ionicons name={getPaymentIcon(item.payment.method) as any} size={16} color={C.ink} />
@@ -536,115 +544,14 @@ function OrderCard({
             </View>
           ) : null}
 
-          {getFilterValue(item.status) === "delivered" && userId ? (
-            <View style={styles.detailBlock}>
-              <Text style={styles.sectionLabel}>Return</Text>
-              <Text style={styles.addressLine}>
-                Returns are accepted within 24 hours of delivery only in the original, unopened packaging with all seals intact. Items cannot be returned once the packaging is opened or a seal is broken.
-              </Text>
-              {item.returnRequest?.status ? (
-                <Text style={styles.addressLine}>
-                  Request {item.returnRequest.status}
-                  {item.returnRequest.refundedTo === "wallet"
-                    ? ` · ₹${item.returnRequest.refundAmount || 0} refunded to wallet`
-                    : item.returnRequest.refundedTo === "original" ? ` · ₹${item.returnRequest.refundAmount || 0} refunded to the original payment` : ""}
-                </Text>
-              ) : (
-                <>
-                  {item.items.map((line) => {
-                    const selected = selectedReturns[line.variantId];
-                    return (
-                      <View key={line.variantId} style={{ marginBottom: 8 }}>
-                        <Text style={styles.addressLine}>
-                          {line.productName} · {line.quantity}
-                        </Text>
-                        <View style={{ flexDirection: "row", gap: 8 }}>
-                          <TouchableOpacity
-                            onPress={() =>
-                              setSelectedReturns((current) => {
-                                const next = { ...current };
-                                if (selected === "refund") delete next[line.variantId];
-                                else next[line.variantId] = "refund";
-                                return next;
-                              })
-                            }
-                          >
-                            <Text style={{ color: selected === "refund" ? C.primary : "#6B7280", fontWeight: "700" }}>
-                              {selected === "refund" ? "Refund selected" : "Refund"}
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() =>
-                              setSelectedReturns((current) => {
-                                const next = { ...current };
-                                if (selected === "replace") delete next[line.variantId];
-                                else next[line.variantId] = "replace";
-                                return next;
-                              })
-                            }
-                          >
-                            <Text style={{ color: selected === "replace" ? C.primary : "#6B7280", fontWeight: "700" }}>
-                              {selected === "replace" ? "Replace selected" : "Replace"}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })}
-                  <Text style={styles.addressLine}>Choose Refund or Replace for each item. Approved online refunds return to your original payment method. Collected COD and VADI balance refunds go to your VADI wallet. Delivery charges are not refundable. Replacements do not receive a refund.</Text>
-                  <TextInput
-                    maxLength={1000}
-                    value={returnReason}
-                    onChangeText={setReturnReason}
-                    placeholder="What went wrong? Returns are accepted within 24 hours."
-                    placeholderTextColor="#9CA3AF"
-                    style={{
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      borderRadius: 10,
-                      padding: 10,
-                      marginBottom: 8,
-                      color: "#111",
-                    }}
-                  />
-                  <TouchableOpacity
-                    style={styles.invoiceDownloadBtn}
-                    disabled={returnBusy || !Object.keys(selectedReturns).length || returnReason.trim().length < 5}
-                    onPress={() => {
-                      void (async () => {
-                        if (!Object.keys(selectedReturns).length || returnReason.trim().length < 5) {
-                          showAlert("Return request", "Choose at least one item and describe the issue in at least 5 characters.");
-                          return;
-                        }
-                        setReturnBusy(true);
-                        try {
-                          await API.post(`/orders/${item._id}/return`, {
-                            userId,
-                            reason: returnReason,
-                            items: Object.entries(selectedReturns).map(([variantId, action]) => ({
-                              variantId,
-                              quantity: item.items.find((line) => line.variantId === variantId)?.quantity || 1,
-                              action,
-                            })),
-                          });
-                          showAlert("Return requested", "We will review this within the return window.");
-                          onRefresh();
-                        } catch (error: any) {
-                          showAlert("Return", error?.response?.data?.message || "Could not request a return");
-                        } finally {
-                          setReturnBusy(false);
-                        }
-                      })();
-                    }}
-                  >
-                    <Text style={styles.invoiceDownloadBtnText}>
-                      {returnBusy ? "Sending..." : "Request return"}
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          ) : null}
+          {userId && (canCancelOrder(item.status) || item.status === "cancelled") && <View style={styles.detailBlock}><OrderCancellation order={item} onRefresh={onRefresh} /></View>}
+
+          {['delivered', 'returned'].includes(item.status) && userId && <View style={styles.detailBlock}>
+            <OrderReturn key={item._id} order={item} onRefresh={onRefresh} />
+            {item.returnRequest?.status === "approved" && <ReturnTracking orderId={item._id} onRefresh={onRefresh} />}
+          </View>}
+
+
         </View>
       )}
     </Animated.View>
@@ -999,8 +906,10 @@ const styles = themed(() => StyleSheet.create({
 
   // Action row
   actionRow: { flexDirection: "row", gap: 10 },
-  trackBtnWrap: { flex: 1 },
+  trackBtnWrap: { flex: 1, minWidth: 0 },
   trackBtn: {
+    paddingHorizontal: 10,
+    minHeight: 46,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1014,7 +923,7 @@ const styles = themed(() => StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  trackBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  trackBtnText: { color: "#fff", fontSize: 14, fontWeight: "700", flexShrink: 1, textAlign: "center" },
   detailsBtn: {
     flexDirection: "row",
     alignItems: "center",

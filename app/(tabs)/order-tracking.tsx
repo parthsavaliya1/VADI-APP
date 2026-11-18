@@ -1,3 +1,9 @@
+import { getReturnProgress, type TimelineStep } from "@/utils/returnProgress";
+import ReturnTracking from "@/components/ReturnTracking";
+import OrderReturn, { type ReturnItem, type ReturnRequest } from "@/components/OrderReturn";
+import OrderCancellation from "@/components/OrderCancellation";
+import { canCancelOrder, type Cancellation } from "@/utils/orderActionPresentation";
+import CodOnlinePayment from "@/components/CodOnlinePayment";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import React, { useCallback, useEffect, useState } from "react";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -101,7 +107,7 @@ const formatDate = (dateString: string) => {
 // ─── Animated Step Component ─────────────────────────────────────────────────
 
 interface StepProps {
-  step: (typeof TRACKING_STEPS)[number];
+  step: TimelineStep;
   index: number;
   isCompleted: boolean;
   isActive: boolean;
@@ -309,6 +315,13 @@ export default function OrderTrackingScreen() {
   }>();
 
   const [liveOrder, setLiveOrder] = useState<{
+    _id?: string;
+    cancellation?: Cancellation;
+    items?: ReturnItem[];
+    deliveredAt?: string;
+    updatedAt?: string;
+    returnRequest?: ReturnRequest;
+    payment?: { method: string; status: string; codCollected?: boolean; onlineAttempt?: string | null; convertedFromCod?: boolean; cashCollectionStarted?: boolean };
     status?: string;
     orderNumber?: string;
     createdAt?: string;
@@ -369,16 +382,20 @@ export default function OrderTrackingScreen() {
   const deliveryHandoverCode = liveOrder?.deliveryHandoverCode;
 
   const normalizedStatus = normalizeStatus(status);
-  const currentStepIndex = STATUS_TO_STEP_INDEX[normalizedStatus] ?? 0;
+  const returnProgress = getReturnProgress(normalizedStatus, liveOrder?.returnRequest);
+  const trackingSteps = returnProgress?.steps || TRACKING_STEPS;
+  const currentStepIndex = returnProgress?.index ?? (STATUS_TO_STEP_INDEX[normalizedStatus] ?? 0);
   const isDelivered = normalizedStatus === "delivered";
   const isCancelled =
     normalizedStatus === "cancelled" || normalizedStatus === "returned";
+
+  const timelineComplete = returnProgress ? returnProgress.complete : isDelivered || isCancelled;
 
   const orderDate = formatDate(createdAt);
   const expectedDate = liveOrder?.deliverySlot?.slot || "15–20 min";
 
   const progressPercent =
-    ((currentStepIndex + 1) / TRACKING_STEPS.length) * 100;
+    ((currentStepIndex + 1) / trackingSteps.length) * 100;
 
   // Header animation
   const [headerAnim] = useState(() => new Animated.Value(0));
@@ -484,14 +501,6 @@ export default function OrderTrackingScreen() {
             styles.heroCard,
             {
               opacity: heroAnim,
-              transform: [
-                {
-                  translateY: heroAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [24, 0],
-                  }),
-                },
-              ],
             },
           ]}
         >
@@ -499,36 +508,36 @@ export default function OrderTrackingScreen() {
           <View style={styles.heroBgCircle} />
 
           <View style={styles.heroTop}>
-            <View>
+            <View style={styles.heroStatusContent}>
               <Text style={styles.heroStatusLabel}>Current Status</Text>
               <Text
                 style={[
                   styles.heroStatus,
                   isDelivered && { color: C.ink },
-                  isCancelled && { color: "#B42318" },
+                  !returnProgress && isCancelled && { color: "#B42318" },
                 ]}
               >
-                {formatStatus(normalizedStatus)}
+                {returnProgress?.label || formatStatus(normalizedStatus)}
               </Text>
             </View>
             <View
               style={[
                 styles.statusOrb,
                 isDelivered && styles.statusOrbSuccess,
-                isCancelled && styles.statusOrbDanger,
+                !returnProgress && isCancelled && styles.statusOrbDanger,
               ]}
             >
               <Ionicons
                 name={
-                  isDelivered
+                  timelineComplete
                     ? "checkmark-done"
-                    : isCancelled
+                    : !returnProgress && isCancelled
                     ? "close"
                     : "bicycle"
                 }
                 size={22}
                 color={
-                  isDelivered ? C.ink : isCancelled ? "#B42318" : "#F59E0B"
+                  timelineComplete ? C.ink : !returnProgress && isCancelled ? "#B42318" : "#F59E0B"
                 }
               />
             </View>
@@ -540,7 +549,7 @@ export default function OrderTrackingScreen() {
               style={[
                 styles.progressBarFill,
                 isDelivered && styles.progressBarFillSuccess,
-                isCancelled && styles.progressBarFillDanger,
+                !returnProgress && isCancelled && styles.progressBarFillDanger,
                 {
                   width: progressFillAnim.interpolate({
                     inputRange: [0, 1],
@@ -551,7 +560,7 @@ export default function OrderTrackingScreen() {
             />
           </View>
           <Text style={styles.progressText}>
-            Step {currentStepIndex + 1} of {TRACKING_STEPS.length}
+            Step {currentStepIndex + 1} of {trackingSteps.length}
           </Text>
 
           {/* Stat row */}
@@ -579,23 +588,25 @@ export default function OrderTrackingScreen() {
           </View>
         </Animated.View>
 
+        {liveOrder?.payment && liveOrder._id && typeof liveOrder.grandTotal === 'number' && ((liveOrder.payment.method === 'cod' && liveOrder.payment.status === 'pending' && !isDelivered && !isCancelled) || (liveOrder.payment.convertedFromCod && liveOrder.payment.status === 'paid')) && <View style={{ marginHorizontal: 20, marginBottom: 16, padding: 16, backgroundColor: C.card, borderRadius: 16 }}>
+          <CodOnlinePayment order={{ _id: liveOrder._id, orderNumber, status, grandTotal: liveOrder.grandTotal, payment: liveOrder.payment }} onRefresh={fetchLiveOrder} />
+        </View>}
+
         {/* ── ETA Banner ── */}
-        {!isDelivered && !isCancelled && (
+        {!returnProgress && !isDelivered && !isCancelled && (
           <View style={styles.etaBanner}>
             <View style={styles.etaBannerLeft}>
               <Ionicons name="time-outline" size={20} color="#92400E" />
-              <View style={{ marginLeft: 8 }}>
+              <View style={styles.etaText}>
                 <Text style={styles.etaSmall}>Expected Delivery</Text>
                 <Text style={styles.etaBig}>{expectedDate}</Text>
               </View>
             </View>
-            <View style={styles.etaBannerRight}>
-              <Text style={styles.etaDays}>15–20 min</Text>
-            </View>
+
           </View>
         )}
 
-        {isDelivered && (
+        {!returnProgress && isDelivered && (
           <View style={[styles.etaBanner, styles.deliveredBanner]}>
             <Ionicons name="checkmark-done-circle" size={22} color={C.ink} />
             <View style={{ marginLeft: 10 }}>
@@ -643,10 +654,10 @@ export default function OrderTrackingScreen() {
           </Pressable>
         ) : null}
 
-        {isCancelled && (
+        {!returnProgress && isCancelled && (
           <View style={[styles.etaBanner, styles.cancelledBanner]}>
             <Ionicons name="close-circle" size={22} color="#B42318" />
-            <View style={{ marginLeft: 10 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.etaSmall, { color: "#B42318" }]}>
                 Order Closed
               </Text>
@@ -694,12 +705,24 @@ export default function OrderTrackingScreen() {
           </Pressable>
         ) : null}
 
+        {liveOrder?._id && (canCancelOrder(status) || status === "cancelled") && <View style={{ backgroundColor: C.card, padding: 16, borderRadius: 16, marginBottom: 14 }}>
+          <OrderCancellation order={{ _id: liveOrder._id, status, payment: liveOrder.payment, cancellation: liveOrder.cancellation }} onRefresh={fetchLiveOrder} />
+
+        </View>}
+
+        {liveOrder?._id && ['delivered', 'returned'].includes(status) && <View style={{ backgroundColor: C.card, padding: 16, borderRadius: 16, marginBottom: 14 }}>
+          <OrderReturn key={liveOrder._id} order={{ _id: liveOrder._id, status, items: liveOrder.items || [], deliveredAt: liveOrder.deliveredAt,
+            updatedAt: liveOrder.updatedAt, returnRequest: liveOrder.returnRequest }} onRefresh={fetchLiveOrder} />
+        </View>}
+
+        {liveOrder?._id && liveOrder.returnRequest?.status === "approved" && <View style={{ marginBottom: 14 }}><ReturnTracking orderId={liveOrder._id} onRefresh={fetchLiveOrder} /></View>}
+
         {/* ── Timeline ── */}
         <View style={styles.timelineCard}>
-          <Text style={styles.timelineTitle}>Shipment Progress</Text>
-          {TRACKING_STEPS.map((step, index) => {
+          <Text style={styles.timelineTitle}>{returnProgress ? "Return Progress" : "Shipment Progress"}</Text>
+          {trackingSteps.map((step, index) => {
             const isCompleted = index <= currentStepIndex;
-            const isActive = index === currentStepIndex && !isDelivered;
+            const isActive = index === currentStepIndex && !timelineComplete;
             return (
               <TrackingStep
                 key={step.key}
@@ -707,7 +730,7 @@ export default function OrderTrackingScreen() {
                 index={index}
                 isCompleted={isCompleted}
                 isActive={isActive}
-                isLast={index === TRACKING_STEPS.length - 1}
+                isLast={index === trackingSteps.length - 1}
                 delay={index * 100 + 200}
                 lineProgress={lineProgressRef}
               />
@@ -887,6 +910,7 @@ const styles = themed(() => StyleSheet.create({
 
   // Hero Card
   heroCard: {
+    flexShrink: 0,
     backgroundColor: C.card,
     borderRadius: 20,
     padding: 18,
@@ -913,6 +937,11 @@ const styles = themed(() => StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 14,
   },
+  heroStatusContent: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
+  },
   heroStatusLabel: {
     fontSize: 11,
     color: C.muted,
@@ -928,6 +957,7 @@ const styles = themed(() => StyleSheet.create({
     letterSpacing: -0.3,
   },
   statusOrb: {
+    flexShrink: 0,
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -1002,7 +1032,11 @@ const styles = themed(() => StyleSheet.create({
 
   // ETA Banner
   etaBanner: {
+    flexShrink: 0,
     flexDirection: "row",
+    flexWrap: "wrap",
+    columnGap: 12,
+    rowGap: 8,
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FEF3C7",
@@ -1016,8 +1050,16 @@ const styles = themed(() => StyleSheet.create({
   etaBannerLeft: {
     flexDirection: "row",
     alignItems: "center",
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 150,
+    minWidth: 0,
   },
-  etaBannerRight: {},
+  etaText: {
+    marginLeft: 8,
+    flex: 1,
+    minWidth: 0,
+  },
   etaSmall: {
     fontSize: 11,
     color: "#92400E",
@@ -1031,20 +1073,14 @@ const styles = themed(() => StyleSheet.create({
     color: "#78350F",
     marginTop: 1,
   },
-  etaDays: {
-    fontSize: 13,
-    color: "#92400E",
-    fontWeight: "700",
-    backgroundColor: "#FDE68A",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
   deliveredBanner: {
     backgroundColor: C.soft,
     borderColor: "#6EE7B7",
   },
   cancelledBanner: {
+    justifyContent: "flex-start",
+    flexWrap: "nowrap",
+    columnGap: 10,
     backgroundColor: "#FEE2E2",
     borderColor: "#FECACA",
   },
@@ -1069,6 +1105,7 @@ const styles = themed(() => StyleSheet.create({
 
   // Timeline Card
   timelineCard: {
+    flexShrink: 0,
     backgroundColor: C.card,
     borderRadius: 20,
     padding: 18,
@@ -1090,6 +1127,7 @@ const styles = themed(() => StyleSheet.create({
 
   // Step
   stepRow: {
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "flex-start",
     minHeight: 62,

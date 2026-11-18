@@ -31,11 +31,20 @@ async function resolveResult(coords: { latitude: number; longitude: number }, ap
 export async function currentRajkotLocation(api: typeof Location = Location, timeoutMs = 15000): Promise<AddressMapResult> {
   await requestPermission(api);
   if (!(await api.hasServicesEnabledAsync())) throw new Error("Turn on your phone's location services, then try again.");
-  const recent = await api.getLastKnownPositionAsync({ maxAge: 30000, requiredAccuracy: 100 }).catch(() => null);
+  const recent = await withTimeout(api.getLastKnownPositionAsync({ maxAge: 30000, requiredAccuracy: 100 }), Math.min(timeoutMs, 3000)).catch(() => null);
   const position = recent || await withTimeout(api.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }), timeoutMs);
   if (!isInRajkotBounds(position.coords.latitude, position.coords.longitude)) throw new Error(DELIVERY_PIN_HELP_MESSAGE);
   const result = await withTimeout(resolveResult(position.coords, api), timeoutMs);
   if (!result) throw new Error("Your current location is outside a supported Rajkot PIN code, or its PIN could not be verified. Search for your delivery address instead.");
+  return result;
+}
+
+/** Validate a manually selected pin with the same permission and delivery checks as GPS. */
+export async function confirmRajkotPin(coords: { latitude: number; longitude: number }, api: typeof Location = Location, timeoutMs = 15000): Promise<AddressMapResult> {
+  if (!isInRajkotBounds(coords.latitude, coords.longitude)) throw new Error(DELIVERY_PIN_HELP_MESSAGE);
+  if (Platform.OS === 'android') await requestPermission(api);
+  const result = await withTimeout(resolveResult(coords, api), timeoutMs);
+  if (!result) throw new Error('Could not verify a supported Rajkot PIN code for this spot. Move the pin to a nearby street and try again.');
   return result;
 }
 

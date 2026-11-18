@@ -754,8 +754,8 @@ export default function HomeScreen() {
             accessibilityRole="button" accessibilityLabel="Search products and view recent searches"
             onPress={() => router.push("/search")}
           >
-            <Ionicons name="search" size={16} color={C.muted} style={{ marginLeft: 2, marginRight: 8 }} />
-            <Text style={[s.searchInput, { color: C.muted }]}>{SEARCH_PLACEHOLDERS[placeholderIndex]}</Text>
+            <Ionicons name="search" size={16} color={C.muted} style={{ marginRight: 8 }} />
+            <Text numberOfLines={1} ellipsizeMode="tail" style={[s.searchInput, { color: C.muted }]}>{SEARCH_PLACEHOLDERS[placeholderIndex]}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[s.voicePill, isListening && s.voicePillActive]}
@@ -1107,7 +1107,7 @@ const s = themed(() => StyleSheet.create({
     elevation: 2, shadowColor: C.primaryDark, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4,
     borderWidth: 1, borderColor: C.line, gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 13, color: C.ink, paddingVertical: 8, minHeight: 42 },
+  searchInput: { flex: 1, minWidth: 0, fontSize: 13, lineHeight: 20, color: C.ink, paddingVertical: 0, paddingHorizontal: 0, textAlign: "left", textAlignVertical: "center", includeFontPadding: false },
   voicePill: {
     backgroundColor: C.soft,
     borderRadius: 8,

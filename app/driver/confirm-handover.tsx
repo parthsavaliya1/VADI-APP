@@ -1,3 +1,4 @@
+import DriverPaymentCheck from "@/components/DriverPaymentCheck";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { useEffect, useState } from "react";
 import {
@@ -114,6 +115,7 @@ export default function DriverConfirmHandoverScreen() {
               style={styles.input}
             />
 
+            <DriverPaymentCheck key={orderId} orderRef={orderId} />
             <Text style={styles.label}>Customer code</Text>
             <TextInput
               placeholder="6 digits"
