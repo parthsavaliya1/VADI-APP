@@ -69,7 +69,7 @@ export function ProductCard({
             ) : inCart ? (
               <Ionicons name="checkmark" size={15} color="#fff" />
             ) : (
-              <>{disabled || rectangularAdd ? <Text style={s.addBtnText}>{disabled ? "OUT" : "ADD"}</Text> : <Ionicons name="add" size={22} color="#fff" />}</>
+              <>{disabled || rectangularAdd ? <Text style={s.addBtnText}>{disabled ? "OUT" : "ADD"}</Text> : <Ionicons name="add" size={16} color="#fff" />}</>
             )}
           </TouchableOpacity>
         </View>

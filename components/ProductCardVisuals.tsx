@@ -33,7 +33,7 @@ export const productCardStyles = themed(() => StyleSheet.create({
   prodUnit: { fontSize: 11, color: C.muted, marginBottom: 5 },
   prodFooter: { flexWrap: "wrap", gap: 4, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: "auto" },
   prodPrice: { fontSize: 16, fontWeight: "800", color: C.primary },
-  addBtn: { backgroundColor: C.primary, borderWidth: 1, borderColor: C.primary, borderRadius: 22, minWidth: 40, minHeight: 40, padding: 6, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  addBtn: { backgroundColor: C.primary, borderWidth: 1, borderColor: C.primary, borderRadius: 16, minWidth: 32, minHeight: 32, padding: 4, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   rectangularAdd: { minWidth: 64, minHeight: 40, borderRadius: 8, paddingHorizontal: 14 },
   addBtnActive: { backgroundColor: C.primaryDark, borderColor: C.primaryDark },
   addBtnText: { color: "#fff", fontWeight: "700", fontSize: 10 },
