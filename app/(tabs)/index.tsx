@@ -1,4 +1,4 @@
-import { ProductCard } from "@/components/ProductCard";
+import { HomeProductCard as ProductCard } from "@/components/HomeProductCard";
 import { StruckPrice } from "@/components/StruckPrice";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useRef, useState } from "react";
@@ -29,7 +29,8 @@ import {
   offerDeadlineToFutureMs,
   remainingMsToCountdownDHMS,
 } from "../../utils/offerEnd";
-import { C, themed } from "@/constants/theme";
+import { Fonts, themed } from "@/constants/theme";
+import { HomeColors as C, botanicalLeaves } from "@/constants/homeDesign";
 import { getProductLayout } from "@/utils/productLayout";
 
 type SpeechEventName = "start" | "end" | "result" | "error";
@@ -87,9 +88,9 @@ const getFallbackBanners = () => [
 
 const getFeatures = () => [
   { icon: "leaf-outline", label: "100% Natural", sub: "Chemical free", color: C.primary, bg: C.soft },
-  { icon: "home-outline", label: "From Local\nFarms", sub: "Support local", color: C.primary, bg: C.soft },
+  { icon: "home-outline", label: "Local Farms", sub: "Support local", color: C.primary, bg: C.soft },
   { icon: "flash-outline", label: "Fast Delivery", sub: "At your door", color: C.primary, bg: C.soft },
-  { icon: "shield-checkmark-outline", label: "Secure\nPayment", sub: "Safe & easy", color: C.primary, bg: C.soft },
+  { icon: "shield-checkmark-outline", label: "Secure Payment", sub: "Safe & easy", color: C.primary, bg: C.soft },
 ];
 
 const getQuickActions = () => [
@@ -309,7 +310,8 @@ function DealCard({
   offerEndMs: number | null;
 }) {
   const { width, fontScale } = useWindowDimensions();
-  const { dealCardWidth: DEAL_CARD_W, stackActions } = getProductLayout(width, fontScale);
+  const { stackActions } = getProductLayout(width, fontScale);
+  const DEAL_CARD_W = Math.max(1, width - 32);
   const v = getDefaultVariant(item);
   const disc = v.mrp > 0 ? Math.round(((v.mrp - v.price) / v.mrp) * 100) : item.discount || 0;
   return (
@@ -323,7 +325,8 @@ function DealCard({
           <Text style={s.badgeTxt}>{disc}% OFF</Text>
         </View>
       )}
-      <View style={[s.dealImgZone, stackActions && { width: "100%", height: 112 }]}>
+      <View style={[s.dealImgZone, stackActions && { width: "100%", height: 150 }]}>
+        <View pointerEvents="none" style={s.imageArch} />
         <Image source={{ uri: item.image || "https://via.placeholder.com/150" }} style={s.dealImg} />
       </View>
       <View style={s.dealInfo}>
@@ -333,10 +336,10 @@ function DealCard({
         <View style={[s.dealFooter, { flexWrap: "wrap", gap: 8 }]}>
           <View style={{ flex: 1, marginRight: 6 }}>
             <Text style={s.dealPrice}>₹{v.price.toFixed(2)}</Text>
-            {disc > 0 && <StruckPrice style={s.strikePrice}>₹{v.mrp.toFixed(2)}</StruckPrice>}
+            {disc > 0 && <StruckPrice style={[s.strikePrice, s.dealStrikePrice]}>₹{v.mrp.toFixed(2)}</StruckPrice>}
           </View>
-          <TouchableOpacity style={[s.addBtn, inCart && s.addBtnActive]} hitSlop={{ top: 7, bottom: 7, left: 0, right: 0 }} accessibilityLabel={inCart ? `${item.name} added to cart` : `Add ${item.name} to cart`} onPress={(e) => { e.stopPropagation(); if (!inCart) onAdd(); }} activeOpacity={0.8}>
-            {inCart ? <Ionicons name="checkmark" size={16} color="#fff" /> : <Text style={s.addBtnText}>ADD</Text>}
+          <TouchableOpacity style={[s.addBtn, s.dealAddBtn, inCart && s.addBtnActive]} hitSlop={{ top: 7, bottom: 7, left: 0, right: 0 }} accessibilityLabel={inCart ? `${item.name} added to cart` : `Add ${item.name} to cart`} onPress={(e) => { e.stopPropagation(); if (!inCart) onAdd(); }} activeOpacity={0.8}>
+            {inCart ? <Ionicons name="checkmark" size={16} color="#fff" /> : <Text style={[s.addBtnText, s.dealAddText]}>ADD</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -347,18 +350,21 @@ function DealCard({
 // ─── Featured Card ────────────────────────────────────────────────────────────
 function FeaturedCard({ item, onAdd, inCart }: { item: Product; onAdd: () => void; inCart: boolean }) {
   const { width, fontScale } = useWindowDimensions();
-  const { horizontalCardWidth: HORIZONTAL_CARD_W, stackActions } = getProductLayout(width, fontScale);
+  const { stackActions } = getProductLayout(width, fontScale);
+  const HORIZONTAL_CARD_W = Math.max(1, width - 32);
   const v = getDefaultVariant(item);
   return (
     <Pressable
-      style={({ pressed }) => [s.featCard, { width: HORIZONTAL_CARD_W }, pressed && s.featCardPressed]}
+      style={({ pressed }) => [s.featCard, { width: HORIZONTAL_CARD_W }, stackActions && { flexDirection: "column" }, pressed && s.featCardPressed]}
       accessibilityRole="button"
       accessibilityLabel={item.name + ", " + v.packSize + v.packUnit + ", ₹" + v.price.toFixed(2) + ". View details"}
       onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
     >
-      <View style={s.featImgZone}>
+      <View style={[s.featImgZone, stackActions && { width: "100%", height: 150 }]}>
+        <View pointerEvents="none" style={s.imageArch} />
         <Image source={{ uri: item.image || "https://via.placeholder.com/150" }} style={s.featImg} />
       </View>
+      <Image source={botanicalLeaves} pointerEvents="none" accessible={false} style={s.botanicalAccent} />
       <View style={s.featContent}>
         <View style={s.featDetails}>
           <Text style={s.featName}>{item.name}</Text>
@@ -402,7 +408,8 @@ function EmptyCategoryState({ categoryName, onClear }: { categoryName: string; o
 function SectionHeader({ title, onSeeAll, right }: { title: React.ReactNode; onSeeAll?: () => void; right?: React.ReactNode }) {
   return (
     <View style={s.secHeader}>
-      <View style={{ flex: 1 }}>{typeof title === "string" ? <Text style={s.secTitle}>{title}</Text> : title}</View>
+      <View style={{ flexShrink: 1 }}>{typeof title === "string" ? <Text style={s.secTitle}>{title}</Text> : title}</View>
+      <View pointerEvents="none" style={s.secRule} />
       {right}
       {onSeeAll && (
         <TouchableOpacity onPress={onSeeAll}>
@@ -415,8 +422,8 @@ function SectionHeader({ title, onSeeAll, right }: { title: React.ReactNode; onS
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
-  const { width, fontScale } = useWindowDimensions();
-  const { dealCardWidth: DEAL_CARD_W } = getProductLayout(width, fontScale);
+  const { width } = useWindowDimensions();
+  const DEAL_CARD_W = Math.max(1, width - 32);
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(0);
   const { loading: authLoading, user } = useAuth();
@@ -698,12 +705,18 @@ export default function HomeScreen() {
     <SafeAreaView style={s.safe} edges={["left", "right"]}>
       <Animated.View style={[s.headerFixed, { opacity: headerOpacity }]} onLayout={event => { const next = Math.ceil(event.nativeEvent.layout.height); setHeaderHeight(previous => previous === next ? previous : next); }}>
         <View style={[s.headerWrap, { paddingTop: insets.top }]}>
+          <View style={s.masthead}>
+            <Text style={s.wordmark}>VADI FRESH</Text>
+            <View style={s.wordmarkRule} />
+            <Text style={s.wordmarkCaption}>EVERYDAY GOODNESS</Text>
+            <Ionicons name="leaf-outline" size={24} color={C.primary} />
+          </View>
           <View style={s.header}>
           <View style={{ flex: 1 }}>
             <View style={s.brandRow}>
               <Image source={require("../../assets/images/vadi-brand-logo.png")} style={s.headerLogo} />
               <View style={{ flex: 1 }}>
-                <Text style={s.deliverLabel}>📍 Delivering to</Text>
+                <Text style={s.deliverLabel}>Delivering to</Text>
                 <TouchableOpacity
                   style={s.addressRow}
                   onPress={() => router.push("/my-addresses")}
@@ -803,7 +816,7 @@ export default function HomeScreen() {
               decelerationRate="fast"
               renderItem={({ item }) => <BannerSlide item={item} />}
               style={s.bannerList}
-              contentContainerStyle={{ paddingHorizontal: 16 }}
+              getItemLayout={(_, index) => ({ length: width - 32, offset: (width - 32) * index, index })}
               onMomentumScrollEnd={(e) => {
                 const idx = Math.round(e.nativeEvent.contentOffset.x / (width - 32));
                 setBannerIdx(Math.min(idx, bannerSlides.length - 1));
@@ -853,7 +866,7 @@ export default function HomeScreen() {
                 const selected = selectedCatId === item._id;
                 return (
                   <TouchableOpacity
-                    style={[s.catCard, selected && s.catCardSelected]}
+                    style={[s.catCard, { width: Math.max(86, Math.min(150, (width - 52) / 3)) }, selected && s.catCardSelected]}
                     activeOpacity={0.75}
                     onPress={() => router.push({
                       pathname: "/category",
@@ -864,7 +877,7 @@ export default function HomeScreen() {
                       },
                     })}
                   >
-                    <View style={[s.catIconWrap, { backgroundColor: item.image ? C.card : qa.bg }]}>
+                    <View style={[s.catIconWrap, { backgroundColor: C.soft }]}>
                       {item.image
                         ? <Image source={{ uri: item.image }} style={s.catImg} />
                         : <Ionicons name={qa.icon as any} size={22} color={qa.color} />
@@ -883,7 +896,7 @@ export default function HomeScreen() {
         {/* ── TODAY'S DEALS ────────────────────────────────────────────────── */}
         {!isFiltering && homeLayout.showBestDealsSection && dealProducts.length > 0 && (
           <View style={s.dealSection}>
-            <View style={s.secHeader}>
+            <View style={[s.secHeader, { paddingHorizontal: 0 }]}>
               <View style={{ flex: 1 }}>
                 <View style={s.dealHeaderTopRow}>
                   <Text style={s.secTitle}>{"Today's Deal"}</Text>
@@ -1071,6 +1084,17 @@ const s = themed(() => StyleSheet.create({
   scrollContent: {},
   loadingScreen: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: C.page },
 
+  botanicalAccent: { position: "absolute", top: 0, right: 0, width: 84, height: 130, opacity: 0.3, resizeMode: "cover" },
+  masthead: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 12 },
+  wordmark: { fontFamily: Fonts.serif, fontSize: 20, fontWeight: "700", letterSpacing: 1.2, color: C.ink },
+  wordmarkRule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: C.line },
+  wordmarkCaption: { fontSize: 7, letterSpacing: 1.3, fontWeight: "600", color: C.muted, maxWidth: 72 },
+  secRule: { flex: 1, height: 1, backgroundColor: C.line, minWidth: 8 },
+  imageArch: { position: "absolute", top: 6, bottom: 0, left: 0, right: 0, backgroundColor: C.soft, borderTopLeftRadius: 100, borderTopRightRadius: 100, borderBottomLeftRadius: 8, borderBottomRightRadius: 8 },
+  dealAddBtn: { backgroundColor: "#FFF9F0", borderColor: "#FFF9F0" },
+  dealAddText: { color: C.primaryDark },
+  dealStrikePrice: { color: "#DFE4CC" },
+
   // HEADER
   headerFixed: {
     position: "absolute",
@@ -1083,37 +1107,24 @@ const s = themed(() => StyleSheet.create({
   headerWrap: {
     backgroundColor: C.page,
   },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 4, paddingBottom: 10 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 2, paddingBottom: 14, gap: 8 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 0 },
-  headerLogo: { width: 40, height: 40, resizeMode: "contain" },
+  headerLogo: { width: 36, height: 36, resizeMode: "contain" },
   brandTagline: { fontSize: 13, fontWeight: "800", color: C.ink },
   brandSubTagline: { fontSize: 11, color: C.muted, marginTop: 2 },
   deliverLabel: { fontSize: 11, color: C.muted, fontWeight: "500", marginBottom: 2 },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  addressText: { fontSize: 15, fontWeight: "800", color: C.ink, flexShrink: 1, minWidth: 0 },
+  addressText: { fontSize: 14, fontWeight: "700", color: C.ink, flexShrink: 1, minWidth: 0 },
   headerIcons: { flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 8 },
-  iconBtn: {
-    position: "relative", padding: 7, backgroundColor: C.card, borderRadius: 12,
-    elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 3,
-  },
+  iconBtn: { position: "relative", padding: 9, backgroundColor: C.soft, borderRadius: 24, borderWidth: 1, borderColor: C.line },
   notifDot: { position: "absolute", top: 5, right: 5, width: 7, height: 7, borderRadius: 4, backgroundColor: "#EF4444", borderWidth: 1.5, borderColor: "#fff" },
   cartBadge: { position: "absolute", top: 0, right: 0, backgroundColor: C.primary, borderRadius: 10, minWidth: 17, minHeight: 17, justifyContent: "center", alignItems: "center", paddingHorizontal: 3 },
   cartBadgeText: { color: "#fff", fontSize: 9, fontWeight: "800" },
 
   // SEARCH
-  searchBox: {
-    flexDirection: "row", alignItems: "center", backgroundColor: C.card, borderRadius: 12,
-    paddingLeft: 14, paddingRight: 8, minHeight: 42, marginHorizontal: 16, marginBottom: 14,
-    elevation: 2, shadowColor: C.primaryDark, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4,
-    borderWidth: 1, borderColor: C.line, gap: 8,
-  },
+  searchBox: { flexDirection: "row", alignItems: "center", backgroundColor: C.card, borderRadius: 18, paddingLeft: 14, paddingRight: 8, minHeight: 50, marginHorizontal: 16, marginBottom: 16, borderWidth: 1, borderColor: C.line, gap: 8 },
   searchInput: { flex: 1, minWidth: 0, fontSize: 13, lineHeight: 20, color: C.ink, paddingVertical: 0, paddingHorizontal: 0, textAlign: "left", textAlignVertical: "center", includeFontPadding: false },
-  voicePill: {
-    backgroundColor: C.soft,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
+  voicePill: { backgroundColor: C.soft, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 9 },
   voicePillActive: {
     backgroundColor: C.primary,
   },
@@ -1125,26 +1136,25 @@ const s = themed(() => StyleSheet.create({
 
   // BANNER
   bannerSection: { marginBottom: 16, marginHorizontal: 0, paddingHorizontal: 0, marginTop: 0 },
-  bannerList: { marginBottom: 10, paddingHorizontal: 0 },
-  bannerSlide: { borderRadius: 16, overflow: "hidden", width: "100%", marginHorizontal: 16 },
-  bannerImg: { width: "100%", aspectRatio: 1080 / 352, resizeMode: "cover", borderRadius: 16 },
+  bannerList: { marginBottom: 10, marginHorizontal: 16, borderRadius: 20, overflow: "hidden" },
+  bannerSlide: { borderRadius: 20, overflow: "hidden", width: "100%" },
+  bannerImg: { width: "100%", aspectRatio: 1080 / 352, resizeMode: "cover", borderRadius: 20 },
   bannerDots: { flexDirection: "row", justifyContent: "center", gap: 5, marginTop: 8 },
   dot: { height: 5, width: 5, borderRadius: 3, backgroundColor: C.line },
   dotActive: { width: 18, backgroundColor: C.primary },
 
   // FEATURE BADGES
-  featBadgesRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 12, marginBottom: 22, gap: 6 },
-  featBadge: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 4, alignItems: "center" },
-  featIconCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center", marginBottom: 6 },
-  featBadgeTitle: { fontSize: 11, fontWeight: "800", color: C.ink, textAlign: "center", lineHeight: 14 },
-  featBadgeSub: { fontSize: 11, color: C.muted, textAlign: "center", marginTop: 1 },
-
+  featBadgesRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, marginBottom: 26, gap: 0 },
+  featBadge: { flex: 1, borderRightWidth: StyleSheet.hairlineWidth, borderColor: C.line, paddingVertical: 4, paddingHorizontal: 4, alignItems: "center" },
+  featIconCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: "center", alignItems: "center", marginBottom: 7 },
+  featBadgeTitle: { fontSize: 10, fontWeight: "600", color: C.ink, textAlign: "center", lineHeight: 14 },
+  featBadgeSub: { fontSize: 9, color: C.muted, textAlign: "center", marginTop: 3 },
   // SECTION
-  section: { marginBottom: 24, marginHorizontal: 0, paddingHorizontal: 0 },
-  dealSection: { marginBottom: 24, marginHorizontal: 16, backgroundColor: C.badge, paddingVertical: 14, paddingHorizontal: 12, borderRadius: 16 },
-  secHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12 },
-  secTitle: { fontSize: 17, fontWeight: "900", color: C.ink },
-  seeAll: { fontSize: 13, color: C.primary, fontWeight: "700" },
+  section: { marginBottom: 26, marginHorizontal: 0, paddingHorizontal: 0 },
+  dealSection: { marginBottom: 26, marginHorizontal: 16, paddingVertical: 0, paddingHorizontal: 0 },
+  secHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12, gap: 10 },
+  secTitle: { fontFamily: Fonts.serif, fontSize: 22, fontWeight: "700", color: C.ink, letterSpacing: -0.5, flexShrink: 1 },
+  seeAll: { fontSize: 11, color: C.primary, fontWeight: "700" },
   dealHeaderTopRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   dealViewAllBtn: { marginLeft: "auto" },
 
@@ -1157,35 +1167,26 @@ const s = themed(() => StyleSheet.create({
 
   // DEAL CARD
   dealListContent: { paddingRight: 0 },
-  dealCard: {
-    backgroundColor: C.card, borderRadius: 14, elevation: 3, flexDirection: "row",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6,
-    borderWidth: 1, borderColor: "#F0F0F0", overflow: "hidden", minHeight: 112,
-  },
-  dealImgZone: { width: 96, minHeight: 112, backgroundColor: C.card, alignItems: "center", justifyContent: "center", position: "relative", alignSelf: "stretch" },
-  dealBadge: { position: "absolute", top: 6, right: 6, backgroundColor: C.badge, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, zIndex: 10, elevation: 5 },
-  badgeTxt: { color: C.badgeText, fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
-  dealImg: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", resizeMode: "contain" },
-  dealInfo: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, justifyContent: "center" },
-  dealName: { fontSize: 11, fontWeight: "800", color: C.ink, marginBottom: 4, lineHeight: 15 },
-  dealUnit: { fontSize: 10, color: C.muted, fontWeight: "600", marginBottom: 4 },
-  dealCardTimer: { fontSize: 10, fontWeight: "800", color: "#DC2626", marginBottom: 6 },
+  dealCard: { backgroundColor: C.primaryDark, borderRadius: 20, flexDirection: "row", borderWidth: 1, borderColor: C.primaryDark, overflow: "hidden", minHeight: 152, padding: 10 },
+  dealImgZone: { width: 112, minHeight: 132, alignItems: "center", justifyContent: "center", position: "relative", alignSelf: "stretch", borderRadius: 14, overflow: "hidden" },
+  dealBadge: { position: "absolute", top: 10, right: 10, backgroundColor: C.badge, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5, zIndex: 10 },
+  badgeTxt: { color: C.badgeText, fontSize: 9, fontWeight: "700", letterSpacing: 0.2 },
+  dealImg: { width: "90%", height: 126, resizeMode: "contain" },
+  dealInfo: { flex: 1, minWidth: 0, paddingHorizontal: 12, paddingTop: 26, paddingBottom: 6, justifyContent: "center" },
+  dealName: { fontFamily: Fonts.serif, fontSize: 18, fontWeight: "700", color: "#FFF9F0", marginBottom: 5, lineHeight: 23 },
+  dealUnit: { fontSize: 11, color: "#E9EDCF", fontWeight: "500", marginBottom: 8 },
+  dealCardTimer: { fontSize: 11, fontWeight: "700", color: "#FFE0AD", marginBottom: 6 },
   dealFooter: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },
-  dealPrice: { fontSize: 13, fontWeight: "900", color: C.ink },
+  dealPrice: { fontSize: 18, fontWeight: "800", color: "#FFF9F0" },
   strikePrice: { fontSize: 10, color: C.muted, textDecorationLine: "line-through", marginTop: 2 },
   roundAddBtn: { backgroundColor: C.primary, width: 28, height: 28, borderRadius: 8, justifyContent: "center", alignItems: "center", flexShrink: 0, elevation: 3 },
 
   // CATEGORY
-  catCard: {
-    backgroundColor: C.card, width: 82, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 6,
-    alignItems: "center", elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1, shadowRadius: 5, borderWidth: 1.5, borderColor: "transparent",
-  },
+  catCard: { backgroundColor: "transparent", borderRadius: 18, paddingVertical: 0, paddingHorizontal: 0, alignItems: "center", borderWidth: 1, borderColor: "transparent" },
   catCardSelected: { borderColor: C.primary, backgroundColor: C.page },
-  catIconWrap: { width: 48, height: 48, borderRadius: 24, justifyContent: "center", alignItems: "center", marginBottom: 8, overflow: "hidden" },
+  catIconWrap: { width: "100%", height: 88, borderTopLeftRadius: 60, borderTopRightRadius: 60, borderBottomLeftRadius: 8, borderBottomRightRadius: 8, justifyContent: "center", alignItems: "center", marginBottom: 6, overflow: "hidden", padding: 8 },
   catImg: { width: "100%", height: "100%", resizeMode: "contain" },
-  catName: { fontSize: 12, fontWeight: "700", color: C.ink, textAlign: "center", lineHeight: 15 },
-
+  catName: { fontFamily: Fonts.serif, fontSize: 15, fontWeight: "700", color: C.ink, textAlign: "center", lineHeight: 20, backgroundColor: C.soft, borderRadius: 16, alignSelf: "stretch", paddingVertical: 6, paddingHorizontal: 3 },
   // PRODUCTS GRID
   productsGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", paddingHorizontal: 16, gap: 10 },
 
@@ -1204,30 +1205,26 @@ const s = themed(() => StyleSheet.create({
   prodUnit: { fontSize: 10, color: C.muted, fontWeight: "600", marginTop: 2, marginBottom: 4, paddingHorizontal: 10 },
   prodFooter: { gap: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 10, paddingBottom: 8 },
   prodPrice: { fontSize: 13, fontWeight: "800", color: C.primary },
-  addBtn: { borderWidth: 1.5, borderColor: C.primary, borderRadius: 8, minWidth: 44, minHeight: 30, paddingHorizontal: 8, paddingVertical: 3, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  addBtn: { borderWidth: 1, borderColor: C.primary, borderRadius: 22, minWidth: 44, minHeight: 40, paddingHorizontal: 12, paddingVertical: 7, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   addBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
   addBtnText: { color: C.primary, fontWeight: "800", fontSize: 10 },
 
   // FEATURED CARD
-  featCard: {
-    backgroundColor: C.card, borderRadius: 20, elevation: 2,
-    shadowColor: C.ink, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
-    borderWidth: 1, borderColor: C.line, overflow: "hidden",
-  },
+  featCard: { backgroundColor: C.card, borderRadius: 20, borderWidth: 1, borderColor: C.line, overflow: "hidden", flexDirection: "row", padding: 12, minHeight: 144 },
   featCardPressed: { opacity: 0.92, transform: [{ scale: 0.98 }] },
-  featImgZone: { height: 104, backgroundColor: C.card, alignItems: "center", justifyContent: "center", position: "relative" },
+  featImgZone: { width: 112, height: 132, alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", borderRadius: 10 },
   carouselContent: { paddingHorizontal: 16, paddingVertical: 4, gap: 12 },
   trendingCard: { borderRadius: 16, elevation: 0, shadowOpacity: 0 },
   trendingImgZone: { height: 96 },
-  featImg: { width: "100%", height: "100%", resizeMode: "contain" },
+  featImg: { width: "90%", height: "94%", resizeMode: "contain" },
   cardFooterStacked: { flexDirection: "column", alignItems: "stretch", gap: 8 },
-  featContent: { flex: 1, padding: 10, gap: 6 },
+  featContent: { flex: 1, minWidth: 0, padding: 12, gap: 8, justifyContent: "center" },
   featDetails: { gap: 2 },
-  featName: { fontSize: 12, fontWeight: "700", color: C.ink, lineHeight: 16 },
-  featUnit: { fontSize: 10, lineHeight: 14, color: C.muted, fontWeight: "600" },
-  featFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: "auto" },
-  featPrice: { fontSize: 13, fontWeight: "800", color: C.primary, flex: 1, minWidth: 0 },
-  featAddButton: { minWidth: 44, borderRadius: 8 },
+  featName: { fontFamily: Fonts.serif, fontSize: 18, fontWeight: "700", color: C.ink, lineHeight: 23 },
+  featUnit: { fontSize: 11, lineHeight: 16, color: C.muted, fontWeight: "500" },
+  featFooter: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 },
+  featPrice: { fontSize: 17, fontWeight: "800", color: C.primary, minWidth: 0 },
+  featAddButton: { minWidth: 54, borderRadius: 20 },
   featAddBtn: { backgroundColor: C.primary, width: 28, height: 28, borderRadius: 8, flexShrink: 0, justifyContent: "center", alignItems: "center" },
 
   // FRESH STRIP
@@ -1257,13 +1254,13 @@ const s = themed(() => StyleSheet.create({
   cartFooterBtn: { color: "#fff", fontSize: 14, fontWeight: "700" },
 
   // GUEST BANNER
-  guestBanner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: C.card, marginHorizontal: 16, marginBottom: 10, paddingVertical: 11, paddingHorizontal: 14, borderRadius: 16, borderWidth: 1.5, borderColor: C.line, shadowColor: C.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
+  guestBanner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: C.card, marginHorizontal: 16, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, borderColor: C.line, gap: 6 },
   guestLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
   guestIconWrap: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.soft, alignItems: "center", justifyContent: "center" },
-  guestTitle: { fontSize: 13, fontWeight: "700", color: C.ink },
-  guestSub: { fontSize: 11, color: C.muted, fontWeight: "500", marginTop: 1 },
+  guestTitle: { fontFamily: Fonts.serif, fontSize: 14, fontWeight: "700", color: C.ink },
+  guestSub: { fontSize: 10, color: C.muted, fontWeight: "400", marginTop: 3 },
   guestRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   guestLoginBtn: { backgroundColor: C.primary, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
   guestLoginText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  guestDismiss: { width: 26, height: 26, borderRadius: 13, backgroundColor: C.soft, alignItems: "center", justifyContent: "center" },
+  guestDismiss: { width: 24, height: 32, alignItems: "center", justifyContent: "center" },
 }));
