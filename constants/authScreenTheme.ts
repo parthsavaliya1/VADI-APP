@@ -1,10 +1,12 @@
 import { Dimensions } from "react-native";
+import { C } from "@/constants/theme";
 
 const { width: windowWidth } = Dimensions.get("window");
 
-/** Tuned to farm banner + UI (see scripts/process-auth-bg-assets.mjs) */
-export const BG_SURFACE = "#F1F6ED";
-export const BG_GRADIENT_MID = "#E3ECDA";
+/** Resolve at render time, after the admin-selected theme has loaded. */
+export function getAuthBackgroundColors(): [string, string, string] {
+  return [C.page, C.page, C.page];
+}
 
 export const SCREEN_WIDTH = windowWidth;
 

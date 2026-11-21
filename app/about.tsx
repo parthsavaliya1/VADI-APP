@@ -280,7 +280,7 @@ const styles = themed(() =>
       borderWidth: 1,
       borderColor: C.line,
     },
-    logo: { width: 84, height: 84, resizeMode: "contain" },
+    logo: { width: 144, height: 90, resizeMode: "contain" },
     brandName: { marginTop: 8, fontSize: 22, fontWeight: "900", color: C.ink, letterSpacing: 0.5 },
     brandTagline: {
       marginTop: 2,

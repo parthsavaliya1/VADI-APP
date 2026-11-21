@@ -1,3 +1,4 @@
+import { productCardStyles as cardStyles } from "@/components/ProductCardVisuals";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
@@ -95,8 +96,8 @@ const styles = themed(() => StyleSheet.create({
   },
   title: { fontSize: 18, fontWeight: "800" },
   empty: { color: C.muted },
-  card: { backgroundColor: C.card, borderRadius: 14, padding: 14, marginBottom: 10 },
-  name: { fontWeight: "800", fontSize: 16 },
+  card: { ...cardStyles.prodCard, padding: 14, marginBottom: 12 },
+  name: { ...cardStyles.prodName },
   meta: { color: C.muted, marginTop: 4 },
   status: { marginTop: 6, color: C.primary, fontWeight: "700" },
   editBtn: {

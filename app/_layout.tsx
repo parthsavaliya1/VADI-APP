@@ -1,3 +1,4 @@
+import { C, getThemeVersion, subscribeTheme } from "@/constants/theme";
 import { useAuth , AuthProvider } from "@/context/AuthContext";
 import { AddressProvider } from "@/context/AddressContext";
 import { CartProvider } from "@/context/CartContext";
@@ -6,18 +7,18 @@ import { OrderProvider } from "@/context/OrderContext";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { getApiUrl, loadRemoteConfig } from "@/firebase";
 import { resolveStartupApiUrl, setBaseUrl } from "@/utils/api";
-import { loadAppTheme } from "@/utils/appTheme";
+import { loadAppTheme, loadCachedAppTheme } from "@/utils/appTheme";
 import { ensurePushChannel } from "@/utils/pushNotifications";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Text, View } from "react-native";
 import Toast from "react-native-toast-message";
 import { RazorpayHost } from "@/components/RazorpayCheckout";
 import SeasonalAtmosphere from "@/components/SeasonalAtmosphere";
 
-// Keep the configured native logo visible until startup content is laid out.
+// Hold the native splash until the saved theme is restored and the themed loader is laid out.
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 function AccountProviders({ children }: { children: React.ReactNode }) {
@@ -65,11 +66,15 @@ function PushOpenListener() {
 }
 
 export default function RootLayout() {
+  useSyncExternalStore(subscribeTheme, getThemeVersion, getThemeVersion);
+  const [cachedThemeReady, setCachedThemeReady] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
-  // Load Remote Config & set base URL before anything renders (same as VADI-HISAB).
+  // Restore appearance first, then resolve the backend before mounting account screens.
   useEffect(() => {
     const init = async () => {
+      await loadCachedAppTheme();
+      setCachedThemeReady(true);
       try {
         await loadRemoteConfig();
         const url = resolveStartupApiUrl(getApiUrl(), process.env.EXPO_PUBLIC_API_URL, process.env.EXPO_PUBLIC_USE_LOCAL_API);
@@ -80,9 +85,9 @@ export default function RootLayout() {
       } catch (err) {
         console.warn("⚠️ Remote Config failed, using default BASE_URL:", err);
       } finally {
-        // Colour theme selected in the admin panel; must be set before first render.
+        // Refresh the admin palette before mounting account screens.
         try {
-          await Promise.race([loadAppTheme(), new Promise(resolve => setTimeout(resolve, 4000))]);
+          await Promise.race([loadAppTheme({ restoreCached: false }), new Promise(resolve => setTimeout(resolve, 4000))]);
         } catch (error) { console.warn("Theme unavailable, using default", error); }
         finally { setIsReady(true); }
       }
@@ -91,16 +96,19 @@ export default function RootLayout() {
     init();
   }, []);
 
+  // Keep the native splash only for the short local-cache read.
+  if (!cachedThemeReady) return null;
+
   if (!isReady) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center" }}>
+      <View style={{ flex: 1, backgroundColor: C.page, justifyContent: "center", alignItems: "center" }} onLayout={() => SplashScreen.hide()}>
         <AnimatedLoader size="large" />
       </View>
     );
   }
 
   return (
-    <View key="ready-app" style={{ flex: 1 }} onLayout={() => SplashScreen.hide()}>
+    <View key="ready-app" style={{ flex: 1, backgroundColor: C.page }} onLayout={() => SplashScreen.hide()}>
     <AuthProvider>
       <CustomAlertProvider>
         <AccountProviders>
@@ -108,7 +116,7 @@ export default function RootLayout() {
               <PushOpenListener />
               <ReviewBanner />
               {[
-                <Stack key="stack" screenOptions={{ headerShown: false }}>
+                <Stack key="stack" screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.page } }}>
                   <Stack.Screen name="(auth)" />
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="driver" />

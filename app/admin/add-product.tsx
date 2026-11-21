@@ -772,7 +772,7 @@ const styles = themed(() => StyleSheet.create({
     marginLeft: 4,
   },
   input: {
-    backgroundColor: "#F8F9FA",
+    backgroundColor: C.page,
     padding: 14,
     borderRadius: 12,
     fontSize: 15,
@@ -783,7 +783,7 @@ const styles = themed(() => StyleSheet.create({
   priceInput: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    backgroundColor: C.page,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: C.line,
@@ -804,7 +804,7 @@ const styles = themed(() => StyleSheet.create({
     fontWeight: "500",
   },
   pickerWrapper: {
-    backgroundColor: "#F8F9FA",
+    backgroundColor: C.page,
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
@@ -874,7 +874,7 @@ const styles = themed(() => StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: C.page,
     borderRadius: 12,
     marginBottom: 12,
   },
@@ -929,7 +929,7 @@ const styles = themed(() => StyleSheet.create({
     color: C.primary,
   },
   imageBtn: {
-    backgroundColor: "#F1F8F4",
+    backgroundColor: C.soft,
     padding: 32,
     borderRadius: 16,
     alignItems: "center",
@@ -955,7 +955,7 @@ const styles = themed(() => StyleSheet.create({
     width: "100%",
     height: 240,
     borderRadius: 16,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: C.soft,
   },
   removeImageBtn: {
     position: "absolute",

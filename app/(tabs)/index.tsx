@@ -1,4 +1,5 @@
-import { HomeProductCard as ProductCard } from "@/components/HomeProductCard";
+import { productCardStyles as cardStyles } from "@/components/ProductCardVisuals";
+import { ProductCard } from "@/components/ProductCard";
 import { StruckPrice } from "@/components/StruckPrice";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useRef, useState } from "react";
@@ -380,7 +381,7 @@ function FeaturedCard({ item, onAdd, inCart }: { item: Product; onAdd: () => voi
             onPress={(event) => { event.stopPropagation(); if (inCart) router.push("/cart"); else onAdd(); }}
             activeOpacity={0.7}
           >
-            {inCart ? <Ionicons name="checkmark" size={18} color="#fff" /> : <Text style={s.addBtnText}>+ ADD</Text>}
+            {inCart ? <Ionicons name="checkmark" size={18} color="#fff" /> : <Text style={s.addBtnText}>ADD</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -714,7 +715,9 @@ export default function HomeScreen() {
           <View style={s.header}>
           <View style={{ flex: 1 }}>
             <View style={s.brandRow}>
-              <Image source={require("../../assets/images/vadi-brand-logo.png")} style={s.headerLogo} />
+              <View style={s.headerLogoFrame}>
+                <Image source={require("../../assets/images/vadi-brand-logo.png")} style={s.headerLogo} accessibilityLabel="Vadi Fresh" />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.deliverLabel}>Delivering to</Text>
                 <TouchableOpacity
@@ -978,6 +981,7 @@ export default function HomeScreen() {
                     inCart={inCart}
                     onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
                     compact
+                    rectangularAdd
                     showTrendingBadge
                   />
                 );
@@ -1091,9 +1095,9 @@ const s = themed(() => StyleSheet.create({
   wordmarkCaption: { fontSize: 7, letterSpacing: 1.3, fontWeight: "600", color: C.muted, maxWidth: 72 },
   secRule: { flex: 1, height: 1, backgroundColor: C.line, minWidth: 8 },
   imageArch: { position: "absolute", top: 6, bottom: 0, left: 0, right: 0, backgroundColor: C.soft, borderTopLeftRadius: 100, borderTopRightRadius: 100, borderBottomLeftRadius: 8, borderBottomRightRadius: 8 },
-  dealAddBtn: { backgroundColor: "#FFF9F0", borderColor: "#FFF9F0" },
+  dealAddBtn: { ...cardStyles.rectangularAdd, backgroundColor: C.card, borderColor: C.card },
   dealAddText: { color: C.primaryDark },
-  dealStrikePrice: { color: "#DFE4CC" },
+  dealStrikePrice: { color: C.card, opacity: 0.75 },
 
   // HEADER
   headerFixed: {
@@ -1109,7 +1113,8 @@ const s = themed(() => StyleSheet.create({
   },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 2, paddingBottom: 14, gap: 8 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 0 },
-  headerLogo: { width: 36, height: 36, resizeMode: "contain" },
+  headerLogoFrame: { width: 36, height: 36, padding: 2, borderRadius: 6, borderWidth: 1, borderColor: C.line, backgroundColor: C.card, justifyContent: "center", alignItems: "center" },
+  headerLogo: { width: "100%", height: "100%", resizeMode: "contain" },
   brandTagline: { fontSize: 13, fontWeight: "800", color: C.ink },
   brandSubTagline: { fontSize: 11, color: C.muted, marginTop: 2 },
   deliverLabel: { fontSize: 11, color: C.muted, fontWeight: "500", marginBottom: 2 },
@@ -1173,11 +1178,11 @@ const s = themed(() => StyleSheet.create({
   badgeTxt: { color: C.badgeText, fontSize: 9, fontWeight: "700", letterSpacing: 0.2 },
   dealImg: { width: "90%", height: 126, resizeMode: "contain" },
   dealInfo: { flex: 1, minWidth: 0, paddingHorizontal: 12, paddingTop: 26, paddingBottom: 6, justifyContent: "center" },
-  dealName: { fontFamily: Fonts.serif, fontSize: 18, fontWeight: "700", color: "#FFF9F0", marginBottom: 5, lineHeight: 23 },
-  dealUnit: { fontSize: 11, color: "#E9EDCF", fontWeight: "500", marginBottom: 8 },
-  dealCardTimer: { fontSize: 11, fontWeight: "700", color: "#FFE0AD", marginBottom: 6 },
+  dealName: { fontFamily: Fonts.serif, fontSize: 18, fontWeight: "700", color: C.card, marginBottom: 5, lineHeight: 23 },
+  dealUnit: { fontSize: 11, color: C.card, fontWeight: "500", marginBottom: 8 },
+  dealCardTimer: { fontSize: 11, fontWeight: "700", color: C.card, marginBottom: 6 },
   dealFooter: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },
-  dealPrice: { fontSize: 18, fontWeight: "800", color: "#FFF9F0" },
+  dealPrice: { fontSize: 18, fontWeight: "800", color: C.card },
   strikePrice: { fontSize: 10, color: C.muted, textDecorationLine: "line-through", marginTop: 2 },
   roundAddBtn: { backgroundColor: C.primary, width: 28, height: 28, borderRadius: 8, justifyContent: "center", alignItems: "center", flexShrink: 0, elevation: 3 },
 
@@ -1210,7 +1215,7 @@ const s = themed(() => StyleSheet.create({
   addBtnText: { color: C.primary, fontWeight: "800", fontSize: 10 },
 
   // FEATURED CARD
-  featCard: { backgroundColor: C.card, borderRadius: 20, borderWidth: 1, borderColor: C.line, overflow: "hidden", flexDirection: "row", padding: 12, minHeight: 144 },
+  featCard: { ...cardStyles.prodCard, flexDirection: "row", padding: 12, minHeight: 144 },
   featCardPressed: { opacity: 0.92, transform: [{ scale: 0.98 }] },
   featImgZone: { width: 112, height: 132, alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", borderRadius: 10 },
   carouselContent: { paddingHorizontal: 16, paddingVertical: 4, gap: 12 },
@@ -1224,7 +1229,7 @@ const s = themed(() => StyleSheet.create({
   featUnit: { fontSize: 11, lineHeight: 16, color: C.muted, fontWeight: "500" },
   featFooter: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 },
   featPrice: { fontSize: 17, fontWeight: "800", color: C.primary, minWidth: 0 },
-  featAddButton: { minWidth: 54, borderRadius: 20 },
+  featAddButton: { ...cardStyles.rectangularAdd },
   featAddBtn: { backgroundColor: C.primary, width: 28, height: 28, borderRadius: 8, flexShrink: 0, justifyContent: "center", alignItems: "center" },
 
   // FRESH STRIP

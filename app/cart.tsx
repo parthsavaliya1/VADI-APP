@@ -1,10 +1,10 @@
+import { ProductCardImage, productCardStyles as cardStyles } from "@/components/ProductCardVisuals";
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/context/CustomAlertContext";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   FlatList,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -170,14 +170,7 @@ export default function CartScreen() {
         renderItem={({ item }) => (
           <View style={styles.cartItem}>
             {/* Image */}
-            <View style={styles.imageWrapper}>
-              <Image
-                source={{
-                  uri: item.image || "https://via.placeholder.com/80",
-                }}
-                style={styles.itemImage}
-              />
-            </View>
+            <ProductCardImage uri={item.image || "https://via.placeholder.com/80"} style={styles.imageWrapper} />
 
             {/* Details */}
             <View style={styles.itemDetails}>
@@ -376,7 +369,7 @@ const styles = themed(() => StyleSheet.create({
     borderBottomColor: C.line,
   },
   progressBannerSuccess: {
-    backgroundColor: "#F1F8E9",
+    backgroundColor: C.soft,
     borderBottomColor: "#DCEDC8",
   },
   progressTextGroup: { flex: 1, gap: 5 },
@@ -394,41 +387,14 @@ const styles = themed(() => StyleSheet.create({
   listContent: { padding: 14, paddingBottom: 420 },
 
   /* CART ITEM */
-  cartItem: {
-    flexDirection: "row",
-    backgroundColor: C.card,
-    borderRadius: 16,
-    padding: 13,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    gap: 12,
-  },
-  imageWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    backgroundColor: C.page,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-    flexShrink: 0,
-  },
+  cartItem: { ...cardStyles.prodCard, flexDirection: "row", padding: 12, marginBottom: 12, gap: 12 },
+  imageWrapper: { width: 80, height: 100, margin: 0, marginBottom: 0, flexShrink: 0 },
   itemImage: { width: "100%", height: "100%", resizeMode: "cover" },
 
   /* ITEM DETAILS */
   itemDetails: { flex: 1, justifyContent: "space-between" },
   itemTopRow: { flexDirection: "row", alignItems: "flex-start", gap: 4 },
-  itemName: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    color: C.ink,
-    lineHeight: 20,
-  },
+  itemName: { ...cardStyles.prodName, flex: 1 },
   removeBtn: { padding: 2 },
 
   variantChip: {
@@ -449,15 +415,7 @@ const styles = themed(() => StyleSheet.create({
   },
 
   /* QTY */
-  qtyContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: C.page,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: C.line,
-    overflow: "hidden",
-  },
+  qtyContainer: { flexDirection: "row", alignItems: "center", backgroundColor: C.page, borderRadius: 20, borderWidth: 1, borderColor: C.line, overflow: "hidden" },
   qtyBtn: { paddingHorizontal: 10, paddingVertical: 7 },
   qtyText: {
     fontSize: 14,
@@ -470,8 +428,7 @@ const styles = themed(() => StyleSheet.create({
   /* PRICE */
   priceGroup: { alignItems: "flex-end" },
   itemUnitPrice: { fontSize: 11, color: C.muted, fontWeight: "500" },
-  itemTotal: { fontSize: 16, fontWeight: "800", color: C.primary },
-
+  itemTotal: { ...cardStyles.prodPrice },
   /* BILL */
   billContainer: {
     position: "absolute",

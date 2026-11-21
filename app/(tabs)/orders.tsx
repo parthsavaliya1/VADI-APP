@@ -562,7 +562,7 @@ function OrderProductImage({ item, detail }: { item: OrderItem; detail: boolean 
   const uri = item.image || item.product?.image;
   const imageStyle = detail ? styles.detailItemImg : styles.itemThumb;
   return uri
-    ? <Image source={{ uri }} style={imageStyle} resizeMode="cover" />
+    ? <Image source={{ uri }} style={imageStyle} resizeMode="contain" />
     : <View style={[imageStyle, { alignItems: "center", justifyContent: "center", backgroundColor: C.soft }]}><Ionicons name="leaf-outline" size={detail ? 22 : 26} color={C.primary} /></View>;
 }
 

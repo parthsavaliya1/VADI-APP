@@ -42,21 +42,21 @@ export type Palette = {
  * enum and the CSS blocks in vadi-admin/app/globals.css + vadi-site/src/index.css.
  */
 export const THEMES = {
-  /** Mint pages, forest buttons, sage badges. */
+  /** Shared warm cream pages, forest buttons, pistachio surfaces and terracotta offers. */
   "fresh-green": {
-    page: "#F8FCF6",
-    card: "#FCFEFA",
-    primary: "#276438",
-    primaryDark: "#1D4D2A",
-    ink: "#183D25",
-    muted: "#526B58",
+    page: "#FFF9F0",
+    card: "#FFFCF6",
+    primary: "#164F2D",
+    primaryDark: "#103C22",
+    ink: "#173D26",
+    muted: "#626A56",
     tabInactive: "#8E8E93",
-    line: "#D6E5D3",
-    soft: "#E4F0DF",
-    badge: "#D3EAC5",
-    badgeText: "#183D25",
-    primarySoft: "#D3EAC5",
-    success: "#4F7D5B",
+    line: "#CAD0B6",
+    soft: "#EAEECF",
+    badge: "#BE561D",
+    badgeText: "#FFFFFF",
+    primarySoft: "#EAEECF",
+    success: "#164F2D",
   },
   /** Warm cream pages, leaf-green buttons, mango offer badges. */
   "cream-mango": {
@@ -78,7 +78,7 @@ export const THEMES = {
   terracotta: {
     page: "#F7F3EC",
     card: "#FFFFFF",
-    primary: "#B56A45",
+    primary: "#A75D3C",
     primaryDark: "#8F4F32",
     ink: "#171717",
     muted: "#6F6A64",
@@ -158,8 +158,8 @@ export const THEMES = {
   summer: {
     page: "#FFF6E8",
     card: "#FFFFFF",
-    primary: "#E07A1F",
-    primaryDark: "#B85E12",
+    primary: "#A65312",
+    primaryDark: "#803C0B",
     ink: "#3A2410",
     muted: "#8A6A4A",
     tabInactive: "#8E8E93",
@@ -198,6 +198,7 @@ export function isThemeKey(value: unknown): value is ThemeKey {
 
 let activeTheme: ThemeKey = DEFAULT_THEME;
 let themeVersion = 0;
+const themeListeners = new Set<() => void>();
 
 /**
  * The live palette. Mutated in place by `setTheme` so that any code reading
@@ -209,10 +210,21 @@ export const C: Palette = { ...THEMES[DEFAULT_THEME] };
 export const brand = C;
 
 export function setTheme(key: ThemeKey) {
-  if (!isThemeKey(key)) return;
+  if (!isThemeKey(key) || key === activeTheme) return;
   activeTheme = key;
   Object.assign(C, THEMES[key]);
   themeVersion += 1;
+  themeListeners.forEach((listener) => listener());
+}
+
+/** React can subscribe without remounting navigation or account providers. */
+export function subscribeTheme(listener: () => void): () => void {
+  themeListeners.add(listener);
+  return () => { themeListeners.delete(listener); };
+}
+
+export function getThemeVersion(): number {
+  return themeVersion;
 }
 
 export function getThemeKey(): ThemeKey {

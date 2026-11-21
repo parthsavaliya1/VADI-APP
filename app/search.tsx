@@ -17,7 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { C } from "@/constants/theme";
+import { C, themed } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchHistory } from "@/utils/useSearchHistory";
 import { API } from "@/utils/api";
@@ -304,7 +304,7 @@ function Chip({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   searchControls: { flexDirection: "row", alignItems: "center", gap: 8 },
   searchAnchor: { flex: 1, minWidth: 0, position: "relative", zIndex: 20 },
   history: {
@@ -402,4 +402,4 @@ const styles = StyleSheet.create({
   row: { gap: 10, marginBottom: 12 },
   emptyWrap: { alignItems: "center", paddingTop: 48 },
   empty: { textAlign: "center", color: C.muted, marginTop: 10, fontWeight: "700" },
-});
+}));

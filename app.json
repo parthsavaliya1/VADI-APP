@@ -4,7 +4,7 @@
     "slug": "vadi-product",
     "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/images/vadi-brand-logo.png",
+    "icon": "./assets/images/vadi-app-icon.png",
     "scheme": "vadiapp",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -20,7 +20,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/images/vadi-brand-logo.png"
+        "foregroundImage": "./assets/images/vadi-adaptive-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.vadi.app",
@@ -87,10 +87,10 @@
           "image": "./assets/images/vadi-brand-logo.png",
           "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#FFFFFF",
+          "backgroundColor": "#FFF9F0",
           "dark": {
             "image": "./assets/images/vadi-brand-logo.png",
-            "backgroundColor": "#FFFFFF"
+            "backgroundColor": "#FFF9F0"
           }
         }
       ],
@@ -135,6 +135,6 @@
       "url": "https://u.expo.dev/f388db81-48ff-4df8-a155-1e55f92484c4"
     },
     "owner": "vadi-app",
-    "backgroundColor": "#FFFFFF"
+    "backgroundColor": "#FFF9F0"
   }
 }

@@ -93,7 +93,7 @@ const styles = themed(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.page },
   container: { padding: 20, paddingTop: 40 },
   logoWrap: { alignItems: "center", marginBottom: 20 },
-  logo: { width: 120, height: 120, resizeMode: "contain" },
+  logo: { width: 180, height: 112, resizeMode: "contain" },
   title: {
     fontSize: 24,
     fontWeight: "800",

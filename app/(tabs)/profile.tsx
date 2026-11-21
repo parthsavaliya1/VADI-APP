@@ -696,7 +696,7 @@ const styles = themed(() => StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: "#F1F8E9",
+    backgroundColor: C.soft,
     top: -30,
     left: -40,
   },
@@ -831,7 +831,7 @@ const styles = themed(() => StyleSheet.create({
     gap: 14,
   },
   menuRowPressed: {
-    backgroundColor: "#F8FAF8",
+    backgroundColor: C.page,
   },
   menuIconWrap: {
     width: 40,
@@ -876,7 +876,7 @@ const styles = themed(() => StyleSheet.create({
   },
   rowDivider: {
     height: 1,
-    backgroundColor: "#F2F4F2",
+    backgroundColor: C.soft,
     marginLeft: 70,
   },
 
@@ -903,7 +903,7 @@ const styles = themed(() => StyleSheet.create({
     marginBottom: 14,
   },
   logoutBtnPressed: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: C.page,
     borderColor: "#CBD5E1",
     transform: [{ scale: 0.99 }],
   },

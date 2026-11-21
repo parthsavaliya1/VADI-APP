@@ -3,30 +3,40 @@ import { getThemeKey, isThemeKey, setTheme } from "@/constants/theme";
 import { API } from "@/utils/api";
 
 const STORAGE_KEY = "vadi-theme";
+const CACHE_TIMEOUT_MS = 1500;
 const FETCH_TIMEOUT_MS = 3000;
 
-/**
- * Applies the colour theme chosen in Admin → Theme.
- * Uses the last known theme immediately, then refreshes it from the backend.
- * Call before the first screen renders (see app/_layout.tsx).
- */
-export async function loadAppTheme(): Promise<void> {
+async function withTimeout<T>(operation: Promise<T>, timeoutMs: number): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const cached = await AsyncStorage.getItem(STORAGE_KEY);
+    return await Promise.race([
+      operation,
+      new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), timeoutMs); }),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+/** Restore before network setup so the first app loader uses the saved palette. */
+export async function loadCachedAppTheme(): Promise<void> {
+  try {
+    const cached = await withTimeout(AsyncStorage.getItem(STORAGE_KEY), CACHE_TIMEOUT_MS);
     if (isThemeKey(cached)) setTheme(cached);
   } catch {
-    // ignore storage errors
+    // Storage can be unavailable; keep the default palette and continue startup.
   }
+}
 
+/** Refresh from Admin after the startup API URL has been resolved. */
+export async function loadAppTheme(options: { restoreCached?: boolean } = {}): Promise<void> {
+  if (options.restoreCached !== false) await loadCachedAppTheme();
   try {
-    const res = await Promise.race([
-      API.get("/app-theme", { timeout: FETCH_TIMEOUT_MS }),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), FETCH_TIMEOUT_MS)),
-    ]);
+    const res = await withTimeout(API.get("/app-theme", { timeout: FETCH_TIMEOUT_MS }), FETCH_TIMEOUT_MS);
     const theme = res?.data?.data?.theme;
     if (isThemeKey(theme)) {
       setTheme(theme);
-      await AsyncStorage.setItem(STORAGE_KEY, theme);
+      await withTimeout(AsyncStorage.setItem(STORAGE_KEY, theme), CACHE_TIMEOUT_MS);
       console.log("🎨 App theme:", theme);
     } else {
       console.log("🎨 App theme: backend returned no theme, using", getThemeKey());

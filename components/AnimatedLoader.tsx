@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, View } from "react-native";
 import type { ColorValue, StyleProp, ViewStyle } from "react-native";
-import { C } from "@/constants/theme";
+import { C, themed, subscribeTheme, getThemeVersion } from "@/constants/theme";
 
 type Props = {
   size?: "small" | "large" | number;
@@ -13,6 +13,7 @@ type Props = {
 
 /** Shared logo loader for page, section and button loading states. */
 export function AnimatedLoader({ size, color = C.primary, style, fullScreen = false, accessibilityLabel = "Loading" }: Props) {
+  useSyncExternalStore(subscribeTheme, getThemeVersion, getThemeVersion);
   const diameter = typeof size === "number" ? Math.max(20, size) : size === "large" || fullScreen ? 112 : 28;
   const [rotation] = useState(() => new Animated.Value(0));
   const [pulse] = useState(() => new Animated.Value(0));
@@ -74,11 +75,11 @@ export function AnimatedLoader({ size, color = C.primary, style, fullScreen = fa
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   fullScreen: { flex: 1, alignSelf: "stretch", alignItems: "center", justifyContent: "center" },
   inline: { alignItems: "center", justifyContent: "center" },
   frame: { alignItems: "center", justifyContent: "center" },
   ring: { position: "absolute" },
-  logoDisc: { alignItems: "center", justifyContent: "center", backgroundColor: "#FFFFFF", overflow: "hidden" },
+  logoDisc: { alignItems: "center", justifyContent: "center", backgroundColor: C.card, overflow: "hidden" },
   logo: { width: "100%", height: "100%" },
-});
+}));

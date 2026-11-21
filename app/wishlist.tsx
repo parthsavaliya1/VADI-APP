@@ -1,11 +1,12 @@
+import { ProductCardImage, productCardStyles as cardStyles } from "@/components/ProductCardVisuals";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { Ionicons } from "@expo/vector-icons";
 import { router , useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/components/AppHeader";
-import { C } from "@/constants/theme";
+import { C, themed } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { API } from "@/utils/api";
 
@@ -62,7 +63,7 @@ export default function WishlistScreen() {
                 style={styles.row}
                 onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
               >
-                {item.image ? <Image source={{ uri: item.image }} style={styles.image} /> : <View style={styles.image} />}
+                <ProductCardImage uri={item.image} style={styles.image} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{item.name}</Text>
                   <Text style={styles.price}>{variant ? `₹${variant.price}` : ""}</Text>
@@ -78,12 +79,12 @@ export default function WishlistScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themed(() => StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.page },
-  row: { flexDirection: "row", gap: 12, alignItems: "center", backgroundColor: "#fff", borderRadius: 14, padding: 12, marginBottom: 10 },
-  image: { width: 64, height: 64, borderRadius: 10, backgroundColor: C.soft },
-  name: { fontWeight: "700", color: C.ink },
-  price: { marginTop: 4, fontWeight: "800", color: C.ink },
+  row: { ...cardStyles.prodCard, flexDirection: "row", gap: 12, alignItems: "center", padding: 12, marginBottom: 12 },
+  image: { width: 86, height: 102, margin: 0, marginBottom: 0, flexShrink: 0 },
+  name: { ...cardStyles.prodName },
+  price: { ...cardStyles.prodPrice, marginTop: 6 },
   stock: { marginTop: 2, color: C.muted, fontSize: 12 },
   empty: { textAlign: "center", color: C.muted, marginTop: 40 },
-});
+}));

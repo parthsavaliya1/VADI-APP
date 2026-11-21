@@ -1,3 +1,5 @@
+import { ProductCardImage, productCardStyles as cardStyles } from "@/components/ProductCardVisuals";
+import { getProductLayout } from "@/utils/productLayout";
 import { AnimatedLoader } from "@/components/AnimatedLoader";
 import { startTransition , useCallback, useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,6 +32,7 @@ import {
   remainingMsToCountdownDHMS,
 } from "@/utils/offerEnd";
 import { C, themed } from "@/constants/theme";
+import { HomeColors as GalleryColors, botanicalLeaves } from "@/constants/homeDesign";
 import { rememberProduct, readRecentIds } from "@/utils/recentlyViewed";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -671,6 +674,8 @@ export default function ProductDetailScreen() {
     );
   }
 
+  const relatedCardWidth = getProductLayout(viewportWidth, fontScale).gridCardWidth;
+  const galleryHeight = Math.min(galleryWidth, 440);
   const productPhotos = uniqueProductPhotos(product.image, product.images);
   const variantPhotos = uniqueProductPhotos(selectedVariant.image, selectedVariant.images);
   const displayImages =
@@ -769,15 +774,17 @@ export default function ProductDetailScreen() {
       >
         {/* ─── Image Carousel ─── */}
         <View
-          style={[styles.imageContainer, { height: galleryWidth }]}
+          style={[styles.imageContainer, { height: galleryHeight }]}
           onLayout={(event) => {
-            const next = Math.round(event.nativeEvent.layout.width);
+            const next = Math.max(1, event.nativeEvent.layout.width - 2);
             if (next > 0 && next !== galleryWidthRef.current) {
               galleryWidthRef.current = next;
               setGalleryWidth(next);
             }
           }}
         >
+          <View pointerEvents="none" style={styles.galleryArch} />
+          <Image source={botanicalLeaves} pointerEvents="none" accessible={false} style={styles.galleryBotanical} />
           <ScrollView
             ref={imageScrollRef}
             key={showVariantPhoto ? selectedVariant._id : "product-gallery"}
@@ -792,11 +799,12 @@ export default function ProductDetailScreen() {
             }
           >
             {displayImages.map((img, index) => (
-              <View key={`${imageIdentity(img)}-${index}`} style={{ width: galleryWidth, height: galleryWidth }}>
+              <View key={`${imageIdentity(img)}-${index}`} style={[styles.imageWrapper, { width: galleryWidth, height: galleryHeight - 2 }]}>
                 <Image
                   source={{ uri: img }}
-                  style={{ width: galleryWidth, height: galleryWidth }}
-                  resizeMode="cover"
+                  style={styles.productImage}
+                  resizeMode="contain"
+                  accessibilityLabel={product.name}
                 />
               </View>
             ))}
@@ -1166,18 +1174,13 @@ export default function ProductDetailScreen() {
                   return (
                     <TouchableOpacity
                       key={item._id}
-                      style={styles.recentCard}
+                      style={[styles.recentCard, { width: relatedCardWidth }]}
                       activeOpacity={0.85}
                       accessibilityRole="button"
                       accessibilityLabel={`View ${item.name}${variant ? `, ${variant.packSize} ${variant.packUnit}, ₹${variant.price}` : ""}${inStock ? "" : ", out of stock"}`}
                       onPress={() => router.push({ pathname: "/product-detail", params: { id: item._id } })}
                     >
-                      <View style={styles.recentImageWrap}>
-                        {photo ? (
-                          <Image source={{ uri: photo }} style={styles.recentImage} resizeMode="contain" />
-                        ) : (
-                          <Ionicons name="image-outline" size={32} color={C.muted} />
-                        )}
+                      <ProductCardImage uri={photo}>
                         {hasDiscount && (
                           <View style={styles.recentDiscount}>
                             <Text style={styles.recentDiscountText}>
@@ -1185,7 +1188,7 @@ export default function ProductDetailScreen() {
                             </Text>
                           </View>
                         )}
-                      </View>
+                      </ProductCardImage>
                       <View style={styles.recentCardBody}>
                         <Text numberOfLines={2} style={styles.recentName}>{item.name}</Text>
                         <Text numberOfLines={1} style={styles.recentPack}>
@@ -1196,7 +1199,9 @@ export default function ProductDetailScreen() {
                             {variant && <Text style={styles.recentPrice}>₹{variant.price}</Text>}
                             {hasDiscount && <Text style={styles.recentMrp}>₹{variant.mrp}</Text>}
                           </View>
-                          <Ionicons name="chevron-forward" size={16} color={C.primary} />
+                          <View style={cardStyles.addBtn}>
+                            <Ionicons name="chevron-forward" size={20} color="#fff" />
+                          </View>
                         </View>
                         {!inStock && variant && <Text style={styles.recentStock}>Out of stock</Text>}
                       </View>
@@ -1236,7 +1241,7 @@ export default function ProductDetailScreen() {
                     return (
                       <TouchableOpacity
                         key={item._id}
-                        style={styles.similarCard}
+                        style={[styles.similarCard, { width: relatedCardWidth }]}
                         activeOpacity={0.9}
                         onPress={() =>
                           router.push({
@@ -1254,17 +1259,7 @@ export default function ProductDetailScreen() {
                           </View>
                         )}
 
-                        {/* Image with light background */}
-                        <View style={styles.similarImageWrap}>
-                          <Image
-                            source={{
-                              uri:
-                                item.image || "https://via.placeholder.com/150",
-                            }}
-                            style={styles.similarImage}
-                            resizeMode="cover"
-                          />
-                        </View>
+                        <ProductCardImage uri={item.image || "https://via.placeholder.com/150"} />
 
                         {/* Name */}
                         <Text numberOfLines={2} style={styles.similarName}>
@@ -1326,7 +1321,7 @@ export default function ProductDetailScreen() {
                                 });
                               }}
                             >
-                              <Text style={styles.simAddBtnText}>ADD</Text>
+                              <Ionicons name="add" size={22} color="#fff" />
                             </TouchableOpacity>
                           ) : (
                             <View style={styles.simQtyRow}>
@@ -1842,15 +1837,12 @@ const styles = themed(() => StyleSheet.create({
   },
   headerCartBadgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
 
+  galleryArch: { position: "absolute", top: 32, bottom: 26, left: "12%", right: "12%", borderTopLeftRadius: 200, borderTopRightRadius: 200, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: GalleryColors.soft },
+  galleryBotanical: { position: "absolute", right: 0, top: 26, width: 96, height: 180, opacity: 0.35, resizeMode: "contain" },
   // ── Image ──
-  imageContainer: { width: "100%", height: screenWidth, backgroundColor: C.card, overflow: "hidden" },
-  imageWrapper: {
-    width: screenWidth,
-    height: screenWidth,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  productImage: { width: "100%", height: "100%" },
+  imageContainer: { marginHorizontal: 16, backgroundColor: GalleryColors.card, borderWidth: 1, borderColor: GalleryColors.line, borderRadius: 26, overflow: "hidden" },
+  imageWrapper: { justifyContent: "center", alignItems: "center", paddingTop: 46, paddingBottom: 34, paddingHorizontal: 28 },
+  productImage: { width: "100%", flex: 1 },
   imageIndicators: {
     position: "absolute",
     bottom: 14,
@@ -1918,7 +1910,7 @@ const styles = themed(() => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: C.soft,
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 6,
@@ -1981,7 +1973,7 @@ const styles = themed(() => StyleSheet.create({
   variantScrollContent: { paddingRight: 8 },
   variantCard: {
     minWidth: 88,
-    backgroundColor: "#F7F7F7",
+    backgroundColor: C.page,
     borderRadius: 12,
     padding: 12,
     marginRight: 10,
@@ -2248,15 +2240,8 @@ const styles = themed(() => StyleSheet.create({
   },
   recentHeader: { paddingHorizontal: 14, marginBottom: 14 },
   recentSubtitle: { fontSize: 12, lineHeight: 18, color: C.muted, marginTop: 2 },
-  recentScrollContent: { paddingHorizontal: 14, paddingBottom: 2, gap: 12, alignItems: "flex-start" },
-  recentCard: {
-    width: 152,
-    borderWidth: 1,
-    borderColor: C.line,
-    borderRadius: 14,
-    overflow: "hidden",
-    backgroundColor: C.card,
-  },
+  recentScrollContent: { paddingHorizontal: 14, paddingBottom: 2, gap: 12, alignItems: "stretch" },
+  recentCard: { ...cardStyles.prodCard },
   recentImageWrap: {
     height: 112,
     padding: 10,
@@ -2265,23 +2250,15 @@ const styles = themed(() => StyleSheet.create({
     justifyContent: "center",
   },
   recentImage: { width: "100%", height: "100%" },
-  recentDiscount: {
-    position: "absolute",
-    top: 7,
-    left: 7,
-    backgroundColor: C.badge,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 5,
-  },
-  recentDiscountText: { fontSize: 10, fontWeight: "800", color: C.badgeText },
-  recentCardBody: { padding: 10, minHeight: 116 },
-  recentName: { fontSize: 13, lineHeight: 18, minHeight: 36, fontWeight: "700", color: C.ink },
-  recentPack: { fontSize: 11, lineHeight: 16, color: C.muted, marginTop: 4 },
-  recentFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10, gap: 4 },
-  recentPriceGroup: { flex: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "baseline", gap: 5 },
-  recentPrice: { fontSize: 15, fontWeight: "800", color: C.ink },
-  recentMrp: { fontSize: 11, color: C.muted, textDecorationLine: "line-through" },
+  recentDiscount: { ...cardStyles.offBadge },
+  recentDiscountText: { ...cardStyles.prodBadgeTxt },
+  recentCardBody: { ...cardStyles.productDetails },
+  recentName: { ...cardStyles.prodName },
+  recentPack: { ...cardStyles.prodUnit },
+  recentFooter: { ...cardStyles.prodFooter },
+  recentPriceGroup: { flex: 1, minWidth: 0, gap: 2 },
+  recentPrice: { ...cardStyles.prodPrice },
+  recentMrp: { ...cardStyles.strikePrice },
   recentStock: { fontSize: 11, color: C.muted, marginTop: 6 },
 
   // ── Similar Products (IMPROVED) ──
@@ -2298,36 +2275,12 @@ const styles = themed(() => StyleSheet.create({
     marginBottom: 12,
   },
   seeAll: { fontSize: 13, fontWeight: "700", color: C.primary },
-  similarScrollContent: { paddingRight: 8, paddingBottom: 4 },
-
-  similarCard: {
-    width: 148,
-    backgroundColor: C.card,
-    borderRadius: 14,
-    padding: 10,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: C.line,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-    position: "relative",
-  },
-  similarDiscountBadge: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    zIndex: 1,
-    backgroundColor: C.badge,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  similarDiscountText: { fontSize: 9, fontWeight: "800", color: C.badgeText },
+  similarScrollContent: { paddingRight: 8, paddingBottom: 4, alignItems: "stretch" },
+  similarCard: { ...cardStyles.prodCard, marginRight: 12, paddingBottom: 12 },
+  similarDiscountBadge: { ...cardStyles.offBadge, top: 10, right: 10, zIndex: 1 },
+  similarDiscountText: { ...cardStyles.prodBadgeTxt },
   similarImageWrap: {
-    backgroundColor: "#F6F6F6",
+    backgroundColor: C.soft,
     borderRadius: 10,
     height: 96,
     justifyContent: "center",
@@ -2336,58 +2289,18 @@ const styles = themed(() => StyleSheet.create({
     overflow: "hidden",
   },
   similarImage: { width: "100%", height: "100%" },
-  similarName: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: C.ink,
-    marginBottom: 5,
-    lineHeight: 17,
-  },
-  similarUnitPill: {
-    backgroundColor: "#F0F0F0",
-    alignSelf: "flex-start",
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 5,
-    marginBottom: 5,
-  },
-  similarUnit: { fontSize: 11, color: C.muted, fontWeight: "600" },
-  similarRatingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    marginBottom: 8,
-  },
+  similarName: { ...cardStyles.prodName, marginHorizontal: 12, marginTop: 8 },
+  similarUnitPill: { marginHorizontal: 12, marginTop: 3, marginBottom: 5 },
+  similarUnit: { ...cardStyles.prodUnit },
+  similarRatingRow: { flexDirection: "row", alignItems: "center", gap: 3, marginBottom: 8, marginHorizontal: 12 },
   similarRatingText: { fontSize: 11, fontWeight: "800", color: C.ink },
   similarReviewCount: { fontSize: 10, color: "#aaa", fontWeight: "500" },
-  similarBottom: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginTop: 2,
-  },
-  similarPrice: { fontSize: 15, fontWeight: "900", color: C.ink },
-  similarMRP: {
-    fontSize: 11,
-    color: C.muted,
-    textDecorationLine: "line-through",
-  },
-  simAddBtn: {
-    backgroundColor: C.card,
-    borderWidth: 1.5,
-    borderColor: C.primary,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
+  similarBottom: { ...cardStyles.prodFooter, marginHorizontal: 12, marginTop: "auto", paddingTop: 6 },
+  similarPrice: { ...cardStyles.prodPrice },
+  similarMRP: { ...cardStyles.strikePrice },
+  simAddBtn: { ...cardStyles.addBtn },
   simAddBtnText: { fontSize: 12, fontWeight: "800", color: C.primary },
-  simQtyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: C.primary,
-    borderRadius: 8,
-    overflow: "hidden",
-  },
+  simQtyRow: { flexDirection: "row", alignItems: "center", backgroundColor: GalleryColors.primary, borderRadius: 20, overflow: "hidden", minHeight: 40 },
   simQtyBtn: {
     paddingHorizontal: 7,
     paddingVertical: 5,
@@ -2428,7 +2341,7 @@ const styles = themed(() => StyleSheet.create({
   writeReviewText: { fontSize: 13, fontWeight: "700", color: "#fff" },
 
   ratingSummary: {
-    backgroundColor: "#F9F9F9",
+    backgroundColor: C.page,
     padding: 16,
     borderRadius: 12,
     marginBottom: 14,
@@ -2473,7 +2386,7 @@ const styles = themed(() => StyleSheet.create({
   },
 
   reviewsList: { gap: 10 },
-  reviewCard: { backgroundColor: "#F9F9F9", padding: 14, borderRadius: 12 },
+  reviewCard: { backgroundColor: C.page, padding: 14, borderRadius: 12 },
   reviewHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -2720,14 +2633,14 @@ const styles = themed(() => StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: C.soft,
     justifyContent: "center",
     alignItems: "center",
   },
   modalProductPreview: {
     flexDirection: "row",
     gap: 12,
-    backgroundColor: "#F7F7F7",
+    backgroundColor: C.page,
     padding: 12,
     borderRadius: 12,
     marginBottom: 20,
@@ -2759,7 +2672,7 @@ const styles = themed(() => StyleSheet.create({
     marginTop: 8,
   },
   modalInput: {
-    backgroundColor: "#F7F7F7",
+    backgroundColor: C.page,
     padding: 13,
     borderRadius: 11,
     fontSize: 14,

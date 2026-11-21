@@ -419,7 +419,7 @@ const styles = themed(() => StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#F1F8F4",
+    backgroundColor: C.soft,
     justifyContent: "center",
     alignItems: "center",
     position: "relative",

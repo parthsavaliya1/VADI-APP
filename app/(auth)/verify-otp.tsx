@@ -24,8 +24,7 @@ import {
 import { AuthScreenBackground } from "../../components/auth/AuthScreenBackground";
 import {
   AUTH_FARM_SECTION_HEIGHT,
-  BG_GRADIENT_MID,
-  BG_SURFACE,
+  getAuthBackgroundColors,
 } from "../../constants/authScreenTheme";
 import { useAuth } from "../../context/AuthContext";
 import { C, themed } from "@/constants/theme";
@@ -176,7 +175,7 @@ export default function VerifyOtpScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <LinearGradient
-        colors={[BG_SURFACE, BG_GRADIENT_MID, BG_SURFACE]}
+        colors={getAuthBackgroundColors()}
         style={styles.gradient}
       >
         <AuthScreenBackground farmBandHeight={farmBandHeight} />
@@ -357,7 +356,7 @@ export default function VerifyOtpScreen() {
 const styles = themed(() => StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: BG_SURFACE,
+    backgroundColor: C.page,
   },
   gradient: {
     flex: 1,
@@ -373,8 +372,8 @@ const styles = themed(() => StyleSheet.create({
     marginBottom: 28,
   },
   logoImage: {
-    width: 120,
-    height: 120,
+    width: 180,
+    height: 112,
     resizeMode: "contain",
     marginBottom: 8,
   },
