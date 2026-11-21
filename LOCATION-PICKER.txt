@@ -1,0 +1,55 @@
+VADI location picker
+
+Architecture
+The app uses Expo Router, shared C/themed palette tokens, Expo Location and
+react-native-webview. The picker opens as a reusable full-screen modal, so no
+router routes, providers or checkout navigation need changing. Native platforms
+use WebView; web uses an iframe with the same Leaflet document.
+
+Usage
+Import LocationPicker from @/components/LocationPicker. Pass visible,
+initialLocation (optional), onCancel, and onConfirm. onConfirm receives numeric
+{ latitude, longitude }; it can be async and throw an error to keep the picker
+open with an error message. An omitted initialLocation opens a world view.
+An initialLocation is a viewport hint, not an inferred GPS location.
+Optional searchLocations provides the existing address search functionality.
+
+Persistence
+Add/Edit Address receives the confirmed selection and retains the existing
+POST /addresses and PUT /addresses/:id save flow. Save/Update Address persists
+location: { type: 'Point', coordinates: [longitude, latitude] }.
+Opening, dragging, GPS and Cancel do not write to the API. Existing Rajkot
+bounds and PIN rules still apply. Native reverse geocoding is best-effort
+autofill after confirmation when permission is already granted. Without it,
+the user fills the address and PIN manually. No new geocoding service is used.
+No tables, migrations, tile uploads, images or Bunny CDN changes are required.
+
+Setup
+Expo Location and react-native-webview are already installed, and foreground
+permission declarations are already configured. No new dependency or Maps key
+is required. Run npm start with the existing development client. Web GPS needs
+HTTPS or localhost. Internet is required for Leaflet assets and map tiles.
+
+Tile configuration
+Default: https://tile.openstreetmap.org/{z}/{x}/{y}.png (maxZoom 19).
+Override per instance using tileProvider: { url, attribution, maxZoom }, or set
+expo.extra.locationTileUrl, locationTileAttribution and locationTileMaxZoom in
+app.json. URLs must use HTTPS. Change attribution together with the provider.
+Attribution is shown inside the map. The native WebView identifies itself as
+VADI-LocationPicker and uses normal browser caching. Tiles are fetched only for
+interactive viewing; no offline download, prefetch or custom tile cache exists.
+OSM public tiles are best-effort and subject to the provider's usage policy:
+https://operations.osmfoundation.org/policies/tiles/
+For a high-traffic deployment, configure a suitable provider or self-host tiles.
+Leaflet 1.9.4 JS/CSS are loaded from jsDelivr; no paid map SDK is involved.
+The app's pre-existing native Maps dependency/build configuration is not used
+by this picker and was left intact to avoid unrelated build changes.
+
+Verification
+npm run typecheck
+npm run test:session
+npx eslint app/add-address.tsx components/LocationPicker.tsx components/LocationMap.tsx components/LocationMap.web.tsx utils/locationMap.ts tests/addressScreen.test.cjs tests/locationPicker.test.cjs
+Device acceptance: drag/zoom and confirm, GPS allowed/denied/services off,
+offline then Retry, cancel/reopen, edit existing address, and address save.
+Automated tests mock native GPS and map events; they do not replace a physical
+iOS/Android test or a live database save.
