@@ -37,7 +37,7 @@ type OpenRazorpayOptions = {
     paymentId: string;
     orderId: string;
     signature: string;
-  }) => void;
+  }) => void | Promise<void>;
   onFailure: (message?: string) => void;
 };
 
@@ -66,17 +66,9 @@ export async function openRazorpay(options: OpenRazorpayOptions) {
       contact: phoneForRazorpay(options.customerPhone),
     });
 
-    const verifyRes = await API.post("/payments/verify-signature", {
-      razorpayOrderId: paymentResult.razorpay_order_id,
-      razorpayPaymentId: paymentResult.razorpay_payment_id,
-      razorpaySignature: paymentResult.razorpay_signature,
-    });
-
-    if (!verifyRes.data?.success) {
-      throw new Error(verifyRes.data?.message || "Payment verification failed");
-    }
-
-    options.onSuccess({
+    // Checkout persists the proof before verification, so a network failure can
+    // resume confirmation without charging for another payment.
+    await options.onSuccess({
       paymentId: paymentResult.razorpay_payment_id,
       orderId: paymentResult.razorpay_order_id,
       signature: paymentResult.razorpay_signature,

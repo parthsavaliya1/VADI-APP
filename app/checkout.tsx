@@ -6,9 +6,10 @@ import { showAlert } from "@/context/CustomAlertContext";
 import { useOrders } from "@/context/OrderContext";
 import { API } from "@/utils/api";
 import { openRazorpay } from "@/utils/razorpay";
+import { clearPendingCheckout, confirmPendingCheckout, isPaymentAmountMismatch, orderPlacementError, readPendingCheckout, savePendingCheckout, type PendingCheckoutPayment } from "@/utils/checkoutRecovery";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   LayoutAnimation,
@@ -38,12 +39,17 @@ if (Platform.OS === "android") {
 }
 
 export default function CheckoutScreen() {
-  const { items, clearCart, refreshCart } = useCart();
+  const { items, refreshCart, loading: cartLoading } = useCart();
   const { user } = useAuth();
   const { placeOrder } = useOrders();
   const { selectedAddress, defaultAddress, addresses, setSelectedAddress, refreshAddresses } =
     useAddress();
   const [isProcessing, setIsProcessing] = useState(false);
+  const processing = useRef(false);
+  const [pendingPayment, setPendingPayment] = useState<PendingCheckoutPayment | null>(null);
+  const [recoveryLoading, setRecoveryLoading] = useState(true);
+  const [recoveryError, setRecoveryError] = useState("");
+  const amountMismatch = isPaymentAmountMismatch(new Error(recoveryError));
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<
     "upi" | "card" | "wallet" | "cod" | "balance"
@@ -58,6 +64,18 @@ export default function CheckoutScreen() {
   const [appliedCoupon, setAppliedCoupon] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponBusy, setCouponBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setRecoveryLoading(true);
+    setPendingPayment(null);
+    setRecoveryError("");
+    (user?._id ? readPendingCheckout(user._id) : Promise.resolve(null))
+      .then(pending => { if (active) setPendingPayment(pending); })
+      .catch(() => { if (active) setRecoveryError("Could not load your previous payment. Check your orders before paying again."); })
+      .finally(() => { if (active) setRecoveryLoading(false); });
+    return () => { active = false; };
+  }, [user?._id]);
 
   const [fadeAnim] = useState(() => new Animated.Value(0));
   const [slideAnim] = useState(() => new Animated.Value(50));
@@ -153,8 +171,60 @@ export default function CheckoutScreen() {
 
   const upiRegex = /^[a-zA-Z0-9._-]{2,}@[a-zA-Z]{2,}$/;
 
+  const finishPaidOrder = async (pending: PendingCheckoutPayment) => {
+    await confirmPendingCheckout(pending, placeOrder);
+    await clearPendingCheckout(pending.userId);
+    setPendingPayment(null);
+    setRecoveryError("");
+    // The server clears the purchased cart transactionally. Never delete the
+    // current cart here: it may already contain another item added by the user.
+    await refreshCart();
+    showAlert("Order Placed! 🎉", "Your payment and order are confirmed.", [
+      { text: "View Orders", onPress: () => router.replace("/(tabs)/orders") },
+    ]);
+  };
+
+  const retryConfirmation = async () => {
+    if (processing.current || recoveryLoading || !user?._id) return;
+    processing.current = true;
+    setIsProcessing(true);
+    try {
+      if (pendingPayment) {
+        await savePendingCheckout(pendingPayment);
+        await finishPaidOrder(pendingPayment);
+      } else {
+        const pending = await readPendingCheckout(user._id);
+        setPendingPayment(pending);
+        setRecoveryError("");
+      }
+    } catch (error) {
+      setRecoveryError(orderPlacementError(error).message);
+    } finally {
+      processing.current = false;
+      setIsProcessing(false);
+    }
+  };
+
+  const startNewCheckout = async () => {
+    if (!pendingPayment || !amountMismatch || processing.current) return;
+    processing.current = true;
+    setIsProcessing(true);
+    try {
+      await clearPendingCheckout(pendingPayment.userId);
+      setPendingPayment(null);
+      setRecoveryError("");
+      await refreshCart();
+      showAlert("Start new checkout", `You can add items and check out with your current cart. If you were charged for the previous payment, contact support with reference ${pendingPayment.payload.paymentDetails?.razorpayPaymentId}.`);
+    } catch {
+      showAlert("Could not start checkout", "Your payment reference is still saved. Please try again.");
+    } finally {
+      processing.current = false;
+      setIsProcessing(false);
+    }
+  };
+
   const handlePlaceOrder = async () => {
-    if (isProcessing) return;
+    if (processing.current || cartLoading || recoveryLoading || pendingPayment || recoveryError) return;
     if (items.length === 0) {
       showAlert("Empty Cart", "Your cart is empty");
       return;
@@ -186,6 +256,7 @@ export default function CheckoutScreen() {
 
     }
 
+    processing.current = true;
     setIsProcessing(true);
 
     try {
@@ -196,7 +267,6 @@ export default function CheckoutScreen() {
       );
       if (!savedAddress) {
         await refreshAddresses();
-        setIsProcessing(false);
         showAlert("Choose delivery address", "Your selected address is no longer available. Please select a saved delivery address.", [
           { text: "Select address", onPress: handleChangeAddress },
         ]);
@@ -204,7 +274,6 @@ export default function CheckoutScreen() {
       }
       const savedDeliveryError = deliveryAddressError(savedAddress);
       if (savedDeliveryError) {
-        setIsProcessing(false);
         showAlert("Check delivery address", savedDeliveryError);
         return;
       }
@@ -226,8 +295,7 @@ export default function CheckoutScreen() {
           couponCode: appliedCoupon || undefined,
         });
 
-        clearCart();
-        setIsProcessing(false);
+        await refreshCart();
 
         showAlert(
           "Order Placed! 🎉",
@@ -244,7 +312,6 @@ export default function CheckoutScreen() {
 
       if (paymentMethod === "balance") {
         if (walletBalance < grandTotal) {
-          setIsProcessing(false);
           showAlert(
             "Low wallet balance",
             `Wallet balance is ₹${walletBalance}. Add ₹${Math.ceil(grandTotal - walletBalance)} to pay with wallet.`,
@@ -262,8 +329,7 @@ export default function CheckoutScreen() {
           notes: "Paid from VADI wallet",
           couponCode: appliedCoupon || undefined,
         });
-        clearCart();
-        setIsProcessing(false);
+        await refreshCart();
         showAlert("Order Placed! 🎉", "Paid from your VADI wallet.", [
           { text: "View Orders", onPress: () => router.replace("/(tabs)/orders") },
         ]);
@@ -277,7 +343,6 @@ export default function CheckoutScreen() {
           "Cart",
           "Your cart is empty or could not be synced. Please try again.",
         );
-        setIsProcessing(false);
         return;
       }
       const serverMerchandise = Math.max(
@@ -287,7 +352,6 @@ export default function CheckoutScreen() {
       const serverDelivery = quoteDeliveryFee(serverMerchandise, fees);
       const serverPayTotal = Math.round((serverMerchandise + serverDelivery) * 100) / 100;
       if (Math.abs(serverPayTotal - grandTotal) > 0.02) {
-        setIsProcessing(false);
         showAlert(
           "Total updated",
           "Your order total changed after syncing the cart. Please review the new total and try again.",
@@ -315,8 +379,10 @@ export default function CheckoutScreen() {
         description: `Order payment - ₹${serverPayTotal}`,
         couponCode: appliedCoupon || undefined,
         onSuccess: async ({ paymentId, orderId, signature }) => {
-          try {
-            await placeOrder({
+          const pending: PendingCheckoutPayment = {
+            userId: user._id,
+            amount: serverPayTotal,
+            payload: {
               address: orderAddress,
               paymentMethod: resolvedOnlineMethod,
               paymentDetails: {
@@ -326,35 +392,20 @@ export default function CheckoutScreen() {
               },
               deliveryFee,
               couponCode: appliedCoupon || undefined,
-              notes: `Preferred payment: ${onlinePaymentType}; Razorpay paymentId: ${paymentId}; Razorpay orderId: ${orderId}; Signature: ${signature}`,
-            });
-
-            clearCart();
-            setIsProcessing(false);
-
-            showAlert(
-              "Payment Successful! 🎉",
-              `Payment ID: ${paymentId}\nYour order has been placed.`,
-              [
-                {
-                  text: "View Orders",
-                  onPress: () => router.replace("/(tabs)/orders"),
-                },
-              ],
-            );
-          } catch (orderErr: any) {
-            // Payment succeeded but order placement failed
-            setIsProcessing(false);
-            showAlert(
-              "Order Error",
-              `Payment was successful (ID: ${paymentId}) but we couldn't place your order. Please contact support.`,
-              [{ text: "OK" }],
-            );
+              notes: `Preferred payment: ${onlinePaymentType}; Razorpay paymentId: ${paymentId}`,
+            },
+          };
+          setPendingPayment(pending);
+          try {
+            await savePendingCheckout(pending);
+            await finishPaidOrder(pending);
+          } catch (error) {
+            setRecoveryError(orderPlacementError(error).message);
+            showAlert("Confirm your payment", `Payment reference: ${paymentId}. Retry order confirmation before paying again. You can still edit your cart.`, [{ text: "OK" }]);
           }
         },
         onFailure: (message?: string) => {
           // Payment was cancelled or failed — do NOT place order
-          setIsProcessing(false);
           showAlert(
             "Payment Failed",
             message || "Your payment was cancelled or failed. No order was placed.",
@@ -363,8 +414,10 @@ export default function CheckoutScreen() {
         },
       });
     } catch (err: any) {
+      showAlert("Error", orderPlacementError(err).message);
+    } finally {
+      processing.current = false;
       setIsProcessing(false);
-      showAlert("Error", err?.message || "Failed to place order");
     }
   };
 
@@ -382,6 +435,26 @@ export default function CheckoutScreen() {
         >
           {/* HEADER */}
           <AppHeader title="Checkout" showBack />
+
+          {(pendingPayment || recoveryError) && <View style={styles.card}>
+            <View style={styles.cardContent}>
+              <Text style={styles.sectionTitle}>Finish confirming your payment</Text>
+              {pendingPayment && <Text selectable style={{ color: C.ink, marginTop: 10 }}>Payment reference: {pendingPayment.payload.paymentDetails?.razorpayPaymentId}</Text>}
+              <Text style={{ color: C.muted, marginTop: 10 }}>{amountMismatch
+                ? "This payment cannot confirm your current cart. Check your orders before starting a new checkout. If you were charged, contact support with the payment reference."
+                : "Confirm the previous order before making another payment. You can still add or remove items in your cart."}</Text>
+              {!!recoveryError && <Text accessibilityRole="alert" style={{ color: C.ink, marginTop: 10 }}>{recoveryError}</Text>}
+              <TouchableOpacity accessibilityRole="button" disabled={isProcessing} onPress={amountMismatch ? startNewCheckout : retryConfirmation} style={[styles.placeOrderBtn, { marginTop: 14 }, isProcessing && styles.placeOrderBtnDisabled]}>
+                <Text style={styles.placeOrderText}>{isProcessing ? "Confirming…" : amountMismatch ? "Start new checkout" : pendingPayment ? "Retry order confirmation" : "Reload payment confirmation"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" onPress={() => router.push("/(tabs)/orders")} style={{ paddingVertical: 12 }}>
+                <Text style={{ color: C.primary, fontWeight: "700" }}>Check your orders</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" onPress={() => router.push("/(tabs)")} style={{ paddingVertical: 12 }}>
+                <Text style={{ color: C.primary, fontWeight: "700" }}>Continue shopping</Text>
+              </TouchableOpacity>
+            </View>
+          </View>}
 
           {/* DELIVERY ADDRESS */}
           <Animated.View style={[styles.card, styles.cardElevated]}>
@@ -928,11 +1001,11 @@ export default function CheckoutScreen() {
             <TouchableOpacity
               style={[
                 styles.placeOrderBtn,
-                (isProcessing || !activeAddress) &&
+                (isProcessing || recoveryLoading || !!pendingPayment || !!recoveryError || cartLoading || !activeAddress) &&
                   styles.placeOrderBtnDisabled,
               ]}
               onPress={handlePlaceOrder}
-              disabled={isProcessing || !activeAddress}
+              disabled={isProcessing || recoveryLoading || !!pendingPayment || !!recoveryError || cartLoading || !activeAddress}
               activeOpacity={0.8}
             >
               {isProcessing ? (

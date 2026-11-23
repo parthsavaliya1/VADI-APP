@@ -1,5 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
 import { API } from "@/utils/api";
+import { orderPlacementError } from "@/utils/checkoutRecovery";
 import { createContext, ReactNode, useCallback, useContext, useState } from "react";
 
 /* ================= TYPES ================= */
@@ -15,7 +16,7 @@ type OrderAddress = {
   landmark?: string;
 };
 
-type PlaceOrderPayload = {
+export type PlaceOrderPayload = {
   address: {
     _id: string;
     name: string;
@@ -113,13 +114,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     });
 
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || error.message || "Failed to place order",
-      );
+      throw orderPlacementError(error);
     }
 
     if (!res.data?.success) {
-      throw new Error(res.data?.message || "Failed to place order");
+      throw orderPlacementError({ response: res });
     }
 
     return res.data;
