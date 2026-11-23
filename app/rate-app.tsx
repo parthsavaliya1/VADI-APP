@@ -15,7 +15,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { showAlert } from "@/context/CustomAlertContext";
 import { C, themed } from "@/constants/theme";
 
-const PLAY_STORE = "https://play.google.com/store/apps/details?id=com.vadi.app";
+const PLAY_STORE = "https://play.google.com/store/apps/details?id=com.vadindia.vadifresh";
 const SUPPORT_EMAIL = "vadi.support@gmail.com";
 
 const TAGS = ["Fresh produce", "Fast delivery", "Easy to order", "App is slow", "Missing items"];

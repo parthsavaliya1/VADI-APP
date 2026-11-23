@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "VADI",
+    "name": "VADI Fresh",
     "slug": "vadi-product",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/vadi-app-icon.png",
     "scheme": "vadiapp",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.vadi.app",
+      "bundleIdentifier": "com.vadindia.vadifresh",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -23,8 +23,8 @@
         "foregroundImage": "./assets/images/vadi-adaptive-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.vadi.app",
-      "versionCode": 2,
+      "package": "com.vadindia.vadifresh",
+      "versionCode": 4,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
